@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insights — Malaysian Renewable Energy Advisory | EcoEnergy Consultancy</title>
+<meta name="description" content="Independent analysis of Malaysia's renewable-energy schemes, tariffs and regulations for commercial and industrial clients — from EcoEnergy Consultancy.">
+<link rel="icon" type="image/svg+xml" href="../assets/ecoenergy_leaf_appicon.svg">
+<link rel="canonical" href="https://www.ecoconsultancy.services/insights/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-deep:#081527;
+  --navy:#0F2742;
+  --navy-raised:#15334F;
+  --navy-line:#23425F;
+  --gold:#D4A23A;
+  --gold-deep:#B8841F;
+  --paper:#F4EFE6;
+  --paper-dim:#E9E2D4;
+  --ink:#12233A;
+  --ink-soft:#48586C;
+  --cloud:#AFBFCF;
+  --cloud-dim:#7E93A8;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Hanken Grotesk',-apple-system,sans-serif;
+  --mono:'Spline Sans Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);background:var(--navy-deep);color:var(--paper);
+  font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;
+  display:flex;flex-direction:column;
+}
+::selection{background:var(--gold);color:var(--navy-deep)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(24px,5vw,64px);width:100%}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--gold)}
+
+/* ---------- nav ---------- */
+header{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  background:rgba(8,21,39,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:76px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo img{width:30px;height:30px}
+.logo-text{display:flex;flex-direction:column;line-height:1.15}
+.logo-mark{font-family:var(--serif);font-size:23px;color:var(--paper);letter-spacing:-.01em}
+.logo-mark b{font-weight:600;color:var(--gold)}
+.logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
+nav.links{display:flex;gap:34px}
+nav.links a{
+  color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
+  letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
+}
+nav.links a::after{content:"";position:absolute;left:0;bottom:-6px;width:0;height:1px;background:var(--gold);transition:width .3s var(--ease)}
+nav.links a:hover{color:var(--paper)}
+nav.links a:hover::after{width:100%}
+nav.links a.active{color:var(--paper)}
+nav.links a.active::after{width:100%}
+.nav-cta{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-decoration:none;
+  color:var(--navy-deep);background:var(--gold);padding:11px 22px;
+  transition:background .25s var(--ease),transform .25s var(--ease);
+}
+.nav-cta:hover{background:var(--paper);transform:translateY(-1px)}
+@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:520px){.nav-cta{display:none}}
+
+/* ---------- header band ---------- */
+.page-head{
+  padding:150px 0 60px;
+  background:
+    radial-gradient(1100px 600px at 82% -10%,rgba(212,162,58,.10),transparent 60%),
+    radial-gradient(900px 700px at -10% 120%,rgba(21,51,79,.9),transparent 65%),
+    var(--navy-deep);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.page-head h1{font-family:var(--serif);font-weight:300;font-size:clamp(38px,5vw,60px);line-height:1.08;letter-spacing:-.02em;margin:22px 0 20px}
+.page-head h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+.page-head p{max-width:52ch;color:var(--cloud);font-weight:300;font-size:clamp(16px,1.4vw,18.5px)}
+
+/* ---------- list ---------- */
+.list{padding:clamp(56px,8vh,90px) 0;flex:1}
+.post{
+  display:block;text-decoration:none;color:inherit;
+  background:linear-gradient(160deg,var(--navy-raised),var(--navy) 72%);
+  border:1px solid var(--navy-line);border-top:3px solid var(--gold);
+  padding:38px 40px;max-width:900px;
+  box-shadow:0 24px 48px -24px rgba(0,0,0,.55);
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s var(--ease);
+}
+.post:hover{transform:translateY(-6px);border-color:rgba(212,162,58,.45);box-shadow:0 34px 60px -22px rgba(0,0,0,.7)}
+.post .p-meta{display:flex;flex-wrap:wrap;gap:10px 20px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cloud-dim);margin-bottom:16px}
+.post .p-meta .cat{color:var(--gold)}
+.post h2{font-family:var(--serif);font-weight:500;font-size:clamp(23px,2.7vw,30px);line-height:1.22;letter-spacing:-.01em;color:var(--paper)}
+.post p{margin-top:14px;color:var(--cloud);font-weight:300;font-size:16px;line-height:1.7;max-width:64ch}
+.post .more{display:inline-block;margin-top:20px;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;color:var(--gold)}
+.post:hover .more{color:var(--paper)}
+
+.soon{margin-top:40px;max-width:900px;font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--cloud-dim)}
+.soon span{color:var(--gold)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(212,162,58,.16);padding:34px 0 60px;background:var(--navy-deep)}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--cloud-dim)}
+footer a{color:var(--cloud-dim);text-decoration:none}
+footer a:hover{color:var(--gold)}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="../index.html#top">
+      <img src="../assets/ecoenergy_leaf_mark.svg" alt="EcoEnergy leaf mark">
+      <span class="logo-text">
+        <span class="logo-mark">Eco<b>Energy</b></span>
+        <span class="logo-sub">Consultancy</span>
+      </span>
+    </a>
+    <nav class="links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#sectors">Sectors</a>
+      <a href="../index.html#approach">Approach</a>
+      <a href="../index.html#models">Engagement</a>
+      <a href="index.html" class="active">Insights</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
+  </div>
+</header>
+
+<section class="page-head">
+  <div class="wrap">
+    <p class="kicker">Insights</p>
+    <h1>Straight answers on Malaysia's <em>renewable-energy</em> schemes.</h1>
+    <p>Independent analysis of the schemes, tariffs and regulations shaping solar, storage and RE projects for commercial and industrial clients — written to inform decisions, not to sell panels.</p>
+  </div>
+</section>
+
+<section class="list">
+  <div class="wrap">
+    <a class="post" href="solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html">
+      <div class="p-meta">
+        <span class="cat">Scheme Strategy</span>
+        <span>2026</span>
+        <span>~9 min read</span>
+      </div>
+      <h2>Solar ATAP vs SELCO vs CRESS vs Corporate PPA: which solar route fits your factory in 2026?</h2>
+      <p>NEM and CGPP are gone; the December 2025 rule changes moved the numbers by millions of ringgit over a 20-year horizon. A 2026 decision tree comparing Malaysia's four commercial solar routes — with the actual regulatory parameters, including the revised 1 MWac BESS threshold and the cut CRESS System Access Charge.</p>
+      <span class="more">Read the analysis →</span>
+    </a>
+
+    <p class="soon">More insights in progress — <span>GITA timing traps</span>, RP4 tariff mechanics, and CRESS bankability. Check back soon.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
+    <p><a href="../index.html#contact">Contact</a> &nbsp;·&nbsp; <a href="../index.html#top">Home</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

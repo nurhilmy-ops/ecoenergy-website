@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar ATAP vs SELCO vs CRESS vs Corporate PPA — Which Solar Route Fits Your Factory in 2026? | EcoEnergy Consultancy</title>
+<meta name="description" content="An independent 2026 decision guide for Malaysian C&I clients comparing Solar ATAP, SELCO, CRESS and corporate PPAs — with the current Energy Commission and PETRA regulatory parameters.">
+<link rel="icon" type="image/svg+xml" href="../assets/ecoenergy_leaf_appicon.svg">
+<link rel="canonical" href="https://www.ecoconsultancy.services/insights/solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Solar ATAP vs SELCO vs CRESS vs Corporate PPA: Which Solar Route Fits Your Factory in 2026?">
+<meta property="og:description" content="An independent 2026 decision guide comparing Malaysia's four commercial solar routes — with the current regulatory parameters.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-deep:#081527;
+  --navy:#0F2742;
+  --navy-raised:#15334F;
+  --navy-line:#23425F;
+  --gold:#D4A23A;
+  --gold-deep:#B8841F;
+  --paper:#F4EFE6;
+  --paper-dim:#E9E2D4;
+  --ink:#12233A;
+  --ink-soft:#48586C;
+  --cloud:#AFBFCF;
+  --cloud-dim:#7E93A8;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Hanken Grotesk',-apple-system,sans-serif;
+  --mono:'Spline Sans Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  background:var(--navy-deep);
+  color:var(--paper);
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--navy-deep)}
+a{color:var(--gold)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(24px,5vw,64px)}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--gold)}
+
+/* ---------- nav ---------- */
+header{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  background:rgba(8,21,39,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:76px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo img{width:30px;height:30px}
+.logo-text{display:flex;flex-direction:column;line-height:1.15}
+.logo-mark{font-family:var(--serif);font-size:23px;color:var(--paper);letter-spacing:-.01em}
+.logo-mark b{font-weight:600;color:var(--gold)}
+.logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
+nav.links{display:flex;gap:34px}
+nav.links a{
+  color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
+  letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
+}
+nav.links a::after{
+  content:"";position:absolute;left:0;bottom:-6px;width:0;height:1px;
+  background:var(--gold);transition:width .3s var(--ease);
+}
+nav.links a:hover{color:var(--paper)}
+nav.links a:hover::after{width:100%}
+nav.links a.active{color:var(--paper)}
+nav.links a.active::after{width:100%}
+.nav-cta{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-decoration:none;
+  color:var(--navy-deep);background:var(--gold);padding:11px 22px;
+  transition:background .25s var(--ease),transform .25s var(--ease);
+}
+.nav-cta:hover{background:var(--paper);transform:translateY(-1px)}
+@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:520px){.nav-cta{display:none}}
+
+/* ---------- article hero ---------- */
+.art-hero{
+  padding:150px 0 56px;
+  background:
+    radial-gradient(1100px 600px at 82% -10%,rgba(212,162,58,.10),transparent 60%),
+    radial-gradient(900px 700px at -10% 120%,rgba(21,51,79,.9),transparent 65%),
+    var(--navy-deep);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.crumbs{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cloud-dim);margin-bottom:26px}
+.crumbs a{color:var(--cloud-dim);text-decoration:none}
+.crumbs a:hover{color:var(--gold)}
+.crumbs span{color:var(--gold)}
+.art-hero h1{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(32px,4.6vw,56px);line-height:1.08;letter-spacing:-.02em;
+  max-width:22ch;margin:22px 0 26px;
+}
+.art-hero h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+.art-meta{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--cloud-dim);padding-top:22px;border-top:1px solid rgba(212,162,58,.16);max-width:760px}
+.art-meta .who{color:var(--cloud)}
+.art-meta .tag{color:var(--gold);text-transform:uppercase;letter-spacing:.16em}
+
+/* ---------- article body ---------- */
+.article{padding:clamp(48px,7vh,80px) 0 20px}
+.prose{max-width:760px;margin:0 auto}
+.prose>p:first-child{
+  font-size:clamp(18px,1.5vw,20.5px);color:var(--paper);font-weight:300;line-height:1.7;
+}
+.prose p{margin:0 0 24px;color:var(--cloud);font-weight:300;font-size:17px;line-height:1.8}
+.prose strong{color:var(--paper);font-weight:600}
+.prose em{font-style:italic}
+.prose a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(212,162,58,.4);transition:border-color .25s var(--ease)}
+.prose a:hover{border-bottom-color:var(--gold)}
+.prose h2{
+  font-family:var(--serif);font-weight:500;font-size:clamp(25px,3vw,34px);
+  line-height:1.22;letter-spacing:-.01em;color:var(--paper);
+  margin:56px 0 20px;padding-top:14px;
+}
+.prose h2 em{font-style:italic;color:var(--gold)}
+.prose h3{
+  font-family:var(--serif);font-weight:500;font-size:21px;color:var(--paper);
+  margin:38px 0 14px;letter-spacing:-.005em;
+}
+.prose ul{margin:0 0 24px;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+.prose ul li{position:relative;padding-left:26px;color:var(--cloud);font-weight:300;line-height:1.7}
+.prose ul li::before{
+  content:"";position:absolute;left:2px;top:.72em;width:7px;height:7px;
+  background:var(--gold);transform:rotate(45deg);
+}
+.prose ol{margin:0 0 24px;padding-left:22px;color:var(--cloud);font-weight:300;display:flex;flex-direction:column;gap:12px}
+.prose ol li{padding-left:8px;line-height:1.7}
+.prose ol li::marker{color:var(--gold);font-family:var(--mono);font-size:14px}
+
+/* rule / divider */
+.prose hr{
+  border:0;height:1px;background:rgba(212,162,58,.2);
+  margin:44px auto;max-width:200px;
+}
+
+/* section-lead paragraph after an option heading (the "What it is" lines rendered as <p>) */
+.callout{
+  background:linear-gradient(160deg,var(--navy-raised),var(--navy) 80%);
+  border:1px solid var(--navy-line);border-left:3px solid var(--gold);
+  padding:22px 26px;margin:0 0 24px;
+}
+.callout p{margin:0;color:var(--cloud)}
+.callout p+p{margin-top:12px}
+
+/* the "catch" note */
+.note-catch{border-left-color:var(--gold-deep)}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:0 0 28px;border:1px solid var(--navy-line)}
+table{border-collapse:collapse;width:100%;min-width:460px;font-size:15px}
+thead th{
+  background:var(--navy-raised);color:var(--gold);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  text-align:left;padding:15px 20px;font-weight:500;border-bottom:1px solid var(--navy-line);
+}
+tbody td{padding:15px 20px;border-bottom:1px solid rgba(35,66,95,.6);color:var(--cloud);font-weight:300;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:rgba(21,51,79,.35)}
+tbody td strong{color:var(--paper);font-weight:600}
+
+/* ---------- end CTA ---------- */
+.art-cta{
+  margin-top:64px;
+  background:linear-gradient(120deg,var(--gold-deep),var(--gold) 55%);
+  color:var(--navy-deep);
+}
+.art-cta .wrap{padding:56px 0}
+.art-cta .inner{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.art-cta h3{font-family:var(--serif);font-weight:500;font-size:clamp(24px,3vw,34px);letter-spacing:-.01em;line-height:1.18;max-width:20ch}
+.art-cta h3 em{font-style:italic}
+.art-cta p{font-size:14.5px;font-weight:500;color:#3A2E10;margin-top:10px;max-width:44ch}
+.btn-navy{
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-decoration:none;
+  background:var(--navy-deep);color:var(--paper);padding:17px 32px;white-space:nowrap;
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+}
+.btn-navy:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(8,21,39,.65)}
+
+.disclaimer{max-width:760px;margin:44px auto 0;padding-top:26px;border-top:1px solid rgba(212,162,58,.16)}
+.disclaimer p{font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--cloud-dim);letter-spacing:.01em}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(212,162,58,.16);padding:34px 0 60px;background:var(--navy-deep);margin-top:70px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--cloud-dim)}
+footer a{color:var(--cloud-dim);text-decoration:none}
+footer a:hover{color:var(--gold)}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="../index.html#top">
+      <img src="../assets/ecoenergy_leaf_mark.svg" alt="EcoEnergy leaf mark">
+      <span class="logo-text">
+        <span class="logo-mark">Eco<b>Energy</b></span>
+        <span class="logo-sub">Consultancy</span>
+      </span>
+    </a>
+    <nav class="links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#sectors">Sectors</a>
+      <a href="../index.html#approach">Approach</a>
+      <a href="../index.html#models">Engagement</a>
+      <a href="index.html" class="active">Insights</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
+  </div>
+</header>
+
+<section class="art-hero">
+  <div class="wrap">
+    <p class="crumbs"><a href="../index.html#top">Home</a> &nbsp;/&nbsp; <a href="index.html">Insights</a> &nbsp;/&nbsp; <span>Solar scheme comparison</span></p>
+    <p class="kicker">Scheme Strategy · 2026</p>
+    <h1>Solar ATAP vs SELCO vs CRESS vs Corporate PPA: which solar route fits your <em>factory</em> in 2026?</h1>
+    <div class="art-meta">
+      <span class="tag">Independent Advisory</span>
+      <span class="who">By EcoEnergy Consultancy Sdn Bhd</span>
+      <span>Current as of mid-2026</span>
+      <span>~9 min read</span>
+    </div>
+  </div>
+</section>
+
+<article class="article">
+  <div class="wrap">
+    <div class="prose">
+
+      <p>If you run a factory or commercial facility in Malaysia, you have probably noticed two things over the past year: your TNB bill behaves differently under the new tariff structure, and every solar EPC contractor in the Klang Valley wants to sell you a system. What most of them will not do is give you a straight, independent answer to the real question:</p>
+
+      <p><strong>Which scheme — Solar ATAP, SELCO, CRESS, or a corporate PPA — actually fits your load profile?</strong></p>
+
+      <p>Half the advice still circulating online references NEM and CGPP. Both are gone. NEM closed and has been replaced by Solar ATAP; CGPP's 800 MW quota was fully awarded. If a proposal on your desk mentions either as a live option, that alone tells you how current the advice is.</p>
+
+      <p>Here is the 2026 decision tree, with the actual regulatory parameters — because the numbers changed materially in December 2025, and the differences run to millions of ringgit over a 20-year horizon.</p>
+
+      <hr>
+
+      <h2>First, why your electricity bill is the starting point</h2>
+
+      <p>Since 1 July 2025, Peninsular Malaysia operates under the RP4 tariff structure, which restructured how commercial and industrial customers are charged — including time-of-use (ToU) bands and maximum demand charges. Before comparing solar schemes, you need to know three numbers from your own bills:</p>
+
+      <ol>
+        <li><strong>Your average monthly consumption (kWh)</strong> and how much falls in peak ToU bands</li>
+        <li><strong>Your maximum demand (kW)</strong> — because peak shaving may matter as much as energy offset</li>
+        <li><strong>Your daytime load shape</strong> — solar without storage only offsets what you consume while the sun is up</li>
+      </ol>
+
+      <p>These three numbers decide which scheme wins for you. There is no universal answer, which is precisely why "which is cheaper" comparisons from installers selling one product should be read with caution.</p>
+
+      <h2>Option 1: SELCO — self-consumption, maximum independence</h2>
+
+      <div class="callout">
+        <p><strong>What it is:</strong> Solar Photovoltaic for Self-Consumption. You generate and consume on-site, with no export to the grid. Ground-mounted and floating installations within your premises are permitted, and the scheme is open to agricultural users as well as C&amp;I.</p>
+        <p><strong>Who it fits:</strong> Factories with strong, stable daytime load — manufacturing plants and 24-hour facilities that can absorb everything the panels produce.</p>
+      </div>
+
+      <h3>The 2026 rules you must know (revised by the Energy Commission, 31 December 2025)</h3>
+
+      <ul>
+        <li><strong>BESS is now mandatory only for systems exceeding 1 MWac</strong> — previously the threshold was 72 kWp. This is the single biggest cost change of the year. For most SME factories under 1 MWac, the battery mandate that was inflating capex quotes in 2025 no longer applies.</li>
+        <li><strong>Standby charges of RM12/kWp per month apply only above the 1 MWac threshold</strong> (the threshold definition itself was revised from MWp to MWac). Below that, you are exempt.</li>
+        <li>The previous Power System Study has been replaced by a <strong>Connection Assessment Study (CAS)</strong> for installations above 72 kWp, conducted by the project's design engineer.</li>
+      </ul>
+
+      <div class="callout note-catch">
+        <p><strong>The catch:</strong> Every kWh you generate but don't consume is wasted. If your load dips on weekends or during shutdowns, your effective rooftop solar ROI stretches. And if you are sizing above 1 MWac, the BESS requirement and standby charge must be built into the financial model from day one — we still see proposals that quietly omit both.</p>
+      </div>
+
+      <h2>Option 2: Solar ATAP — the NEM successor, with export credits</h2>
+
+      <div class="callout">
+        <p><strong>What it is:</strong> The Solar Accelerated Transition Action Program, launched under new Energy Commission guidelines released 30 December 2025, with applications open from 1 January 2026. It replaces net energy metering: you consume your own generation first, and export the excess to the grid for bill credits.</p>
+        <p><strong>Who it fits:</strong> Businesses with high daytime usage but an imperfect load match — where some production would otherwise be wasted under SELCO.</p>
+      </div>
+
+      <p><strong>The critical difference from old NEM:</strong> For non-domestic consumers, export credits are based on the <strong>average system marginal price issued by the Single Buyer</strong> — not the retail tariff offset that made NEM so generous. Credits also do not roll over indefinitely, so oversizing your system to "farm" export credits is not the play it once was. The contract runs 10 years.</p>
+
+      <div class="callout note-catch">
+        <p><strong>The catch:</strong> The system marginal price is a wholesale-linked figure, typically well below your retail rate. Solar ATAP economics are driven by self-consumption first; the export credit is a sweetener, not the business case. Any proposal that models export at retail rates is wrong.</p>
+      </div>
+
+      <h2>Option 3: CRESS — buying green power through the grid</h2>
+
+      <div class="callout">
+        <p><strong>What it is:</strong> The Corporate Renewable Energy Supply Scheme lets your business buy renewable electricity directly from an independent developer, delivered through the TNB grid under a third-party access model. No panels on your roof; the plant sits elsewhere, and you sign a supply agreement.</p>
+        <p><strong>Who it fits:</strong> Large consumers — CRESS is generally the domain of medium- and high-voltage customers — with big green commitments (RE100, customer ESG demands, Scope 2 emissions targets) and either no suitable roof or loads far exceeding what on-site solar can serve. Publicly announced CRESS project plans already total around 4 GW.</p>
+      </div>
+
+      <p><strong>The number that decides everything: the System Access Charge (SAC).</strong> On top of the negotiated generation tariff, you pay the SAC for grid delivery. The rates were cut by up to 40% by PETRA in August 2025:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Supply type</th><th>Original SAC</th><th>Current SAC</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Firm output (e.g., solar + battery storage)</td><td>25 sen/kWh</td><td><strong>20 sen/kWh</strong></td></tr>
+            <tr><td>Non-firm output (intermittent)</td><td>45 sen/kWh</td><td><strong>40 sen/kWh</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Under the revised CRESS Guidelines (29 December 2025), the SAC is fixed for three years in line with the Incentive Based Regulation (IBR) regulatory period, with a cap on how much it can move at each revision. That gives you medium-term certainty — but SAC trajectory beyond the current IBR period remains the key bankability question on every CRESS deal we review.</p>
+
+      <div class="callout note-catch">
+        <p><strong>The catch:</strong> Generation tariff + SAC must beat your blended retail tariff for the economics to work. At 20 sen/kWh firm SAC, the arithmetic has become genuinely competitive for EHV and HV customers — but it demands a hard look at your tariff category, not a brochure comparison.</p>
+      </div>
+
+      <h2>Option 4: Corporate PPA — solar on your roof, someone else's capital</h2>
+
+      <div class="callout">
+        <p><strong>What it is:</strong> A solar power purchase agreement where a developer installs, owns, and operates the system on your premises, and you buy the output at an agreed rate — the "zero-capex" model heavily marketed across Malaysia.</p>
+        <p><strong>Who it fits:</strong> Businesses that want the SELCO or Solar ATAP benefit without capital outlay or O&amp;M responsibility. Providers typically look for monthly TNB bills of at least RM10,000–20,000.</p>
+      </div>
+
+      <div class="callout note-catch">
+        <p><strong>The catch:</strong> These are 15–20 year contracts. The three clauses that determine whether you got a good deal are the tariff escalation mechanism, the termination/buyout schedule, and the performance guarantee. This is where independent review earns its fee many times over — the developer's lawyer drafted the agreement for the developer.</p>
+      </div>
+
+      <h2>Don't leave GITA on the table</h2>
+
+      <p>If you own the asset (SELCO, Solar ATAP, or an outright purchase rather than a PPA), the <strong>Green Investment Tax Allowance (GITA)</strong> can materially improve your rooftop solar ROI — but the claim windows and qualifying-asset timing under MIDA/LHDN rules have tripped up more than one client who installed first and asked questions later. Timing your capitalisation against the incentive window is a design decision, not an afterthought. (We will cover the GITA timing traps in a dedicated post.)</p>
+
+      <h2>The honest summary</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Your situation</th><th>Likely best route</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Stable daytime load, system under 1 MWac</td><td><strong>SELCO</strong> — BESS mandate and standby charge no longer apply</td></tr>
+            <tr><td>High daytime load with excess generation</td><td><strong>Solar ATAP</strong> — but model exports at system marginal price, not retail</td></tr>
+            <tr><td>Large MV/HV load, ESG-driven, no roof capacity</td><td><strong>CRESS</strong> — run the numbers at 20/40 sen SAC against your tariff category</td></tr>
+            <tr><td>Good load, no capital appetite</td><td><strong>Corporate PPA</strong> — get the contract independently reviewed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Every one of these routes can be the right answer. Every one can also be mis-sold. The scheme parameters above are current as of mid-2026 — and if the past 18 months proved anything, it is that they move.</p>
+
+    </div>
+  </div>
+
+  <div class="art-cta">
+    <div class="wrap">
+      <div class="inner">
+        <div>
+          <h3>Unsure which route fits your <em>load profile?</em></h3>
+          <p>EcoEnergy Consultancy provides independent techno-economic feasibility studies for C&amp;I clients — we advise, we don't sell panels. That means our answer depends on your bills, not our inventory.</p>
+        </div>
+        <a class="btn-navy" href="mailto:contact@ecoconsultancy.services?subject=Independent%20scheme%20assessment">Request an assessment →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="disclaimer">
+      <p>EcoEnergy Consultancy Sdn Bhd advises on solar PV, battery energy storage, hydropower, and waste-to-energy across Malaysia's regulatory landscape. This article is general information, not financial, legal or tax advice; scheme parameters change and should be confirmed against current Energy Commission, PETRA and MIDA/LHDN guidance for your specific project.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
+    <p><a href="index.html">All insights</a> &nbsp;·&nbsp; <a href="../index.html#contact">Contact</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
