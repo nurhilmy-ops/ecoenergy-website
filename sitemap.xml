@@ -20,7 +20,19 @@
   </url>
   <url>
     <loc>https://www.ecoconsultancy.services/insights/solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html</loc>
-    <lastmod>2026-07-14</lastmod>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ecoconsultancy.services/insights/gita-solar-tax-allowance-timing-traps-2026.html</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ecoconsultancy.services/insights/lss1-to-lss6-large-scale-solar-comparison.html</loc>
+    <lastmod>2026-08-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
