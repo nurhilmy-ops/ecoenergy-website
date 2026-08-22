@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRESS Bankability &amp; SMP Mechanics | EcoEnergy</title>
+<meta name="description" content="What project-finance lenders underwrite in a Malaysian CRESS deal — offtaker credit, merchant tail, firm vs non-firm SAC, the 2027 reset — and how the System Marginal Price (SMP) drives every open position.">
+<link rel="icon" type="image/svg+xml" href="../assets/ecoenergy_leaf_appicon.svg">
+<link rel="canonical" href="https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html">
+<meta name="robots" content="index, follow">
+<meta name="author" content="EcoEnergy Consultancy Sdn. Bhd.">
+<meta name="theme-color" content="#081527">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="EcoEnergy Consultancy">
+<meta property="og:title" content="CRESS bankability: the questions your lender will ask — and the SMP mechanics behind them">
+<meta property="og:description" content="Offtaker credit, merchant tails, the 20-sen firm/non-firm question, the 2027 SAC reset — and why SMP sits under every open position.">
+<meta property="og:url" content="https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html">
+<meta property="og:image" content="https://www.ecoconsultancy.services/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_MY">
+<meta property="article:published_time" content="2026-08-22">
+<meta property="article:author" content="EcoEnergy Consultancy Sdn. Bhd.">
+<meta property="article:section" content="Insights">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CRESS bankability: the questions your lender will ask — and the SMP mechanics behind them">
+<meta name="twitter:description" content="Offtaker credit, merchant tails, the 20-sen firm/non-firm question, the 2027 SAC reset — and why SMP sits under every open position.">
+<meta name="twitter:image" content="https://www.ecoconsultancy.services/assets/og-image.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "CRESS bankability: the questions your lender will ask — and the SMP mechanics behind them",
+  "description": "What project-finance lenders underwrite in a Malaysian CRESS deal — offtaker credit, merchant tail, firm vs non-firm SAC, the 2027 reset — and how the System Marginal Price (SMP) drives every open position.",
+  "image": "https://www.ecoconsultancy.services/assets/og-image.png",
+  "datePublished": "2026-08-22",
+  "dateModified": "2026-08-22",
+  "inLanguage": "en",
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html" },
+  "author": { "@type": "Organization", "name": "EcoEnergy Consultancy Sdn. Bhd.", "url": "https://www.ecoconsultancy.services/" },
+  "publisher": { "@type": "Organization", "name": "EcoEnergy Consultancy Sdn. Bhd.",
+    "logo": { "@type": "ImageObject", "url": "https://www.ecoconsultancy.services/assets/ecoenergy_leaf_primary.svg" } }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.ecoconsultancy.services/" },
+    { "@type": "ListItem", "position": 2, "name": "Insights", "item": "https://www.ecoconsultancy.services/insights/" },
+    { "@type": "ListItem", "position": 3, "name": "CRESS bankability &amp; SMP", "item": "https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html" }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-deep:#081527;
+  --navy:#0F2742;
+  --navy-raised:#15334F;
+  --navy-line:#23425F;
+  --gold:#D4A23A;
+  --gold-deep:#B8841F;
+  --paper:#F4EFE6;
+  --paper-dim:#E9E2D4;
+  --ink:#12233A;
+  --ink-soft:#48586C;
+  --cloud:#AFBFCF;
+  --cloud-dim:#7E93A8;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Hanken Grotesk',-apple-system,sans-serif;
+  --mono:'Spline Sans Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  background:var(--navy-deep);
+  color:var(--paper);
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--navy-deep)}
+a{color:var(--gold)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(24px,5vw,64px)}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--gold)}
+
+/* ---------- nav ---------- */
+header{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  background:rgba(8,21,39,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:76px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo img{width:30px;height:30px}
+.logo-text{display:flex;flex-direction:column;line-height:1.15}
+.logo-mark{font-family:var(--serif);font-size:23px;color:var(--paper);letter-spacing:-.01em}
+.logo-mark b{font-weight:600;color:var(--gold)}
+.logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
+nav.links{display:flex;gap:34px}
+nav.links a{
+  color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
+  letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
+}
+nav.links a::after{
+  content:"";position:absolute;left:0;bottom:-6px;width:0;height:1px;
+  background:var(--gold);transition:width .3s var(--ease);
+}
+nav.links a:hover{color:var(--paper)}
+nav.links a:hover::after{width:100%}
+nav.links a.active{color:var(--paper)}
+nav.links a.active::after{width:100%}
+.nav-cta{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-decoration:none;
+  color:var(--navy-deep);background:var(--gold);padding:11px 22px;
+  transition:background .25s var(--ease),transform .25s var(--ease);
+}
+.nav-cta:hover{background:var(--paper);transform:translateY(-1px)}
+@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:520px){.nav-cta{display:none}}
+
+/* ---------- article hero ---------- */
+.art-hero{
+  padding:150px 0 56px;
+  background:
+    radial-gradient(1100px 600px at 82% -10%,rgba(212,162,58,.10),transparent 60%),
+    radial-gradient(900px 700px at -10% 120%,rgba(21,51,79,.9),transparent 65%),
+    var(--navy-deep);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.crumbs{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cloud-dim);margin-bottom:26px}
+.crumbs a{color:var(--cloud-dim);text-decoration:none}
+.crumbs a:hover{color:var(--gold)}
+.crumbs span{color:var(--gold)}
+.art-hero h1{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(32px,4.6vw,56px);line-height:1.08;letter-spacing:-.02em;
+  max-width:22ch;margin:22px 0 26px;
+}
+.art-hero h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+.art-meta{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--cloud-dim);padding-top:22px;border-top:1px solid rgba(212,162,58,.16);max-width:760px}
+.art-meta .who{color:var(--cloud)}
+.art-meta .tag{color:var(--gold);text-transform:uppercase;letter-spacing:.16em}
+
+/* ---------- article body ---------- */
+.article{padding:clamp(48px,7vh,80px) 0 20px}
+.prose{max-width:760px;margin:0 auto}
+.prose>p:first-child{
+  font-size:clamp(18px,1.5vw,20.5px);color:var(--paper);font-weight:300;line-height:1.7;
+}
+.prose p{margin:0 0 24px;color:var(--cloud);font-weight:300;font-size:17px;line-height:1.8}
+.prose strong{color:var(--paper);font-weight:600}
+.prose em{font-style:italic}
+.prose a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(212,162,58,.4);transition:border-color .25s var(--ease)}
+.prose a:hover{border-bottom-color:var(--gold)}
+.prose h2{
+  font-family:var(--serif);font-weight:500;font-size:clamp(25px,3vw,34px);
+  line-height:1.22;letter-spacing:-.01em;color:var(--paper);
+  margin:56px 0 20px;padding-top:14px;
+}
+.prose h2 em{font-style:italic;color:var(--gold)}
+.prose h3{
+  font-family:var(--serif);font-weight:500;font-size:21px;color:var(--paper);
+  margin:38px 0 14px;letter-spacing:-.005em;
+}
+.prose ul{margin:0 0 24px;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+.prose ul li{position:relative;padding-left:26px;color:var(--cloud);font-weight:300;line-height:1.7}
+.prose ul li::before{
+  content:"";position:absolute;left:2px;top:.72em;width:7px;height:7px;
+  background:var(--gold);transform:rotate(45deg);
+}
+.prose ol{margin:0 0 24px;padding-left:22px;color:var(--cloud);font-weight:300;display:flex;flex-direction:column;gap:12px}
+.prose ol li{padding-left:8px;line-height:1.7}
+.prose ol li::marker{color:var(--gold);font-family:var(--mono);font-size:14px}
+
+/* rule / divider */
+.prose hr{
+  border:0;height:1px;background:rgba(212,162,58,.2);
+  margin:44px auto;max-width:200px;
+}
+
+/* section-lead paragraph after an option heading (the "What it is" lines rendered as <p>) */
+.callout{
+  background:linear-gradient(160deg,var(--navy-raised),var(--navy) 80%);
+  border:1px solid var(--navy-line);border-left:3px solid var(--gold);
+  padding:22px 26px;margin:0 0 24px;
+}
+.callout p{margin:0;color:var(--cloud)}
+.callout p+p{margin-top:12px}
+
+/* the "catch" note */
+.note-catch{border-left-color:var(--gold-deep)}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:0 0 28px;border:1px solid var(--navy-line)}
+table{border-collapse:collapse;width:100%;min-width:460px;font-size:15px}
+thead th{
+  background:var(--navy-raised);color:var(--gold);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  text-align:left;padding:15px 20px;font-weight:500;border-bottom:1px solid var(--navy-line);
+}
+tbody td{padding:15px 20px;border-bottom:1px solid rgba(35,66,95,.6);color:var(--cloud);font-weight:300;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:rgba(21,51,79,.35)}
+tbody td strong{color:var(--paper);font-weight:600}
+
+/* ---------- end CTA ---------- */
+.art-cta{
+  margin-top:64px;
+  background:linear-gradient(120deg,var(--gold-deep),var(--gold) 55%);
+  color:var(--navy-deep);
+}
+.art-cta .wrap{padding:56px 0}
+.art-cta .inner{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.art-cta h3{font-family:var(--serif);font-weight:500;font-size:clamp(24px,3vw,34px);letter-spacing:-.01em;line-height:1.18;max-width:20ch}
+.art-cta h3 em{font-style:italic}
+.art-cta p{font-size:14.5px;font-weight:500;color:#3A2E10;margin-top:10px;max-width:44ch}
+.btn-navy{
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-decoration:none;
+  background:var(--navy-deep);color:var(--paper);padding:17px 32px;white-space:nowrap;
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+}
+.btn-navy:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(8,21,39,.65)}
+
+.disclaimer{max-width:760px;margin:44px auto 0;padding-top:26px;border-top:1px solid rgba(212,162,58,.16)}
+.disclaimer p{font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--cloud-dim);letter-spacing:.01em}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(212,162,58,.16);padding:34px 0 60px;background:var(--navy-deep);margin-top:70px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--cloud-dim)}
+footer a{color:var(--cloud-dim);text-decoration:none}
+footer a:hover{color:var(--gold)}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="../index.html#top">
+      <img src="../assets/ecoenergy_leaf_mark.svg" alt="EcoEnergy leaf mark">
+      <span class="logo-text">
+        <span class="logo-mark">Eco<b>Energy</b></span>
+        <span class="logo-sub">Consultancy</span>
+      </span>
+    </a>
+    <nav class="links">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#sectors">Sectors</a>
+      <a href="../index.html#approach">Approach</a>
+      <a href="../index.html#models">Engagement</a>
+      <a href="index.html" class="active">Insights</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
+  </div>
+</header>
+
+<section class="art-hero">
+  <div class="wrap">
+    <p class="crumbs"><a href="../index.html#top">Home</a> &nbsp;/&nbsp; <a href="index.html">Insights</a> &nbsp;/&nbsp; <span>CRESS bankability &amp; SMP</span></p>
+    <p class="kicker">Project Finance · CRESS</p>
+    <h1>CRESS bankability: the questions your lender will ask — and the <em>SMP mechanics</em> behind them.</h1>
+    <div class="art-meta">
+      <span class="tag">Independent Advisory</span>
+      <span class="who">By EcoEnergy Consultancy Sdn Bhd</span>
+      <span>Published 22 August 2026</span>
+      <span>~9 min read</span>
+    </div>
+  </div>
+</section>
+
+<article class="article">
+  <div class="wrap">
+    <div class="prose">
+
+      <p>CRESS has crossed the line from policy experiment to commercial option. The scheme has been live since September 2024, the System Access Charge was cut in July 2025 and is now <strong>fixed for the rest of the current regulatory period</strong>, and corporate demand for green supply — driven by data centres and export-facing manufacturers — keeps growing. The commercial logic increasingly works.</p>
+
+      <p>Which moves the real question one seat down the table: <strong>will a lender finance it?</strong> A CRESS project is a merchant-adjacent structure wearing a PPA's clothes, and banks price the difference. This article walks through what project-finance lenders actually underwrite in a CRESS deal — and takes a proper detour into the <strong>System Marginal Price</strong>, the number that quietly sits underneath every open position in the structure.</p>
+
+      <hr>
+
+      <h2>CRESS in one minute</h2>
+
+      <p>The Corporate Renewable Energy Supply Scheme lets a renewable generator sell directly to a corporate consumer, using the grid as a delivery road. The price between generator and offtaker is <strong>freely negotiated</strong> — no auction, no quota queue. The road toll is the <strong>System Access Charge (SAC)</strong>, paid for using the network:</p>
+
+      <ul>
+        <li><strong>Firm supply — SAC of 20 sen/kWh.</strong> The generator guarantees a delivery profile, managing its own intermittency (in practice: storage or portfolio balancing). Reduced from 25 sen in July 2025.</li>
+        <li><strong>Non-firm supply — SAC of 40 sen/kWh.</strong> The generator delivers as the resource produces, and the grid absorbs the variability. Reduced from 45 sen.</li>
+        <li>Both rates are <strong>locked until the end of RP4</strong> — the current incentive-based-regulation period running through December 2027. Remember that date; it returns below.</li>
+      </ul>
+
+      <p>For which offtakers and schemes CRESS beats the alternatives commercially, see our <a href="solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html">scheme comparison</a>. From here, we assume CRESS has won on paper — and ask what the bank says.</p>
+
+      <h2>What the lender actually underwrites</h2>
+
+      <p>A project financier lends against contracted cash flow and haircuts everything else. In a CRESS structure, five items decide which side of that line your revenue sits on.</p>
+
+      <h3>1. The offtaker's balance sheet — not the scheme's</h3>
+      <p>Under LSS, the offtaker is effectively the single buyer behind a regulated framework. Under CRESS, your offtaker is a company — and your debt capacity is a function of <em>its</em> credit. A ten-year commitment from an investment-grade multinational and the same commitment from a thinly capitalised special-purpose tenant of a data-centre park are different projects wearing the same scheme. Expect the lender to ask for parent guarantees, letters of credit, or reserve accounts scaled to the offtaker's rating — and expect the PPA's termination-payment clause to be read more carefully than its price.</p>
+
+      <h3>2. Tenor mismatch and the merchant tail</h3>
+      <p>Corporate offtakers rarely sign beyond 10–15 years; the asset lives 25+. Whatever the PPA doesn't cover is a <strong>merchant tail</strong> — revenue at future market conditions nobody can contract today. Lenders respond by sizing debt to the contracted period (shortening tenor, raising the equity cheque) or by crediting the tail at a deep discount. Your financial model should show debt fully serviced within the PPA term as the base case; a model that needs the tail to repay principal is a model the credit committee rewrites.</p>
+
+      <h3>3. Volume risk — what happens when consumption drops</h3>
+      <p>A corporate consumer's load is a business variable: plants idle, tenants churn, efficiency programmes bite. The PPA's answer — take-or-pay floor, take-and-pay with a shortfall mechanism, or pure pay-as-consumed — determines whether volume risk lives with the offtaker or with you. And whatever isn't taken becomes <em>excess energy</em>, which brings us to the number this article promised.</p>
+
+      <h2>The SMP detour: the price under every open position</h2>
+
+      <p>The <strong>System Marginal Price (SMP)</strong> is the half-hourly price of the most expensive generating unit dispatched to meet demand in Peninsular Malaysia. It comes out of the merit-order dispatch run under the Single Buyer's market operations (the competitive dispatch framework introduced with NEDA in 2015), and the Single Buyer publishes it. Three properties matter for your model:</p>
+
+      <ul>
+        <li><strong>It is a fuel price in disguise.</strong> The marginal unit is almost always gas or coal, so SMP tracks fossil fuel markets — it rises and falls with them, and it spiked hard during the 2022 global fuel crisis. Solar's own growth pushes the other way, depressing midday SMP as zero-marginal-cost generation floods the dispatch stack — the more solar Malaysia builds, the softer the midday price your excess energy earns.</li>
+        <li><strong>It is volatile by construction.</strong> It resolves every half hour and swings with demand, outages and fuel costs. It is a settlement price, not a plannable revenue line.</li>
+        <li><strong>It is the economy-wide reference for "what surplus energy is worth."</strong> Across Malaysian schemes — CRESS excess energy, non-domestic credits under other programmes — the settlement value of uncontracted energy is linked, directly or by formula, to SMP.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Why lenders care:</strong> in a CRESS structure, energy delivered <em>beyond</em> what the offtaker takes is settled at SMP-linked value — merchant revenue, in the fullest sense. A lender will credit it at a fraction of your forecast, if at all. The practical modelling discipline: run the base case with excess energy at <strong>zero</strong>, then show SMP-linked upside as sensitivity. If the project only works when SMP stays high, you don't have a project — you have a fuel-price bet with solar panels attached.</p>
+      </div>
+
+      <p>The same logic runs in reverse for <strong>non-firm structures</strong>: when your plant under-delivers, the offtaker tops up from the grid at its retail tariff — which now moves monthly with fuel-cost pass-through under the RP4 tariff framework. The spread between your PPA price and that fluctuating grid price is the offtaker's realised saving. A PPA priced attractively against last year's grid tariff can look mediocre against next year's — and an offtaker whose savings evaporated is an offtaker looking for the exit clause. Price the deal against a <em>range</em> of grid-tariff outcomes, not a snapshot.</p>
+
+      <h2>4. Firm vs non-firm: a 20-sen question with a capex answer</h2>
+      <p>The SAC structure prices the choice explicitly: firmness saves 20 sen/kWh in access charges but obliges you to deliver a committed profile — in practice, batteries, oversizing, or portfolio backup, all of which are capex and operating cost. Whether the 20-sen saving pays for the firming depends on storage costs, your resource profile and the offtaker's load shape. This is a solvable optimisation, but it must be solved <em>before</em> the PPA is priced — retrofitting firmness into a signed non-firm deal is buying insurance after the flood.</p>
+
+      <h2>5. The 2027 reset</h2>
+      <p>The SAC is fixed <strong>until the end of RP4 — December 2027</strong>. Your PPA runs a decade beyond that. Every regulatory period, the charge is reviewed; it fell at the last review, and nothing guarantees the direction of the next one. Lenders will ask one precise question: <em>who absorbs an SAC increase in 2028?</em> A bankable PPA answers it in writing — a pass-through clause, a price reopener, or an explicit allocation — rather than leaving it to a future negotiation between a generator that can't absorb it and an offtaker that won't.</p>
+
+      <h2>The bankability checklist</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Risk</th><th>The lender's question</th><th>What to bring to the table</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Offtaker credit</td><td>Who stands behind the offtake for 15 years?</td><td>Rating evidence, parent guarantee or LC, termination-payment terms</td></tr>
+            <tr><td>Tenor mismatch</td><td>Is debt repaid within the contracted period?</td><td>Model with merchant tail at zero in the base case</td></tr>
+            <tr><td>Volume risk</td><td>What happens when consumption drops?</td><td>Take-or-pay floor or shortfall mechanism, in the PPA text</td></tr>
+            <tr><td>Excess energy</td><td>What is surplus generation worth?</td><td>SMP-linked value as sensitivity only — never base case</td></tr>
+            <tr><td>Grid-price basis</td><td>Do the offtaker's savings survive tariff swings?</td><td>Deal priced against a grid-tariff range, not a snapshot</td></tr>
+            <tr><td>Firm vs non-firm</td><td>Does the 20-sen SAC saving fund the firming cost?</td><td>Storage/oversizing optimisation run before PPA pricing</td></tr>
+            <tr><td>SAC reset 2028</td><td>Who absorbs a post-RP4 charge increase?</td><td>Pass-through or reopener clause, drafted now</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>None of this argues against CRESS — the opposite. The scheme's flexibility is exactly what makes it powerful, and the cut, locked-in SAC has genuinely improved the arithmetic. But flexibility means the risk allocation isn't decided by the regulator; it's decided by your PPA. In LSS, bankability is largely inherited from the framework — as a decade of financed projects <a href="lss1-to-lss6-large-scale-solar-comparison.html">shows</a>. In CRESS, bankability is <em>drafted</em>. The projects that reach financial close will be the ones that answered the lender's questions in the term sheet, not in the Q&amp;A after.</p>
+
+    </div>
+  </div>
+
+  <div class="art-cta">
+    <div class="wrap">
+      <div class="inner">
+        <div>
+          <h3>Structuring a CRESS deal that survives <em>credit committee?</em></h3>
+          <p>We build lender-grade financial models — SMP sensitivities, firming optimisation, SAC-reset scenarios — and defend them through due diligence. Start with a free 30-minute scheme-fit consult.</p>
+        </div>
+        <a class="btn-navy" href="../consult/">Book a consult →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="disclaimer">
+      <p>EcoEnergy Consultancy Sdn Bhd advises on solar PV, battery energy storage, hydropower, and waste-to-energy across Malaysia's regulatory landscape. SAC rates and scheme parameters are as published by PETRA and the Energy Commission (effective 1 July 2025) and may be revised at future regulatory reviews; SMP settlement specifics depend on the prevailing Single Buyer rules and your executed agreements. This article is general information, not financial or legal advice — verify current terms with the administering agencies and your advisers before committing capital.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
+    <p><a href="index.html">All insights</a> &nbsp;·&nbsp; <a href="../index.html#contact">Contact</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
