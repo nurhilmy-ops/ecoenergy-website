@@ -1,15 +1,27 @@
 # Media credits
 
-All stock assets sourced from Wikimedia Commons. Files g1-g3 are crops
-of the originals (crops of the CC BY-SA file carry the same license).
+## Photographs (g1.jpg to g4.jpg)
+EcoEnergy project archive, provided by the owner. EXIF metadata
+(including GPS coordinates) stripped before publication.
 
-| Local file | Source file (Wikimedia Commons) | Author | License |
+- g1.jpg: switchyard construction, Gambang project
+- g2.jpg: site control room, Pasir Gudang project
+- g3.jpg: mini hydro turbine hall, Slim project
+- g4.jpg: aerial of completed array, Pasir Gudang project
+
+Confirm client/owner publication consent for each project before the
+site goes live. Individuals appear in g2.jpg (from behind); obtain
+their consent or crop further if required (PDPA 2010).
+
+## Video (stock, Wikimedia Commons)
+
+| Local file | Source | Author | License |
 |---|---|---|---|
 | hero.webm | Aasen agrivoltaics solar plant ... Germany 01.webm (1080p transcode) | Tobi Kellner | CC0 |
 | middle.webm | Aasen agrivoltaics solar plant ... Germany 05.webm (1080p transcode) | Tobi Kellner | CC0 |
-| g1.jpg | Building solar (673).jpg | Dawn Waldman / U.S. Air Force | Public domain |
-| g2.jpg | Close-up of a polycrystalline solar PV panel.jpg | Guilhem Vellut | CC BY 2.0 |
-| g3.jpg | Haltern am See, Silbersee III, Solaranlage -- 2022 -- 0827.jpg | Dietmar Rabich | CC BY-SA 4.0 |
 
-Attribution for the CC BY and CC BY-SA items must remain visible on any
-page using them (currently in the site footer).
+CC0 requires no attribution; the footer credit is a courtesy.
+Earlier stock images (U.S. Air Force PD, G. Vellut CC BY 2.0,
+D. Rabich CC BY-SA 4.0) were replaced by project photographs in this
+revision and are no longer used, so their attribution requirements no
+longer apply.
