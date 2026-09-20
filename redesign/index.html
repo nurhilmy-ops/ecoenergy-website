@@ -8,7 +8,7 @@
 <style>
   /* Scene: a credit analyst in a KL bank tower, mid-afternoon daylight
      through tinted glass. Light theme; neutrals tinted toward brand
-     navy (h≈245–250); one saturated accent: brand gold (h≈84). */
+     navy (hue 245 to 250); one saturated accent: brand gold (hue 84). */
   :root {
     --bg: oklch(0.972 0.006 245);
     --surface: oklch(0.993 0.004 245);
@@ -93,14 +93,7 @@
     border-radius: 8px;
     margin-bottom: 2.5rem;
   }
-  .hero .thesis { font-size: clamp(1.1rem, 2vw, 1.3rem); }
-  .scrollcue {
-    font: 0.72rem/1 var(--mono);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 3rem;
-  }
+  .hero .lede { font-size: clamp(1.1rem, 2vw, 1.3rem); }
 
   /* media placeholders */
   .ph {
@@ -118,9 +111,14 @@
   .ph span {
     font: 0.75rem/1.6 var(--mono);
     color: var(--muted);
-    max-width: 40ch;
+    letter-spacing: 0.12em;
   }
-  .ph span b { color: var(--accent); display: block; letter-spacing: 0.12em; }
+  .cap {
+    font: 0.78rem/1.6 var(--mono);
+    color: var(--muted);
+    margin-top: 0.7rem;
+  }
+  .cap em { font-style: normal; color: var(--accent); }
 
   /* gate line */
   .gates {
@@ -128,7 +126,7 @@
     flex-wrap: wrap;
     gap: 0.6rem;
     align-items: center;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
     padding: 0;
     list-style: none;
   }
@@ -180,19 +178,16 @@
   .row p { margin: 0; }
   @media (max-width: 760px) { .row { grid-template-columns: 1fr; gap: 0.5rem; } }
 
-  /* CTA — the brand-navy panel keeps its own fixed palette in both themes */
+  /* CTA panel keeps its fixed brand palette in both themes */
   .cta {
     background: var(--panel);
-    color: oklch(0.95 0.007 245);
     border-radius: 10px;
     padding: 3.5rem clamp(1.5rem, 5vw, 4rem);
   }
-  .cta .eyebrow { color: oklch(0.78 0.12 84); }
-  .cta h2 { color: oklch(0.975 0.005 245); }
-  .cta p { color: oklch(0.85 0.015 245); }
+  .cta h2 { color: oklch(0.975 0.005 245); margin: 0; }
   .cta a.button {
     display: inline-block;
-    margin-top: 1.5rem;
+    margin-top: 1.8rem;
     padding: 0.85rem 1.6rem;
     background: oklch(0.78 0.12 84);
     color: oklch(0.25 0.02 250);
@@ -219,30 +214,19 @@
 <div id="rail"></div>
 <main id="page" class="wrap">
 
-  <!-- HERO -->
+  <!-- HERO: eyebrow, thesis, lede, gate line -->
   <section class="hero">
     <img class="logo" src="assets/ecoenergy_leaf_primary.svg" alt="EcoEnergy Consultancy">
+    <p class="eyebrow">Renewable energy advisory</p>
     <h1>We take renewable energy projects from go/no-go to bankable.</h1>
-    <p class="thesis muted">
-      Advisory, engineering, and independent due diligence for developers,
-      financiers, and landowners — from first screening to financial close.
+    <p class="lede muted">
+      Seven stage gates separate a raw site from a financed project.
+      EcoEnergy runs all seven, and writes the due diligence lenders
+      read before they commit.
     </p>
     <div class="ph" style="margin-top:2.5rem">
-      <span><b>VIDEO 1 · HERO LOOP</b>
-      stock footage — slow aerial drone pass over a utility-scale solar farm
-      at golden hour, muted, autoplay, looped</span>
+      <span>VIDEO 1</span>
     </div>
-    <p class="scrollcue">Scroll — each section is a stage gate ↓</p>
-  </section>
-
-  <!-- THESIS / GATE LINE -->
-  <section data-reveal>
-    <p class="eyebrow">The whole line, one firm</p>
-    <h2>Every project passes the same gates. We run all of them.</h2>
-    <p class="muted">
-      Most advisors cover one gate. EcoEnergy carries a project through the
-      full sequence — or steps in at any gate to verify someone else's work.
-    </p>
     <ul class="gates" aria-label="Project stage gates">
       <li class="gate">Screening · go/no-go</li><li class="gate-arrow" aria-hidden="true">→</li>
       <li class="gate">Conceptual</li><li class="gate-arrow" aria-hidden="true">→</li>
@@ -255,101 +239,80 @@
     </ul>
   </section>
 
-  <!-- FEATURE 1 -->
+  <!-- TWO FEATURE BLOCKS -->
   <section>
     <div class="feature" data-reveal>
       <div>
-        <p class="eyebrow">For developers &amp; owners</p>
-        <h2>Development advisory, gate by gate</h2>
+        <h2>Build on defensible numbers.</h2>
         <p class="muted">
-          Site screening and go/no-go calls before you spend real money.
-          Conceptual studies, pre-feasibility, and full feasibility with
-          yield, grid, land, and cost built on defensible assumptions.
-          Basic and detail design taken to ready-for-construction.
+          A screening study answers go or no-go before you pay a land
+          deposit. Feasibility follows, with yield, grid, land, and cost
+          each tied to a named source a reviewer can check.
         </p>
       </div>
       <div class="media">
-        <div class="ph">
-          <span><b>IMAGE 1 · FEATURE</b>
-          stock photo — engineer with tablet walking a PV array or
-          site under construction</span>
-        </div>
+        <div class="ph"><span>IMAGE 1</span></div>
       </div>
     </div>
 
-    <!-- FEATURE 2 -->
     <div class="feature flip" data-reveal>
       <div>
-        <p class="eyebrow">For banks &amp; financiers</p>
-        <h2>Independent due diligence you can lend against</h2>
+        <h2>Diligence a bank can lend against.</h2>
         <p class="muted">
-          Technical and commercial due diligence for lenders, investors, and
-          acquirers: red-flag reviews, assumption audits, contract and permit
-          checks, and construction monitoring — reported the way credit
-          committees need to read it.
+          We audit the developer's yields, contracts, and permits, then
+          report what a credit committee can act on. A red-flag review
+          settles "should we look further" before the full diligence spend.
         </p>
       </div>
       <div class="media">
-        <div class="ph">
-          <span><b>IMAGE 2 · FEATURE</b>
-          stock photo — due-diligence review scene: documents, laptop,
-          site drawings on a table</span>
-        </div>
+        <div class="ph"><span>IMAGE 2</span></div>
       </div>
     </div>
   </section>
 
-  <!-- GALLERY BAND -->
+  <!-- GALLERY BAND: three captions -->
   <section data-reveal>
-    <p class="eyebrow">In the field</p>
     <div class="band">
-      <div class="ph">
-        <span><b>IMAGE 3 · GALLERY</b>
-        stock photo — floating solar (FPV) on a reservoir, aerial</span>
+      <div>
+        <div class="ph"><span>IMAGE 3</span></div>
+        <p class="cap">Floating solar, <em>measured</em> twice.</p>
       </div>
-      <div class="ph">
-        <span><b>VIDEO 2 · GALLERY</b>
-        stock footage — short loop: substation / transmission
-        infrastructure, or site survey team at work</span>
+      <div>
+        <div class="ph"><span>VIDEO 2</span></div>
+        <p class="cap">Grid connection, <em>sized</em> before signing.</p>
       </div>
-      <div class="ph">
-        <span><b>GALLERY TILE 3</b>
-        reserved — swap in a real project photo when one is cleared
-        for publication</span>
+      <div>
+        <div class="ph"><span>IMAGE SLOT · PROJECT PHOTO</span></div>
+        <p class="cap">Every assumption <em>walked</em> on site.</p>
       </div>
     </div>
   </section>
 
-  <!-- DETAIL ROWS -->
+  <!-- THREE NUMBERED DETAIL ROWS -->
   <section data-reveal>
-    <p class="eyebrow">What runs underneath every gate</p>
     <div class="row">
-      <div class="label">Approvals &amp; stakeholders</div>
-      <p class="muted">We manage authority requirements and stakeholder
-      approvals across the project cycle — so consents arrive when the
-      schedule needs them, not after.</p>
+      <div class="label">01 · Approvals</div>
+      <p class="muted">Consent schedules built backward from your financing
+      date. Each authority requirement tracked from first submission to
+      final sign-off.</p>
     </div>
     <div class="row">
-      <div class="label">Risk management</div>
-      <p class="muted">Risks identified, quantified, and allocated to the
-      party best placed to carry them — in the register, the contracts, and
-      the model, consistently.</p>
+      <div class="label">02 · Risk</div>
+      <p class="muted">Every risk priced and assigned to the party best able
+      to carry it. The register, the contracts, and the model all say the
+      same thing.</p>
     </div>
     <div class="row">
-      <div class="label">Financial modelling</div>
-      <p class="muted">Bankable analysis: financial models a lender's analyst
-      can interrogate line by line, with every input traceable to a study,
-      a contract, or a quote.</p>
+      <div class="label">03 · Financial model</div>
+      <p class="muted">Every input traces to a study, a contract, or a
+      quote. A lender's analyst can test any line without calling us first.</p>
     </div>
   </section>
 
   <!-- CTA -->
   <section data-reveal>
     <div class="cta">
-      <p class="eyebrow">Start at your gate</p>
       <h2>Bring us the site, the term sheet, or the doubt.</h2>
-      <p>A screening study answers go/no-go in weeks. A red-flag review
-      answers "should we lend?" before the full DD spend.</p>
       <a class="button" href="mailto:contact@ecoconsultancy.services">CONTACT ECOENERGY →</a>
     </div>
   </section>
@@ -390,7 +353,7 @@
 
   gsap.from('.gates > li', {
     y: 16, autoAlpha: 0, stagger: 0.07, duration: 0.45, ease: 'power2.out',
-    scrollTrigger: { trigger: '.gates', start: 'top 82%' }
+    scrollTrigger: { trigger: '.gates', start: 'top 90%' }
   });
 })();
 </script>
