@@ -4,44 +4,48 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EcoEnergy Consultancy</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+  /* Scene: a credit analyst in a KL bank tower, mid-afternoon daylight
+     through tinted glass. Light theme; neutrals tinted toward brand
+     navy (h≈245–250); one saturated accent: brand gold (h≈84). */
   :root {
-    --bg: #f3f5f7;
-    --surface: #ffffff;
-    --ink: #10233a;
-    --muted: #48607a;
-    --line: #ccd6df;
-    --gold: #a97c1e;
-    --gold-bright: #d4a23a;
-    --navy: #0f2742;
-    --ph-stripe: rgba(16, 35, 58, 0.06);
-    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --bg: oklch(0.972 0.006 245);
+    --surface: oklch(0.993 0.004 245);
+    --ink: oklch(0.26 0.02 250);
+    --muted: oklch(0.5 0.018 248);
+    --line: oklch(0.87 0.012 245);
+    --accent: oklch(0.58 0.12 84);
+    --accent-bright: oklch(0.73 0.13 84);
+    --panel: oklch(0.28 0.05 252);
+    --ph-stripe: oklch(0.26 0.02 250 / 0.06);
+    --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --sans: 'Public Sans', system-ui, -apple-system, sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0b1c31;
-      --surface: #13304f;
-      --ink: #edf1f5;
-      --muted: #9fb2c6;
-      --line: #29456273;
-      --gold: #d4a23a;
-      --gold-bright: #e2b654;
-      --navy: #0f2742;
-      --ph-stripe: rgba(237, 241, 245, 0.05);
+      --bg: oklch(0.22 0.018 250);
+      --surface: oklch(0.27 0.02 250);
+      --ink: oklch(0.94 0.008 245);
+      --muted: oklch(0.72 0.015 245);
+      --line: oklch(0.36 0.018 248);
+      --accent: oklch(0.78 0.12 84);
+      --accent-bright: oklch(0.82 0.11 84);
+      --panel: oklch(0.3 0.05 252);
+      --ph-stripe: oklch(0.94 0.008 245 / 0.05);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0b1c31;
-    --surface: #13304f;
-    --ink: #edf1f5;
-    --muted: #9fb2c6;
-    --line: #29456273;
-    --gold: #d4a23a;
-    --gold-bright: #e2b654;
-    --navy: #0f2742;
-    --ph-stripe: rgba(237, 241, 245, 0.05);
+    --bg: oklch(0.22 0.018 250);
+    --surface: oklch(0.27 0.02 250);
+    --ink: oklch(0.94 0.008 245);
+    --muted: oklch(0.72 0.015 245);
+    --line: oklch(0.36 0.018 248);
+    --accent: oklch(0.78 0.12 84);
+    --accent-bright: oklch(0.82 0.11 84);
+    --panel: oklch(0.3 0.05 252);
+    --ph-stripe: oklch(0.94 0.008 245 / 0.05);
   }
 
   * { box-sizing: border-box; }
@@ -49,7 +53,7 @@
     background: var(--bg);
     color: var(--ink);
     margin: 0;
-    font: 1.06rem/1.65 var(--serif);
+    font: 1rem/1.7 var(--sans);
   }
   #rail {
     position: fixed;
@@ -57,7 +61,7 @@
     left: 0;
     height: 3px;
     width: 0;
-    background: var(--gold-bright);
+    background: var(--accent-bright);
     z-index: 10;
   }
   .wrap {
@@ -71,10 +75,10 @@
     font: 0.72rem/1 var(--mono);
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: var(--accent);
     margin: 0 0 1rem;
   }
-  h1, h2 { font-family: var(--serif); text-wrap: balance; margin: 0 0 1rem; }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0 0 1rem; }
   h1 { font-size: clamp(2.3rem, 5.5vw, 4rem); line-height: 1.08; font-weight: 700; }
   h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.2; font-weight: 600; }
   p { max-width: 62ch; }
@@ -89,7 +93,7 @@
     border-radius: 8px;
     margin-bottom: 2.5rem;
   }
-  .hero .thesis { font-size: clamp(1.1rem, 2vw, 1.35rem); }
+  .hero .thesis { font-size: clamp(1.1rem, 2vw, 1.3rem); }
   .scrollcue {
     font: 0.72rem/1 var(--mono);
     letter-spacing: 0.18em;
@@ -100,7 +104,7 @@
 
   /* media placeholders */
   .ph {
-    border: 1.5px dashed var(--gold);
+    border: 1.5px dashed var(--accent);
     border-radius: 6px;
     background: repeating-linear-gradient(-45deg, var(--ph-stripe) 0 12px, transparent 12px 24px);
     aspect-ratio: 16 / 9;
@@ -116,7 +120,7 @@
     color: var(--muted);
     max-width: 40ch;
   }
-  .ph span b { color: var(--gold); display: block; letter-spacing: 0.12em; }
+  .ph span b { color: var(--accent); display: block; letter-spacing: 0.12em; }
 
   /* gate line */
   .gates {
@@ -137,7 +141,7 @@
     background: var(--surface);
     white-space: nowrap;
   }
-  .gate.final { border-color: var(--gold); color: var(--gold); font-weight: 500; }
+  .gate.final { border-color: var(--accent); color: var(--accent); font-weight: 500; }
   .gate-arrow { color: var(--muted); font-family: var(--mono); font-size: 0.75rem; }
 
   /* feature blocks */
@@ -172,33 +176,33 @@
     border-top: 1px solid var(--line);
   }
   .row:last-of-type { border-bottom: 1px solid var(--line); }
-  .row .label { font: 0.78rem/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+  .row .label { font: 0.78rem/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
   .row p { margin: 0; }
   @media (max-width: 760px) { .row { grid-template-columns: 1fr; gap: 0.5rem; } }
 
-  /* CTA */
+  /* CTA — the brand-navy panel keeps its own fixed palette in both themes */
   .cta {
-    background: var(--navy);
-    color: #edf1f5;
+    background: var(--panel);
+    color: oklch(0.95 0.007 245);
     border-radius: 10px;
     padding: 3.5rem clamp(1.5rem, 5vw, 4rem);
   }
-  .cta .eyebrow { color: var(--gold-bright); }
-  .cta h2 { color: #ffffff; }
-  .cta p { color: #c9d4e0; }
+  .cta .eyebrow { color: oklch(0.78 0.12 84); }
+  .cta h2 { color: oklch(0.975 0.005 245); }
+  .cta p { color: oklch(0.85 0.015 245); }
   .cta a.button {
     display: inline-block;
     margin-top: 1.5rem;
     padding: 0.85rem 1.6rem;
-    background: var(--gold-bright);
-    color: #10233a;
+    background: oklch(0.78 0.12 84);
+    color: oklch(0.25 0.02 250);
     text-decoration: none;
     font: 500 0.85rem/1 var(--mono);
     letter-spacing: 0.08em;
     border-radius: 4px;
   }
   .cta a.button:focus-visible,
-  a:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
 
   footer {
     padding-block: 2.5rem;
