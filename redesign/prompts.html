@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THE $10K SITE · Six decisions, one command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0.17 0.02 252);
+  --bg2: oklch(0.20 0.022 252);
+  --ink: oklch(0.93 0.008 245);
+  --muted: oklch(0.64 0.02 248);
+  --accent: oklch(0.75 0.12 84);
+  --line: oklch(0.30 0.02 250);
+  --disp:'Bricolage Grotesque',sans-serif;
+  --sans:'Inter',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;
+  line-height:1.6;overflow-x:hidden;
+}
+/* drifting mesh background */
+body::before{
+  content:'';position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(40% 35% at 20% 25%, oklch(0.24 0.05 252 / .55), transparent 70%),
+    radial-gradient(35% 40% at 80% 70%, oklch(0.22 0.04 230 / .5), transparent 70%),
+    radial-gradient(30% 30% at 60% 15%, oklch(0.22 0.03 90 / .35), transparent 70%);
+  animation:mesh 26s ease-in-out infinite alternate;
+}
+@keyframes mesh{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.06)}}
+::selection{background:var(--accent);color:oklch(0.15 0.02 252)}
+em{font-style:italic;color:var(--accent)}
+b{font-weight:500;color:var(--ink)}
+a{color:inherit}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+  padding:22px 4vw;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
+  mix-blend-mode:difference;
+}
+nav .dot{color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;height:100vh;overflow:hidden}
+.hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .veil{position:absolute;inset:0;background:
+  linear-gradient(to bottom, oklch(0.17 0.02 252/.35), transparent 35%, transparent 60%, oklch(0.17 0.02 252) 100%)}
+.hwm{
+  position:absolute;left:4vw;bottom:10vh;max-width:760px;
+}
+.hwm::before{
+  content:'';position:absolute;inset:-60px -80px;z-index:-1;
+  background:radial-gradient(60% 60% at 35% 60%, oklch(0.12 0.025 252/.8), transparent 75%);
+  filter:blur(8px);
+}
+.eye{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;text-shadow:0 1px 12px oklch(0.1 0.02 252/.9)}
+h1{
+  font-family:var(--disp);font-weight:700;font-size:clamp(56px,9vw,128px);line-height:.95;letter-spacing:-.02em;
+  text-shadow:0 2px 28px oklch(0.1 0.02 252/.85);
+}
+.lede{margin-top:22px;max-width:520px;font-size:17px;color:oklch(0.85 0.012 245);text-shadow:0 1px 10px oklch(0.1 0.02 252/.9)}
+.scrollcue{position:absolute;right:4vw;bottom:10vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);writing-mode:vertical-rl}
+
+/* ---------- shared section chrome ---------- */
+section{position:relative;padding:18vh 4vw}
+.wrap{max-width:1180px;margin:0 auto}
+.k{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(36px,5.2vw,72px);line-height:1.02;letter-spacing:-.015em;margin-bottom:26px}
+.body{max-width:62ch;color:var(--muted);font-size:17px}
+.body b{color:var(--ink)}
+
+/* ---------- thesis / index ---------- */
+.thesis h2{max-width:18ch}
+.pieces{margin-top:9vh;border-top:1px solid var(--line)}
+.piece{
+  display:grid;grid-template-columns:90px 1fr 1.1fr;gap:32px;align-items:baseline;
+  padding:30px 0;border-bottom:1px solid var(--line);cursor:pointer;text-decoration:none;
+  transition:padding-left .35s ease;
+}
+.piece:hover{padding-left:14px}
+.piece .n{font-family:var(--mono);font-size:13px;color:var(--accent)}
+.piece .t{font-family:var(--disp);font-weight:700;font-size:clamp(22px,2.6vw,34px);letter-spacing:-.01em}
+.piece .d{font-size:15px;color:var(--muted)}
+
+/* ---------- lesson sections ---------- */
+.lesson .grid{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:start}
+.lesson .media{position:relative;border-radius:6px;overflow:hidden}
+.lesson .media img,.lesson .media video{display:block;width:100%;height:auto}
+.lesson .media .cap{
+  position:absolute;left:22px;bottom:18px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:oklch(0.92 0.008 245);text-shadow:0 1px 10px oklch(0.1 0.02 252/.95);
+}
+.law{margin-top:26px;display:flex;flex-direction:column;gap:12px}
+.law div{display:flex;gap:14px;font-size:15px;color:var(--muted)}
+.law div::before{content:'·';color:var(--accent);font-weight:700}
+.law b{color:var(--ink);font-weight:500}
+
+/* prompt card */
+.prompt{margin-top:34px;background:oklch(0.13 0.018 252);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.prompt .bar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+.prompt .bar span{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.copybtn{
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+  background:none;border:1px solid var(--line);border-radius:4px;color:var(--ink);padding:6px 14px;transition:.25s;
+}
+.copybtn:hover{border-color:var(--accent);color:var(--accent)}
+.prompt pre{
+  padding:22px;white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.75;color:oklch(0.82 0.01 245);
+  max-height:420px;overflow:auto;
+}
+
+/* palette swatches */
+.swatches{display:flex;gap:0;margin-top:26px;border-radius:6px;overflow:hidden;height:84px}
+.swatches div{flex:1;position:relative}
+.swatches span{position:absolute;left:10px;bottom:8px;font-family:var(--mono);font-size:10px;color:oklch(0.9 0.008 245);mix-blend-mode:difference}
+
+/* spine diagram */
+.spine{margin-top:30px;border-top:1px solid var(--line)}
+.spine div{display:grid;grid-template-columns:60px 200px 1fr;gap:24px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--muted)}
+.spine .sn{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.spine .sh{font-family:var(--disp);font-weight:700;color:var(--ink);font-size:16px}
+
+/* band */
+.band{padding:24vh 4vw;text-align:center}
+.band h2{max-width:22ch;margin:0 auto}
+
+/* reserve */
+.reserve{text-align:center;padding:24vh 4vw}
+.cta{
+  display:inline-block;margin-top:36px;font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  border:1px solid var(--accent);color:var(--accent);padding:18px 44px;border-radius:999px;text-decoration:none;transition:.3s;
+}
+.cta:hover{background:var(--accent);color:oklch(0.15 0.02 252)}
+
+footer{
+  position:relative;min-height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--muted);
+}
+footer::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(50% 90% at 50% 120%, oklch(0.4 0.1 84/.45), transparent 70%);
+  animation:aurora 9s ease-in-out infinite alternate;
+}
+@keyframes aurora{from{opacity:.5;transform:translateX(-6%)}to{opacity:1;transform:translateX(6%)}}
+footer span{position:relative}
+footer em{color:var(--accent);font-style:normal}
+
+.reveal{opacity:0;transform:translateY(40px)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}body::before,footer::before{animation:none}}
+
+@media(max-width:860px){
+  .lesson .grid{grid-template-columns:1fr}
+  .piece{grid-template-columns:50px 1fr;}
+  .piece .d{grid-column:2}
+}
+</style>
+</head>
+<body>
+
+<nav><span>THE $10K SITE<span class="dot"> ·</span> A CLAUDE CODE CLUB LESSON</span><span>FORGED, NOT TEMPLATED</span></nav>
+
+<!-- HERO · video one -->
+<header class="hero">
+  <video autoplay muted loop playsinline src="assets/hero.webm"></video>
+  <div class="veil"></div>
+  <div class="hwm">
+    <div class="eye">Six decisions · one command · Fable 5</div>
+    <h1>THE $10K SITE</h1>
+    <p class="lede">Agencies bill five figures for sites like this one. You are about to build one with <em>six prompts</em> and a single product photo. Paste them in order and watch the site improve live.</p>
+  </div>
+  <div class="scrollcue">scroll to begin</div>
+</header>
+
+<!-- THESIS + INDEX -->
+<section class="thesis" id="pieces">
+  <div class="wrap">
+    <div class="k reveal">What we cover today</div>
+    <h2 class="reveal">Six prompts. One product photo. A <em>finished site.</em></h2>
+    <p class="body reveal">Each section below is one decision, one rule set, and one prompt. <b>Paste them into Claude Code in order.</b> The first prompt creates a bare page. Every prompt after it upgrades that same page: motion, then color, then words, then footage. By prompt six you have a working site you can show anyone.</p>
+    <div class="pieces">
+      <a class="piece reveal" href="#s1"><span class="n">01</span><span class="t">The core messaging</span><span class="d">Answer four questions. Claude builds version one: a bare page with your thesis line.</span></a>
+      <a class="piece reveal" href="#s2"><span class="n">02</span><span class="t">The scroll style</span><span class="d">Pick how scroll moves your product. The page gets its motion and its sections.</span></a>
+      <a class="piece reveal" href="#s3"><span class="n">03</span><span class="t">The color palette</span><span class="d">One sentence about a scene becomes the palette. The page gets its colors and fonts.</span></a>
+      <a class="piece reveal" href="#s4"><span class="n">04</span><span class="t">The copy</span><span class="d">Short headlines, specific claims. Every placeholder becomes real words.</span></a>
+      <a class="piece reveal" href="#s5"><span class="n">05</span><span class="t">Photo and video</span><span class="d">Two videos and three images get rendered and wired into the page.</span></a>
+      <a class="piece reveal" href="#s6"><span class="n">06</span><span class="t">The spine</span><span class="d">The final pass: everything snaps into the eight-section order and ships.</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- 01 CORE MESSAGING -->
+<section class="lesson" id="s1">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">01 · The core messaging</div>
+        <h2 class="reveal">One line carries <em>everything.</em></h2>
+        <p class="body reveal">Premium sites say one thing. Four questions turn your product into a single thesis line, and that line gets tested against every decision that follows. This prompt ends with a real page on screen: just your brand name and that line, plain type. Version one of the site you will keep upgrading.</p>
+        <div class="law reveal">
+          <div><b>One product photo</b> is the only asset you need to start.</div>
+          <div><b>Four questions, no more.</b> Over-asking is how projects stall.</div>
+          <div>Every prompt after this one <b>upgrades the same index.html.</b></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 01 · starts the site</span><button class="copybtn">Copy</button></div>
+          <pre>Here is my product. [attach one product photo]
+
+Interview me with exactly four questions, one at a time:
+1. What is the product or brand, in one line?
+2. Who is it for, and what should they feel?
+3. What is the one thing they should remember?
+4. Do I have an AI render tool connected for footage, or should we use stock video and images?
+
+Then distill my answers into one thesis line the whole site will serve. Short. Specific. No filler.
+
+Create version one of the site: a single index.html with the brand name, the thesis line, and a two-sentence lede. Plain readable type, no styling yet. Put my product photo in an assets/ folder. Serve it locally and give me the URL. We will upgrade this same file five more times, so keep it clean.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 SCROLL STYLE -->
+<section class="lesson" id="s2">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">02 · The scroll style</div>
+        <h2 class="reveal">What does scrolling <em>mean</em> here?</h2>
+        <p class="body reveal">Scroll is a camera you hand to the visitor. A watch worth taking apart explodes. A workshop pans sideways. A process unfolds as a story. The style is matched to the product, never picked because it looks cool. This is the design decision most people never realize exists.</p>
+        <div class="law reveal">
+          <div><b>Seven styles</b> cover almost every product on earth.</div>
+          <div>State the pick and defend it <b>in one line.</b></div>
+          <div>If no motion adds meaning, an <b>ambient loop</b> is the honest choice.</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 02 · adds the motion</span><button class="copybtn">Copy</button></div>
+          <pre>Look at the product and thesis in index.html. Pick ONE scroll style and defend the choice in a single line:
+
+A · Ambient loop: a hero object that just looks beautiful
+B · Scroll-scrub: the product transforms or rotates as you scroll
+C · Cursor-spotlight: revealed out of the dark by the cursor
+D · Horizontal pan-lock: a place or lineup you move sideways through
+E · Exploded view: a built object worth taking apart
+F · Push-through: a space the camera flies into
+G · Scrollytelling: a process worth watching unfold
+
+Ask: what does scrolling MEAN for this product? Match the motion to the thing, not to taste.
+
+Then upgrade index.html: add smooth inertia scrolling (Lenis) and scroll-triggered reveals (GSAP ScrollTrigger), and lay out the full page top to bottom: hero, thesis, two feature blocks, a gallery band, three detail rows, a CTA. Use clearly labeled placeholder blocks where the two videos and three images will go. Same file. Tell me to refresh.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 PALETTE -->
+<section class="lesson" id="s3">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">03 · The color palette</div>
+        <h2 class="reveal">A scene picks the colors, <em>not the category.</em></h2>
+        <p class="body reveal">"Coffee brand" forces nothing. "The last cup before a midnight shift" forces a nocturnal palette. You write one sentence about who is using the product, where, and in what light, and the palette falls out of it. This page came from: <b>a credit analyst in a KL bank tower, weighing a nine-figure loan as dusk settles over the towers.</b></p>
+        <div class="swatches reveal">
+          <div style="background:oklch(0.17 0.02 252)"><span>bg</span></div>
+          <div style="background:oklch(0.30 0.02 250)"><span>line</span></div>
+          <div style="background:oklch(0.64 0.02 248)"><span>muted</span></div>
+          <div style="background:oklch(0.93 0.008 245)"><span>ink</span></div>
+          <div style="background:oklch(0.75 0.12 84)"><span>accent</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 03 · adds color and type</span><button class="copybtn">Copy</button></div>
+          <pre>Write one sentence: who is using this product, where, and in what light. Choose dark or light from that scene.
+
+Then build the palette from the scene, never the category:
+- OKLCH only. Never #000 or #fff.
+- Tint every neutral toward the brand hue (chroma 0.005 to 0.02).
+- Commit to ONE saturated accent. Everything else stays quiet.
+- Reduce chroma as lightness approaches 0 or 1, or it turns garish.
+
+Apply the four tokens (bg, ink, muted, accent) to index.html, and add the fonts: one display face for headlines, one clean body face. Then show me the scene sentence next to the live page so I can judge whether the colors tell that story.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 COPY -->
+<section class="lesson" id="s4">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">04 · The copy</div>
+        <h2 class="reveal">Every word <em>earns its place.</em></h2>
+        <p class="body reveal">Expensive sites are quiet. Headlines stay short. Captions run three to five words with one accented word. Claims get specific: "two-thirds less acid" beats "smooth and delicious" every single time. And the spec-sheet clutter that screams template gets killed on sight.</p>
+        <div class="media reveal" style="margin-top:34px">
+          <img src="assets/g1.jpg" alt="High-voltage switchyard under construction at a utility-scale solar site">
+          <div class="cap">g1 · the context shot</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 04 · writes the words</span><button class="copybtn">Copy</button></div>
+          <pre>Write the full site copy and put it straight into index.html, replacing every placeholder line:
+
+- Headlines short. Captions 3 to 5 words, one accent word each.
+- Specific beats generic: "two-thirds less acid" beats "smooth and delicious."
+- Kill spec-sheet clutter. No feature lists, no jargon.
+- No restated headings, no intro that repeats the title.
+- No em dashes. Anywhere. Ever.
+- Every claim concrete enough to be falsifiable.
+
+The page needs: one eyebrow line, one lede, one thesis line, three captions, two feature blocks (heading + 2 sentences), three numbered detail rows, and one CTA line. Nothing else. Tell me to refresh and read it on the page, not in chat.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 PHOTO + VIDEO · video two + g2 -->
+<section class="lesson" id="s5">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">05 · Photo and video</div>
+        <h2 class="reveal">Direct the camera like the user <em>controls time.</em></h2>
+        <p class="body reveal">The whole site runs on five assets: two videos and three images, each used exactly once. Scarcity reads as confidence. The two videos are siblings, same light and palette, different shot. And because scroll lets the visitor scrub time, the render laws are strict: locked camera, constant velocity, motion blur off.</p>
+        <div class="media reveal" style="margin-top:34px">
+          <video autoplay muted loop playsinline src="assets/middle.webm"></video>
+          <div class="cap">video two · the sibling shot</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 05 · renders the assets</span><button class="copybtn">Copy</button></div>
+          <pre>Write 5 render prompts for my product: 2 videos + 3 vertical images. Each asset appears on the site exactly once.
+
+Video laws:
+- Lock the camera to the scroll axis. No drift, no zoom.
+- Constant velocity. Motion blur OFF: the user controls time.
+- The two videos are siblings: copy the hero prompt's lighting and material language, change only the motion or framing.
+- For a transform: the START object must equal the END object, or fall back to a loop. Consistency over spectacle.
+
+Example hero render:
+"A single hand-forged carbon steel pan, floating centered on warm slate, low amber forge light, crisp contact shadow, ultra-detailed product photography, 16:9. Motion: rotates slowly around its vertical axis, locked camera, constant speed, no zoom, no motion blur."
+
+Images: one context shot, one extreme macro, one hero still. All vertical.
+
+Now GENERATE all five with my connected image and video tool. If I have no render tool, find five matching stock assets instead. Save them as assets/hero.mp4, assets/middle.mp4, assets/g1.jpg, assets/g2.jpg, assets/g3.jpg and wire each one into its placeholder in index.html. Tell me to refresh.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BAND -->
+<section class="band">
+  <div class="media reveal" style="max-width:420px;margin:0 auto 8vh;border-radius:6px;overflow:hidden">
+    <img src="assets/g4.jpg" alt="Aerial view of a completed utility-scale solar farm" style="width:100%;display:block">
+    <div class="cap">g3 · the hero still</div>
+  </div>
+  <h2 class="reveal">Five prompts in, you have a site you could <em>invoice for.</em></h2>
+</section>
+
+<!-- 06 SPINE -->
+<section class="lesson" id="s6">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">06 · The spine and the brand</div>
+        <h2 class="reveal">Eight sections, <em>one order.</em></h2>
+        <p class="body reveal">Structure is a solved problem. Every premium site here runs the same spine, in the same order, and only the content changes. That is the brand identity secret: consistency in the skeleton frees every ounce of effort for the parts a visitor actually feels.</p>
+        <div class="spine reveal">
+          <div><span class="sn">1</span><span class="sh">Hero</span><span>video one, dark halo for legibility, alive on load</span></div>
+          <div><span class="sn">2</span><span class="sh">Thesis</span><span>one large line on the drifting mesh</span></div>
+          <div><span class="sn">3</span><span class="sh">Features</span><span>two text and image pairs (g1, g2)</span></div>
+          <div><span class="sn">4</span><span class="sh">Gallery band</span><span>image, video two, image</span></div>
+          <div><span class="sn">5</span><span class="sh">Second moment</span><span>the second scroll stop</span></div>
+          <div><span class="sn">6</span><span class="sh">Rows</span><span>three numbered editorial details</span></div>
+          <div><span class="sn">7</span><span class="sh">Reserve</span><span>one CTA, nothing competing with it</span></div>
+          <div><span class="sn">8</span><span class="sh">Footer</span><span>animated aurora, the signature</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Prompt 06 · ships the site</span><button class="copybtn">Copy</button></div>
+          <pre>Final pass. Rebuild index.html into this exact section order: Hero (hero.mp4 full-bleed), Thesis line, two Feature pairs (g1 and g2), Gallery band (image, middle.mp4, image), three numbered Rows, the CTA, an animated footer.
+
+Hard rules:
+- 2 videos + 3 images, each used exactly once. No card grids, no gallery walls, no reused frames as filler.
+- One committed accent. Never #000 or #fff.
+- Hero text sits on a soft dark halo so it never washes out.
+- The hero must be moving before the first scroll.
+- Final gate: if someone could look at it and say "AI made that," it failed. Gradient text, glassmorphism, identical cards, the big-number hero metric: all banned.
+
+Serve the finished site, give me the URL, and list what changed in this pass. This is the site we ship.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05b media pair: g2 macro shown in copy section context -->
+<section class="band" style="padding-top:6vh">
+  <div class="media reveal" style="max-width:420px;margin:0 auto;border-radius:6px;overflow:hidden">
+    <img src="assets/g2.jpg" alt="Engineers in a site control room, the solar array beyond the windows" style="width:100%;display:block">
+    <div class="cap">g2 · the macro: proof the product works</div>
+  </div>
+</section>
+
+<!-- RESERVE -->
+<section class="reserve">
+  <div class="k reveal">Or skip the six steps</div>
+  <h2 class="reveal">All of this is <em>one command.</em></h2>
+  <p class="body reveal" style="margin:0 auto">The six prompts get you 90% of the way. The plugin is the full system. All you have to do is drop in a single image.</p>
+  <a class="cta reveal" href="https://claudecodeclub.ai">Get the plugin · claudecodeclub.ai</a>
+</section>
+
+<footer><span>Created by Claude Code Club · <em>claudecodeclub.ai</em> · EcoEnergy palette edition</span></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+if (window.gsap && window.ScrollTrigger && window.Lenis &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+
+const lenis = new Lenis({lerp:0.1});
+function raf(t){lenis.raf(t);requestAnimationFrame(raf)}
+requestAnimationFrame(raf);
+gsap.registerPlugin(ScrollTrigger);
+lenis.on('scroll', ScrollTrigger.update);
+
+// hero settles in
+gsap.from('.hwm > *',{y:50,opacity:0,duration:1.2,ease:'power3.out',stagger:0.12,delay:0.2});
+
+// reveals
+document.querySelectorAll('.reveal').forEach(el=>{
+  gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 86%'}});
+});
+
+// hero video gently scales out as you leave it
+gsap.to('.hero video',{scale:1.12,ease:'none',
+  scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+
+// anchor links respect lenis
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{e.preventDefault();lenis.scrollTo(a.getAttribute('href'),{offset:-40})});
+});
+
+} else {
+  document.querySelectorAll('.reveal').forEach(el=>{el.style.opacity=1;el.style.transform='none'});
+}
+
+// copy buttons
+document.querySelectorAll('.copybtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const txt = btn.closest('.prompt').querySelector('pre').innerText;
+    navigator.clipboard.writeText(txt).then(()=>{
+      btn.textContent='Copied';
+      setTimeout(()=>btn.textContent='Copy',1600);
+    });
+  });
+});
+</script>
+</body>
+</html>
