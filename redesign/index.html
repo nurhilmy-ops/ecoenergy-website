@@ -120,6 +120,25 @@
   }
   .cap em { font-style: normal; color: var(--accent); }
 
+  /* wired media */
+  video.vid, .media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .tile {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .tile img, .tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
   /* gate line */
   .gates {
     display: flex;
@@ -224,9 +243,10 @@
       EcoEnergy runs all seven, and writes the due diligence lenders
       read before they commit.
     </p>
-    <div class="ph" style="margin-top:2.5rem">
-      <span>VIDEO 1</span>
-    </div>
+    <video class="vid" style="margin-top:2.5rem" autoplay muted loop playsinline preload="metadata"
+      aria-label="Aerial pass over a solar plant">
+      <source src="assets/hero.webm" type="video/webm">
+    </video>
     <ul class="gates" aria-label="Project stage gates">
       <li class="gate">Screening · go/no-go</li><li class="gate-arrow" aria-hidden="true">→</li>
       <li class="gate">Conceptual</li><li class="gate-arrow" aria-hidden="true">→</li>
@@ -251,7 +271,7 @@
         </p>
       </div>
       <div class="media">
-        <div class="ph"><span>IMAGE 1</span></div>
+        <img src="assets/g1.jpg" alt="Two workers fixing a panel at a utility-scale solar site">
       </div>
     </div>
 
@@ -265,7 +285,7 @@
         </p>
       </div>
       <div class="media">
-        <div class="ph"><span>IMAGE 2</span></div>
+        <img src="assets/g2.jpg" alt="Macro of polycrystalline solar cells and busbars">
       </div>
     </div>
   </section>
@@ -274,15 +294,22 @@
   <section data-reveal>
     <div class="band">
       <div>
-        <div class="ph"><span>IMAGE 3</span></div>
+        <div class="tile">
+          <img src="assets/g3.jpg" alt="Surveyors on a floating solar array">
+        </div>
         <p class="cap">Floating solar, <em>measured</em> twice.</p>
       </div>
       <div>
-        <div class="ph"><span>VIDEO 2</span></div>
-        <p class="cap">Grid connection, <em>sized</em> before signing.</p>
+        <div class="tile">
+          <video autoplay muted loop playsinline preload="metadata"
+            aria-label="Low pass along solar module rows">
+            <source src="assets/middle.webm" type="video/webm">
+          </video>
+        </div>
+        <p class="cap">Every row, flown and <em>counted</em>.</p>
       </div>
       <div>
-        <div class="ph"><span>IMAGE SLOT · PROJECT PHOTO</span></div>
+        <div class="ph tile"><span>PROJECT PHOTO SLOT</span></div>
         <p class="cap">Every assumption <em>walked</em> on site.</p>
       </div>
     </div>
@@ -318,7 +345,9 @@
   </section>
 
   <footer>
-    EcoEnergy Consultancy · ecoconsultancy.services
+    EcoEnergy Consultancy · ecoconsultancy.services<br>
+    Imagery: T. Kellner (CC0) · D. Waldman, U.S. Air Force (public domain) ·
+    G. Vellut (CC BY 2.0) · D. Rabich (CC BY-SA 4.0) · via Wikimedia Commons
   </footer>
 </main>
 
