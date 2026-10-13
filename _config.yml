@@ -1,0 +1,5 @@
+# GitHub Pages (Jekyll) build settings.
+# terrain-tool/ is a Python web application (run separately), not part of the static site:
+# keep its source, templates and docs from being published at www.ecoconsultancy.services.
+exclude:
+  - terrain-tool

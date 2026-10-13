@@ -1,0 +1,26 @@
+# Local stack: the app plus Mailpit, a fake SMTP server with a web inbox,
+# so magic-link emails can be opened at http://localhost:8025 exactly as a visitor would.
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_ENV: development
+      BASE_URL: http://localhost:8000
+      MAIL_BACKEND: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - "8025:8025"   # web inbox
+      - "1025:1025"   # SMTP
