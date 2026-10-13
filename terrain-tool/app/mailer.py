@@ -1,5 +1,8 @@
 """Outgoing email: a development outbox (rows in the ``outbox`` table, viewable at
-/dev/outbox) or SMTP. Also renders the transactional email templates.
+/dev/outbox), SMTP, or the Amazon SES v2 API. Also renders the transactional email templates.
+
+The ``ses`` backend exists because SES offers no SMTP endpoint in Asia Pacific (Malaysia),
+ap-southeast-5 — only the HTTPS API — so sending from Malaysia needs the API.
 
 The magic-link and report-ready messages are transactional: they carry no
 List-Unsubscribe header but do link to /privacy and /account in the footer.
@@ -46,7 +49,10 @@ def send_mail(settings: Settings, to: str, subject: str, text: str, html: str | 
     if settings.mail_backend == "smtp":
         _send_smtp(settings, build_message(settings, to, subject, text, html, headers))
         return
-    raise ValueError(f"Unknown MAIL_BACKEND {settings.mail_backend!r} (expected outbox or smtp)")
+    if settings.mail_backend == "ses":
+        _send_ses(settings, build_message(settings, to, subject, text, html, headers))
+        return
+    raise ValueError(f"Unknown MAIL_BACKEND {settings.mail_backend!r} (expected outbox, smtp or ses)")
 
 
 def build_message(settings: Settings, to: str, subject: str, text: str, html: str | None = None,
@@ -84,6 +90,23 @@ def _send_smtp(settings: Settings, msg: EmailMessage) -> None:
             smtp.login(settings.smtp_user, settings.smtp_password)
         smtp.send_message(msg)
     log.info("Sent mail %s via SMTP %s:%s", msg["Message-ID"], settings.smtp_host, settings.smtp_port)
+
+
+def _send_ses(settings: Settings, msg: EmailMessage) -> None:
+    """Send through the SES v2 API as a raw MIME message (keeps our headers intact).
+    Credentials come from the standard AWS chain (env vars, profile or instance role)."""
+    try:
+        import boto3  # optional dependency: pip install boto3
+    except ImportError as exc:  # pragma: no cover - exercised only without boto3
+        raise RuntimeError("MAIL_BACKEND=ses needs the boto3 package (pip install boto3)") from exc
+    client = boto3.client("sesv2", region_name=settings.ses_region)
+    resp = client.send_email(
+        FromEmailAddress=settings.mail_from,
+        Destination={"ToAddresses": [msg["To"]]},
+        Content={"Raw": {"Data": msg.as_bytes()}},
+    )
+    log.info("Sent mail %s via SES %s (MessageId %s)", msg["Message-ID"], settings.ses_region,
+             resp.get("MessageId"))
 
 
 def newsletter_headers(settings: Settings, subscriber_id: int) -> dict[str, str]:

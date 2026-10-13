@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from engine_helpers import (FIXTURES, GEOD, SYNTH_INFO, function_fetcher, kml_doc,  # noqa: E402
                             line_pm, make_settings, offset, plane_fetcher, point_pm,
-                            polygon_pm, rect, write)
+                            polygon_pm, rect, result_with, route_result, site_result, write)
 
 from app.terrain import ScreeningError, render_summary_md, run_screening, validate_upload  # noqa: E402
 from app.terrain import analysis, boundaries, dem, flags  # noqa: E402
@@ -28,13 +28,14 @@ TOP_KEYS = {"schema_version", "meta", "dem", "location", "totals", "sites", "kpk
 META_KEYS = {"report_id", "generated_at", "site_label", "scheme", "stage", "input_filename",
              "input_sha256"}
 DEM_KEYS = {"provider", "name", "model_type", "epoch", "vertical_datum", "nominal_resolution_m",
-            "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution"}
+            "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution", "disclaimer",
+            "sends_coordinates_to_third_party"}
 LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg",
                  "boundary_attribution"}
 TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km"}
 SITE_KEYS = {"name", "area_ha", "perimeter_m", "centroid", "elev_min_m", "elev_max_m",
              "elev_mean_m", "relief_m", "slope_mean_deg", "slope_p90_deg", "slope_max_deg",
-             "kpkt_pct", "slope_bins_pct", "cells"}
+             "kpkt_pct", "slope_bins_pct", "steeper_than_grade_pct", "cells"}
 KPKT_KEYS = {"I", "II", "III", "IV"}
 BIN_KEYS = {"0-2", "2-5", "5-10", "10-15", "15-25", "25-35", ">35"}
 ROUTE_KEYS = {"name", "length_km", "elev_min_m", "elev_max_m", "total_ascent_m", "max_grade_pct"}
@@ -215,6 +216,7 @@ def test_outputs_written_and_schema_matches_contract(tmp_path):
     for s in result["sites"]:
         assert set(s) == SITE_KEYS
         assert set(s["kpkt_pct"]) == KPKT_KEYS and set(s["slope_bins_pct"]) == BIN_KEYS
+        assert set(s["steeper_than_grade_pct"]) == {"10", "15"}
         assert len(s["centroid"]) == 2
         assert sum(s["slope_bins_pct"].values()) == pytest.approx(100.0, abs=0.5)
     assert set(result["kpkt_overall_pct"]) == KPKT_KEYS
@@ -236,11 +238,14 @@ def test_outputs_written_and_schema_matches_contract(tmp_path):
     assert result["location"]["utm_epsg"] == "EPSG:32647"
     assert result["location"]["state"] == "Selangor"
     assert result["dem"]["cells_analysed"] > 0 and result["dem"]["nodata_pct"] == 0.0
+    assert result["dem"]["disclaimer"] is None                      # synthetic DEM: no licence notice
+    assert result["dem"]["sends_coordinates_to_third_party"] is False
+    assert result["location"]["boundary_attribution"] == boundaries.BOUNDARY_ATTRIBUTION
     assert result["contour_interval_m"] >= 5.0
 
-    # flags are sorted most severe first and always include the EIA reminder
+    # flags are sorted most severe first and always include the EIA area items
     order = [{"warning": 0, "caution": 1, "info": 2}[f["level"]] for f in result["flags"]]
-    assert order == sorted(order) and "eia_check" in codes(result)
+    assert order == sorted(order) and "eia_area_items" in codes(result)
 
     md = (out / "summary.md").read_text(encoding="utf-8")
     assert md == render_summary_md(result)
@@ -334,7 +339,7 @@ def test_point_only_input(tmp_path):
     assert result["sites"] == [] and result["kpkt_overall_pct"] == {k: None for k in KPKT_KEYS}
     assert result["totals"]["total_area_ha"] == 0.0
     assert all((out / f).exists() for f in FIGURE_FILES)
-    assert "eia_check" not in codes(result)
+    assert "eia_area_items" not in codes(result) and "indicative_capacity" not in codes(result)
 
 
 def test_geometry_repair_caveat(tmp_path):
@@ -373,24 +378,334 @@ def test_kpkt_flag_levels_and_order(tmp_path):
     assert codes(result).index("kpkt_class_iv") < codes(result).index("kpkt_class_ii")
     assert "steep_for_ground_pv" in by_code and "high_relief" in by_code
     assert "all_class_i" not in by_code
-    assert any(f["title"] == "Geotechnical slope assessment" for f in result["followups"])
+    titles = [f["title"] for f in result["followups"]]
+    assert "Geotechnical investigation and slope stability analysis" in titles
+    assert "Geotechnical slope assessment" not in titles
 
 
-def test_elevated_terrain_flag(tmp_path):
-    result, _ = screen(tmp_path, polygon_pm("Highland", rect(LON, LAT, 300, 300)),
-                       plane_fetcher(2.0, base=flags.ELEVATED_TERRAIN_M + 50))
-    f = next(f for f in result["flags"] if f["code"] == "elevated_terrain")
-    assert f["level"] == "caution" and "local planning authority" in f["detail"]
+@pytest.fixture
+def in_state(monkeypatch):
+    """Make the boundary lookup return `state` (DOSM spelling) for every point."""
+    def set_state(state, district="Test district"):
+        monkeypatch.setattr(boundaries, "lookup", lambda lon, lat: (state, district))
+    return set_state
 
 
+def flag(result, code):
+    return next(f for f in result["flags"] if f["code"] == code)
+
+
+def built(result):
+    """Attach flags/follow-ups/caveats to a hand-made result dict, as run_screening does."""
+    result["flags"] = flags.build_flags(result)
+    result["followups"] = flags.build_followups(result)
+    result["caveats"] = flags.build_caveats(result)
+    return result
+
+
+def bins(**kw):
+    """Slope bins from keyword shares (b0_2=..., b5_10=..., b25_35=..., gt35=...); rest in 0-2."""
+    names = {"b0_2": "0-2", "b2_5": "2-5", "b5_10": "5-10", "b10_15": "10-15",
+             "b15_25": "15-25", "b25_35": "25-35", "gt35": ">35"}
+    out = {v: 0.0 for v in names.values()}
+    for k, v in kw.items():
+        out[names[k]] = float(v)
+    out["0-2"] = 100.0 - sum(v for k, v in out.items() if k != "0-2")
+    return out
+
+
+# --- hill and highland guideline: slope classes --------------------------------
+@pytest.mark.parametrize("slope_deg, code, level, constraint", [
+    (20.0, "kpkt_class_ii", "caution", "moderate"),
+    (30.0, "kpkt_class_iii", "warning", "high"),
+    (40.0, "kpkt_class_iv", "warning", "extreme"),
+])
+def test_kpkt_class_flags_are_slope_based(tmp_path, slope_deg, code, level, constraint):
+    result, _ = screen(tmp_path, polygon_pm("P", rect(LON, LAT, 300, 300)), plane_fetcher(slope_deg))
+    f = flag(result, code)
+    assert f["level"] == level and "slope-based" in f["title"]
+    assert "slope-based indication" in f["detail"] and "geotechnical condition" in f["detail"]
+    assert f"{constraint} geotechnical constraint" in f["detail"]
+    assert "solar farm is not among the uses" in f["detail"] or code == "kpkt_class_iv"
+    assert f["source"] == flags.SRC_GPP_CLASSES and "Jadual 1" in f["source"]
+    assert "all_class_i" not in codes(result)
+    if code == "kpkt_class_iv":
+        assert "exemption" in f["detail"] and "(10% or more)" in f["detail"]
+        assert "national importance" in f["detail"] and "does not say whether a solar farm" in f["detail"]
+
+
+def test_kpkt_class_iv_small_share_points_to_exemption_route():
+    f = next(f for f in flags.build_flags(result_with([site_result(bins=bins(b15_25=20, gt35=4))]))
+             if f["code"] == "kpkt_class_iv")
+    assert "4.0% of its area (under 10%)" in f["detail"] and "less than 10%" in f["detail"]
+
+
+def test_kpkt_threshold_is_more_than_half_a_percent():
+    at = flags.build_flags(result_with([site_result(bins=bins(b15_25=0.5))]))
+    above = flags.build_flags(result_with([site_result(bins=bins(b15_25=0.6))]))
+    assert "kpkt_class_ii" not in [f["code"] for f in at] and "all_class_i" in [f["code"] for f in at]
+    assert "kpkt_class_ii" in [f["code"] for f in above] and "all_class_i" not in [f["code"] for f in above]
+
+
+def test_all_class_i_wording_and_schemes():
+    flat = [site_result()]
+    f = next(f for f in flags.build_flags(result_with(flat)) if f["code"] == "all_class_i")
+    assert f["level"] == "info" and "slope-based indication" in f["detail"]
+    assert "ex-mining" in f["detail"] and "flood threat" in f["detail"]
+    assert "all_class_i" not in [f["code"] for f in flags.build_flags(result_with(flat, scheme="fpv"))]
+    assert "all_class_i" in [f["code"] for f in flags.build_flags(result_with(flat, scheme="rooftop"))]
+
+
+def test_guideline_reports_trigger_and_wording():
+    lowland = flags.build_flags(result_with([site_result()]))
+    assert "guideline_reports" not in [f["code"] for f in lowland]
+    sloped = next(f for f in flags.build_flags(result_with([site_result(bins=bins(b15_25=3))]))
+                  if f["code"] == "guideline_reports")
+    assert sloped["level"] == "info" and "15° or steeper" in sloped["detail"]
+    for words in ("geotechnical investigation and slope stability analysis",
+                  "geological and geomorphological mapping", "Board of Geologists",
+                  "drainage report under MSMA", "registered with JPS", "DOE-registered EIA consultant",
+                  "50 hectares", "detailed EIA", "earthworks plan", "registered with BEM"):
+        assert words in sloped["detail"], words
+    high = next(f for f in flags.build_flags(result_with([site_result(elev_min=150, elev_max=160)]))
+                if f["code"] == "guideline_reports")
+    assert "150 m or more" in high["detail"] and "15° or steeper" not in high["detail"]
+    sabah = next(f for f in flags.build_flags(result_with([site_result(bins=bins(b15_25=3))], state="Sabah"))
+                 if f["code"] == "guideline_reports")
+    assert "JPBD Semenanjung Malaysia" in sabah["detail"] and "in Sabah" in sabah["detail"]
+
+
+# --- elevation bands -------------------------------------------------------------
+@pytest.mark.parametrize("base, code, level", [
+    (140.0, None, None),
+    (200.0, "hill_land_band", "caution"),
+    (450.0, "highland_band", "warning"),
+    (1200.0, "mountain_band", "warning"),
+])
+def test_elevation_bands(tmp_path, base, code, level):
+    result, _ = screen(tmp_path, polygon_pm("Lot", rect(LON, LAT, 300, 300)), plane_fetcher(0.0, base=base))
+    bands = [c for c in codes(result) if c.endswith("_band")]
+    assert bands == ([code] if code else [])
+    if not code:
+        return
+    f = flag(result, code)
+    assert f["level"] == level and f"up to {base:,.0f} m" in f["detail"]
+    assert "guideline_reports" in codes(result)
+    if code == "hill_land_band":
+        assert "Tanah Bukit" in f["detail"] and "KSAS Level 3" in f["detail"]
+        assert "controlled development" in f["detail"]
+    else:
+        assert "Special Management Areas" in f["detail"] and "Bukit Fraser" in f["detail"]
+        assert "First Schedule item 5(a)" in f["detail"] and "P.U. (A) 195/2015" in f["source"]
+    if code == "highland_band":
+        assert "Tanah Tinggi" in f["detail"] and "eco-tourism" in f["detail"]
+        assert "a solar farm is not a listed use" in f["detail"]
+    if code == "mountain_band":
+        assert "Gunung" in f["detail"] and "national importance" in f["detail"]
+    titles = [x["title"] for x in result["followups"]]
+    assert "Confirm EIA applicability with a DOE-registered EIA consultant" in titles
+
+
+def test_band_uses_each_sites_highest_point():
+    sites = [site_result("Low", elev_min=100, elev_max=180), site_result("High", elev_min=250, elev_max=320)]
+    out = {f["code"]: f for f in flags.build_flags(result_with(sites))}
+    assert "“Low”: up to 180 m (lowest 100 m)" in out["hill_land_band"]["detail"]
+    assert "“High”" not in out["hill_land_band"]["detail"]
+    assert "“High”: up to 320 m" in out["highland_band"]["detail"]
+
+
+# --- EIA Order 2015 ---------------------------------------------------------------
+def test_eia_slope_item13_schedules(tmp_path):
+    result, _ = screen(tmp_path, polygon_pm("Steep", rect(LON, LAT, 300, 300)), plane_fetcher(30.0))
+    f = flag(result, "eia_slope_item13")
+    assert f["level"] == "warning" and "100.0% of its area" in f["detail"]
+    assert "which points to Second Schedule item 13(a)" in f["detail"]
+    assert "public display and public comment" in f["detail"] and "understates" in f["detail"]
+    assert "P.U. (A) 195/2015" in f["source"]
+    part = next(f for f in flags.build_flags(result_with([site_result(bins=bins(b25_35=12))]))
+                if f["code"] == "eia_slope_item13")
+    assert "12.0% of its area (under 50%, which points to First Schedule item 13)" in part["detail"]
+    none = flags.build_flags(result_with([site_result(bins=bins(b25_35=0.5, gt35=5))]))
+    assert "eia_slope_item13" not in [f["code"] for f in none]
+
+
+def test_eia_route_35(tmp_path):
+    west, east = (LON, LAT), offset(LON, LAT, 600, 0)
+    steep, _ = screen(tmp_path / "a", line_pm("Haul road", [west, east]), plane_fetcher(36.0),
+                      settings=make_settings(tmp_path))
+    f = flag(steep, "eia_route_35")
+    assert f["level"] == "warning" and "Second Schedule (item 13(b))" in f["detail"]
+    assert "If an access road is built along this route" in f["detail"]
+    assert f["source"] == flags.SRC_EIA_ROUTE
+    gentler, _ = screen(tmp_path / "b", line_pm("Haul road", [west, east]), plane_fetcher(34.0),
+                        settings=make_settings(tmp_path))
+    assert "eia_route_35" not in codes(gentler)
+    assert flags.EIA_ROUTE_GRADE_PCT == pytest.approx(70.02, abs=0.01)
+
+
+def test_eia_area_items_replace_eia_check():
+    f = next(f for f in flags.build_flags(result_with([site_result(area_ha=61.86)]))
+             if f["code"] == "eia_area_items")
+    assert "eia_check" not in [x["code"] for x in flags.build_flags(result_with([site_result()]))]
+    assert f["level"] == "info" and "not listed among the power-generation items" in f["detail"]
+    for item in ("First Schedule 5(a)", "Second Schedule 5(a)", "First Schedule 5(d)",
+                 "Second Schedule 5(f)", "Second Schedule 3(b)", "First Schedule 17",
+                 "not settled", "61.86 ha", "DOE-registered EIA consultant"):
+        assert item in f["detail"], item
+    unknown = next(f for f in flags.build_flags(result_with([site_result()], state=None))
+                   if f["code"] == "eia_area_items")
+    assert "could not be identified" in unknown["detail"]
+
+
+def test_sabah_and_sarawak_use_the_limited_scope_branch(tmp_path, in_state):
+    in_state("Sabah", "Ranau")
+    body = (polygon_pm("Hill", rect(LON, LAT, 300, 300))
+            + line_pm("Road", [offset(LON, LAT, -100, 150), offset(LON, LAT, 400, 150)]))
+    result, _ = screen(tmp_path, body, plane_fetcher(36.0, base=400.0))
+    c = codes(result)
+    assert result["location"]["state"] == "Sabah"
+    assert "eia_slope_item13" not in c and "eia_route_35" not in c
+    regime = flag(result, "eia_slope_state_regime")
+    assert regime["level"] == "info" and "do not apply in Sabah" in regime["title"]
+    assert "“Road”" in regime["detail"] and "state authority" in regime["detail"]
+    area = flag(result, "eia_area_items")
+    assert "limited scope in Sabah" in area["title"] and "First Schedule 5(a)" not in area["detail"]
+    assert "forest-conversion items (5)" in area["detail"] and area["source"] == flags.SRC_EIA_SCOPE
+    high = flag(result, "highland_band")
+    assert "5(a)" not in high["detail"] and "Special Management Areas" not in high["detail"]
+    sarawak = flags.build_flags(result_with([site_result(bins=bins(b25_35=5))], state="Sarawak"))
+    assert "eia_slope_state_regime" in [f["code"] for f in sarawak]
+    assert "eia_slope_item13" not in [f["code"] for f in sarawak]
+
+
+# --- Act 133 and state rules ----------------------------------------------------------
+def test_sdba_geotech_needs_steep_share_and_relief():
+    def run(**kw):
+        return {f["code"]: f for f in flags.build_flags(result_with([site_result(**kw)]))}
+    hit = run(bins=bins(b25_35=1.0), relief=12.0)["sdba_geotech"]
+    assert hit["level"] == "caution" and "Accredited Checker" in hit["detail"]
+    assert "twenty-five degrees" in hit["detail"] and hit["source"] == flags.SRC_SDBA
+    assert "sdba_geotech" not in run(bins=bins(b25_35=1.0), relief=9.0)
+    assert "sdba_geotech" not in run(bins=bins(b25_35=0.4), relief=50.0)
+    assert "sdba_geotech" in run(bins=bins(gt35=2.0), relief=40.0)          # > 25° includes Class IV
+
+
+def test_penang_hill_rule(tmp_path, in_state):
+    in_state("Pulau Pinang", "Timur Laut")
+    high, _ = screen(tmp_path / "a", polygon_pm("Bukit", rect(LON, LAT, 300, 300)),
+                     plane_fetcher(0.0, base=100.0), settings=make_settings(tmp_path))
+    f = flag(high, "penang_hill")
+    assert f["level"] == "warning" and "up to 100 m" in f["detail"]
+    for words in ("76 m (250 ft)", "steeper than 25°", "RSNPP 2030", "24 Oct 2019", "RSNPP 2040",
+                  "9 Sep 2026", "as reported", "PLANMalaysia@Pulau Pinang", "MBPP/MBSP"):
+        assert words in f["detail"], words
+    assert "News reports" in f["source"]
+    low, _ = screen(tmp_path / "b", polygon_pm("Flat", rect(LON, LAT, 300, 300)),
+                    plane_fetcher(0.0, base=50.0), settings=make_settings(tmp_path))
+    assert "penang_hill" not in codes(low)
+    steep = flags.build_flags(result_with([site_result(elev_max=60, bins=bins(b25_35=2))],
+                                          state="Pulau Pinang"))
+    assert "2.0% of its area steeper than 25°" in next(f for f in steep if f["code"] == "penang_hill")["detail"]
+    elsewhere = flags.build_flags(result_with([site_result(elev_max=120)], state="Kedah"))
+    assert "penang_hill" not in [f["code"] for f in elsewhere]
+
+
+def test_pahang_solar_rule(tmp_path, in_state):
+    in_state("Pahang", "Bentong")
+    rolling, _ = screen(tmp_path / "a", polygon_pm("Rolling", rect(LON, LAT, 300, 300)),
+                        plane_fetcher(12.0), settings=make_settings(tmp_path))
+    f = flag(rolling, "pahang_solar_10deg")
+    assert f["level"] == "warning" and "100.0%" in f["detail"]
+    assert "melebihi 10 darjah adalah tidak sesuai" in f["detail"] and "GPP PHG 03" in f["source"]
+    assert "JTKSAS" not in f["detail"]
+    assert "industrial activity" in flag(rolling, "eia_area_items")["detail"]
+    steep, _ = screen(tmp_path / "b", polygon_pm("Steep", rect(LON, LAT, 300, 300)),
+                      plane_fetcher(30.0), settings=make_settings(tmp_path))
+    g = flag(steep, "pahang_solar_10deg")
+    assert "JTKSAS" in g["detail"] and "25° or steeper" in g["detail"] and "(Pahang) 2019" in g["source"]
+    high = next(f for f in flags.build_flags(result_with(
+        [site_result(elev_min=280, elev_max=320, bins=bins(b10_15=20))], state="Pahang"))
+        if f["code"] == "pahang_solar_10deg")
+    assert "reaches 300 m or more" in high["detail"] and "JTKSAS" in high["detail"]
+    gentle, _ = screen(tmp_path / "c", polygon_pm("Gentle", rect(LON, LAT, 300, 300)),
+                       plane_fetcher(5.0), settings=make_settings(tmp_path))
+    assert "pahang_solar_10deg" not in codes(gentle)
+
+
+# --- ground-mounted PV slope context and capacity ------------------------------------------
+@pytest.mark.parametrize("slope_deg, level", [(12.0, "caution"), (7.0, "info"), (4.0, None)])
+def test_steep_for_ground_pv_levels(tmp_path, slope_deg, level):
+    result, _ = screen(tmp_path, polygon_pm("Lot", rect(LON, LAT, 300, 300)), plane_fetcher(slope_deg))
+    site = result["sites"][0]
+    expect_15 = 100.0 if slope_deg > flags.PV_SLOPE_TRACKER_DEG else 0.0
+    expect_10 = 100.0 if slope_deg > flags.PV_SLOPE_FIXED_DEG else 0.0
+    assert site["steeper_than_grade_pct"] == {"10": expect_10, "15": expect_15}
+    if level is None:
+        assert "steep_for_ground_pv" not in codes(result)
+        return
+    f = flag(result, "steep_for_ground_pv")
+    assert f["level"] == level
+    assert f"“Lot”: {expect_15:.0f}% and {expect_10:.0f}%" in f["detail"]
+    assert "estimated from the slope bands" not in f["detail"]              # exact shares used
+    for words in ("IFC", "no numeric limit", "DuraTrack HZ v3", "Vanguard 1P", "FixOrigin",
+                  "NREL", "do not show whether any product suits this site"):
+        assert words in f["detail"], words
+    assert "s.6.3.4" in f["source"]
+
+
+def test_steep_for_ground_pv_skipped_for_fpv_and_rooftop():
+    sites = [site_result(bins=bins(b10_15=50))]
+    for scheme in ("fpv", "rooftop"):
+        assert "steep_for_ground_pv" not in [f["code"] for f in flags.build_flags(result_with(sites, scheme=scheme))]
+    assert "steep_for_ground_pv" in [f["code"] for f in flags.build_flags(result_with(sites, scheme=None))]
+
+
+def test_share_steeper_interpolates_within_a_bin():
+    site = site_result(bins=bins(b5_10=50))
+    assert flags.share_steeper(site, 10.0) == pytest.approx(0.0)
+    assert flags.share_steeper(site, 5.0) == pytest.approx(50.0)
+    assert flags.share_steeper(site, 8.5) == pytest.approx(50.0 * 1.5 / 5.0)
+    assert flags.grade_share(site, 15) == (pytest.approx(50.0 * (10 - flags.PV_SLOPE_TRACKER_DEG) / 5), False)
+    site["steeper_than_grade_pct"] = {"10": 40.0, "15": 12.0}
+    assert flags.grade_share(site, 15) == (12.0, True)
+    assert flags.share_steeper({"slope_bins_pct": {}}, 8.5) is None
+
+
+def test_indicative_capacity_math():
+    def cap(sites, **kw):
+        return next((f for f in flags.build_flags(result_with(sites, **kw)) if f["code"] == "indicative_capacity"), None)
+    f = cap([site_result(area_ha=12.0, grades={"10": 40.0, "15": 25.0})])
+    # 12 ha / 1.2..0.8 ha per MWp = 10..15 MWp; flatter than 8.5°: 9 ha -> 7.5..11.2 MWp
+    assert "12.00 ha gives about 10–15 MWp" in f["detail"]
+    assert "the 9.0 ha flatter than about 8.5°" in f["detail"] and "7.5–11.2 MWp" in f["detail"]
+    for words in ("gross", "setbacks", "access roads", "drainage reserves", "shading", "grid limits",
+                  "Thailand and Indonesia", "pitch"):
+        assert words in f["detail"], words
+    assert f["level"] == "info" and "Table 7" in f["source"]
+    # Two sites, one estimated from the bins (5-10° band split linearly).
+    two = cap([site_result("A", area_ha=40.0, grades={"10": 0.0, "15": 0.0}),
+               site_result("B", area_ha=20.0, bins=bins(b5_10=50))])
+    flat_b = 20.0 * (1 - 0.5 * (10 - flags.PV_SLOPE_TRACKER_DEG) / 5)
+    assert f"the {40 + flat_b:,.1f} ha flatter" in two["detail"] and "estimated from the slope bands" in two["detail"]
+    assert "50–75 MWp" in two["detail"]
+    flat = cap([site_result(area_ha=42.16, grades={"10": 0.0, "15": 0.0})])
+    assert "35–53 MWp; on the DEM all of it is flatter than about 8.5°" in flat["detail"]
+    assert cap([site_result(area_ha=0.9)]) is None
+    assert cap([site_result()], scheme="fpv") is None and cap([site_result()], scheme="rooftop") is None
+    assert cap([site_result()], scheme=None) is not None and cap([site_result()], scheme="cress") is not None
+
+
+# --- FPV ---------------------------------------------------------------------------------
 def test_fpv_flags(tmp_path):
     flat, _ = screen(tmp_path / "flat", polygon_pm("Pond", rect(LON, LAT, 400, 400)),
                      plane_fetcher(0.0, base=31.0), settings=make_settings(tmp_path), scheme="fpv")
     assert "fpv_dem_epoch" in codes(flat) and "fpv_land_inside" not in codes(flat)
     assert "all_class_i" not in codes(flat) and "steep_for_ground_pv" not in codes(flat)
+    assert "indicative_capacity" not in codes(flat)
     titles = [f["title"] for f in flat["followups"]]
     fpv_only = {"Bathymetric survey", "Seasonal water-level records", "Bund geotechnical assessment"}
     assert fpv_only <= set(titles)
+    assert "flattened" not in flag(flat, "fpv_dem_epoch")["detail"]       # synthetic DEM, not Copernicus
 
     hilly, _ = screen(tmp_path / "hilly", polygon_pm("Pond", rect(LON, LAT, 400, 400)),
                       plane_fetcher(8.0), settings=make_settings(tmp_path), scheme="fpv")
@@ -402,32 +717,105 @@ def test_fpv_flags(tmp_path):
     assert not [c for c in codes(lss) if c.startswith("fpv")]
     assert "Bathymetric survey" not in [f["title"] for f in lss["followups"]]
 
-
-def test_eia_flag_never_quotes_a_threshold(tmp_path):
-    result, _ = screen(tmp_path, polygon_pm("S", rect(LON, LAT, 300, 300)), plane_fetcher(1.0))
-    eia = next(f for f in result["flags"] if f["code"] == "eia_check")
-    numbers = [w for w in eia["detail"].replace(",", " ").split() if w.replace(".", "").isdigit()]
-    assert numbers == [f"{result['totals']['total_area_ha']:.2f}", "2015"]
+    cop = next(f for f in flags.build_flags(result_with([site_result()], scheme="fpv"))
+               if f["code"] == "fpv_dem_epoch")
+    assert "flattened during editing" in cop["detail"] and "says nothing about depth" in cop["detail"]
 
 
+# --- builders ----------------------------------------------------------------------------
 def test_flag_thresholds_from_numbers_only():
     """Rules read numbers, never names: identical numbers, different names -> same codes."""
-    base = {"meta": {"scheme": "lss"}, "dem": {"name": "X", "epoch": "2000", "nodata_pct": 0.0},
-            "totals": {"total_area_ha": 10.0}, "routes": []}
-    site = {"kpkt_pct": {"I": 100.0, "II": 0.0, "III": 0.0, "IV": 0.0},
-            "slope_bins_pct": {"0-2": 100.0, "2-5": 0.0, "5-10": 0.0, "10-15": 0.0, "15-25": 0.0,
-                               "25-35": 0.0, ">35": 0.0},
-            "relief_m": 3.0, "elev_max_m": 20.0, "slope_p90_deg": 1.0, "cells": 400}
-    a = flags.build_flags({**base, "sites": [{**site, "name": "pond FPV steep Class IV hill"}]})
-    b = flags.build_flags({**base, "sites": [{**site, "name": "Lot 7"}]})
-    assert [f["code"] for f in a] == [f["code"] for f in b] == ["all_class_i", "eia_check"]
+    base = result_with([])
+    site = site_result(elev_max=20.0, relief=3.0, area_ha=10.0)
+    a = flags.build_flags({**base, "totals": {"total_area_ha": 10.0},
+                           "sites": [{**site, "name": "pond FPV steep Class IV hill Penang"}]})
+    b = flags.build_flags({**base, "totals": {"total_area_ha": 10.0}, "sites": [{**site, "name": "Lot 7"}]})
+    assert [f["code"] for f in a] == [f["code"] for f in b] == [
+        "all_class_i", "indicative_capacity", "eia_area_items"]
+
+
+def test_every_flag_cites_an_instrument_where_it_states_a_rule():
+    sites = [site_result("Hill", elev_min=200, elev_max=1100, bins=bins(b10_15=20, b15_25=20, b25_35=20, gt35=5))]
+    for state in ("Selangor", "Pulau Pinang", "Pahang", "Sabah"):
+        out = flags.build_flags(result_with(sites, state=state, routes=[route_result(max_grade_pct=80)]))
+        for f in out:
+            if f["code"] not in {"route_grade", "small_site", "dem_nodata", "fpv_land_inside", "fpv_dem_epoch"}:
+                assert f["source"], f["code"]
+            assert "'" not in f["title"] and '"' not in f["title"] and "&" not in f["title"]
+
+
+def test_followups_align_with_flags():
+    plain = {f["title"] for f in flags.build_followups(built(result_with([site_result()])))}
+    assert {"Licensed topographic survey", "Geological map review (JMG)",
+            "Rainfall and climate data (MET Malaysia)", "Surrounding land-use scan (1 / 5 / 10 km)",
+            "Land title, zoning and local authority requirements",
+            "Confirm EIA applicability with a DOE-registered EIA consultant"} <= plain
+    assert "Geotechnical investigation and slope stability analysis" not in plain
+    steep = built(result_with([site_result(bins=bins(b15_25=20, b25_35=10), relief=40)]))
+    fu = {f["title"]: f["detail"] for f in steep["followups"]}
+    for title in ("Geotechnical investigation and slope stability analysis",
+                  "Geological and geomorphological mapping", "Drainage report to MSMA", "Earthworks plan"):
+        assert title in fu, title
+    assert "Accredited Checker" in fu["Geotechnical investigation and slope stability analysis"]
+    assert "Board of Geologists" in fu["Geological and geomorphological mapping"]
+    assert "Act 458" in fu["Licensed topographic survey"]
+    no_eia = built(result_with([]))
+    assert "Confirm EIA applicability with a DOE-registered EIA consultant" not in {
+        f["title"] for f in no_eia["followups"]}
+
+
+def test_caveats_by_provider():
+    cop = flags.build_caveats(result_with([site_result()]))
+    text = " ".join(cop)
+    for words in ("Act 458", "not for planning applications", "vegetation and buildings were not removed",
+                  "Water bodies were flattened", "better than 4 m", "better than 2 m on slopes up to 20%",
+                  "26.55 m", "+12.09 m", "Hawker et al. 2022", "Environ. Res. Lett. 17 024016",
+                  "38 GNSS benchmarks", "2.45 m", "ASPRS", "twice the 90% vertical error",
+                  "never draws them finer than 5 m", "understated", "1–7°N", "s.6.3.4", "DOSM",
+                  "not legal advice"):
+        assert words in text, words
+    assert "OpenTopoData" not in text
+    otd = " ".join(flags.build_caveats(result_with([site_result()], provider="opentopodata")))
+    assert "Hawker" not in otd and "Farr et al. 2007" in otd and "OpenTopoData public API" in otd
+    tif = {**result_with([site_result()], provider="geotiff")}
+    tif["dem"] = {**tif["dem"], "model_type": "DTM (bare earth)"}
+    tif_text = " ".join(flags.build_caveats(tif))
+    assert "Elevation model type: DTM (bare earth)" in tif_text and "ASPRS" not in tif_text
 
 
 def test_figure_stamp():
-    stamp = flags.figure_stamp({"name": "Copernicus DEM GLO-30",
-                                "epoch": "2011–2015 (TanDEM-X acquisitions)"})
+    stamp = flags.figure_stamp({"provider": "copernicus", "name": "Copernicus DEM GLO-30",
+                                "epoch": dem.COPERNICUS_EPOCH})
     assert stamp == ("Desktop screening — not a survey · DEM: Copernicus DEM GLO-30 "
-                     "(2011–2015, TanDEM-X acquisitions) · EcoEnergy Consultancy")
+                     "(December 2010 – January 2015, TanDEM-X acquisitions) · EcoEnergy Consultancy\n"
+                     "Copernicus WorldDEM-30 © DLR/Airbus, provided under COPERNICUS by EU & ESA")
+    srtm = flags.figure_stamp({"provider": "opentopodata", "name": dem.SRTM_NAME, "epoch": dem.SRTM_EPOCH})
+    assert "\n" not in srtm and "11–22 February 2000" in srtm
+
+
+def test_figure_footer_fits_on_the_narrowest_figure():
+    """Both stamp lines fit inside a 7.5 in wide figure at the footer font size."""
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    from app.terrain import figures
+
+    stamp = flags.figure_stamp({"provider": "copernicus", "name": dem.COPERNICUS_NAME,
+                                "epoch": dem.COPERNICUS_EPOCH})
+    fig = Figure(figsize=(7.5, 5.9), dpi=figures.DPI)
+    canvas = FigureCanvasAgg(fig)
+    for line in stamp.split("\n"):
+        t = fig.text(0.01, 0.0, line, fontsize=figures.FOOTER_FONT_PT)
+        assert t.get_window_extent(canvas.get_renderer()).x1 < fig.bbox.width
+
+
+def test_summary_md_prints_dem_disclaimer(tmp_path):
+    result, out = screen(tmp_path, polygon_pm("Lot", rect(LON, LAT, 300, 300)), plane_fetcher(2.0))
+    assert dem.COPERNICUS_DISCLAIMER not in (out / "summary.md").read_text(encoding="utf-8")
+    result["dem"]["disclaimer"] = dem.COPERNICUS_DISCLAIMER
+    md = render_summary_md(result)
+    assert "The organisations in charge of the Copernicus programme" in md
+    assert "Department of Statistics Malaysia" in md
 
 
 # ---------------------------------------------------------------------------
@@ -452,10 +840,16 @@ def test_utm_epsg(lon, lat, epsg):
 
 
 @pytest.mark.parametrize("lon, lat, state, district", [
+    (100.3555, 6.0423, "Kedah", "Kota Setar"),            # Kedah fixture (Lot A paddy)
     (100.37, 6.05, "Kedah", "Kota Setar"),
-    (101.90, 3.52, "Pahang", "Bentong"),
-    (101.08, 4.53, "Perak", "Kinta"),
+    (101.9037, 3.5071, "Pahang", "Bentong"),              # Pahang fixture
+    (101.0577, 4.5477, "Perak", "Kinta"),                 # Perak FPV fixture
+    (101.6869, 2.9358, "W.P. Putrajaya", "W.P. Putrajaya"),
+    (110.35, 1.55, "Sarawak", "Kuching"),
     (116.07, 5.98, "Sabah", "Kota Kinabalu"),
+    (100.33, 5.41, "Pulau Pinang", "Timur Laut"),
+    (102.25, 2.20, "Melaka", "Melaka Tengah"),
+    (101.69, 3.14, "W.P. Kuala Lumpur", "W.P. Kuala Lumpur"),
 ])
 def test_boundary_lookup(lon, lat, state, district):
     assert boundaries.lookup(lon, lat) == (state, district)
@@ -463,8 +857,31 @@ def test_boundary_lookup(lon, lat, state, district):
 
 def test_boundary_lookup_offshore():
     assert boundaries.lookup(104.5, 2.0) == (None, None)          # South China Sea
-    near = boundaries.lookup(100.355, 6.20)                       # ~1–2 km off the Kedah coast
-    assert near[0] == "Kedah"
+    # About 2.3 km off the Kedah coast: no polygon contains it, the nearest is within 5 km.
+    pt = boundaries.Point(100.30, 6.05)
+    assert not len(boundaries._load().tree.query(pt, predicate="intersects"))
+    assert boundaries.lookup(100.30, 6.05) == ("Kedah", "Kota Setar")
+    assert boundaries.lookup(100.26, 6.05) == (None, None)        # about 5.7 km offshore
+
+
+def test_boundary_data_is_dosm_and_repaired():
+    layer = boundaries._load()
+    assert len(layer.geoms) == 160
+    assert all(g.is_valid and g.geom_type in ("Polygon", "MultiPolygon") for g in layer.geoms)
+    states = {s for s, _ in layer.names}
+    assert len(states) == 16 and {"Pulau Pinang", "Melaka", "W.P. Kuala Lumpur", "W.P. Labuan",
+                                  "W.P. Putrajaya", "Sabah", "Sarawak", "Pahang"} <= states
+    assert boundaries.DISTRICTS_PATH.name == "dosm_administrative_2_district.geojson"
+    assert not list(boundaries.BOUNDARY_DIR.glob("geoBoundaries*"))
+    attribution = boundaries.BOUNDARY_ATTRIBUTION
+    assert "Department of Statistics Malaysia (DOSM)" in attribution
+    assert "DOSM Open Data Licence" in attribution and "No endorsement by DOSM is implied." in attribution
+
+
+def test_boundary_lookup_degrades_without_data(monkeypatch, tmp_path):
+    monkeypatch.setattr(boundaries, "_districts", None)
+    monkeypatch.setattr(boundaries, "DISTRICTS_PATH", tmp_path / "missing.geojson")
+    assert boundaries.lookup(101.5, 3.5) == (None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -538,6 +955,10 @@ def test_copernicus_mosaic_across_tiles_with_missing_tile(tmp_path):
     g = dem.fetch_copernicus(bbox, s)
     g.validate()
     assert g.info["provider"] == "copernicus" and g.info["vertical_datum"] == "EGM2008"
+    assert g.info["epoch"] == "December 2010 – January 2015 (TanDEM-X acquisitions)"
+    assert g.info["attribution"].startswith("Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014")
+    assert g.info["disclaimer"] == dem.COPERNICUS_DISCLAIMER
+    assert g.info["sends_coordinates_to_third_party"] is False
     LONS, LATS = np.meshgrid(g.lons, g.lats)
     ne = (LONS >= 101.0) & (LATS > 4.0)
     assert np.isnan(g.z[ne]).all()
@@ -597,6 +1018,7 @@ def test_geotiff_provider(tmp_path):
     finite = np.isfinite(g.z)
     assert np.allclose(g.z[finite], expected[finite], atol=1e-3)
     assert (~finite).sum() == 25                                  # nodata block -> NaN
+    assert g.info["sends_coordinates_to_third_party"] is False and g.info["disclaimer"] is None
 
 
 def test_geotiff_outside_raster_has_no_coverage(tmp_path):
@@ -656,7 +1078,8 @@ def test_opentopodata_batches_throttles_and_retries(tmp_path):
     assert sleeps.count(dem.OTD_RETRY_WAIT_S) == 1
     assert sleeps.count(dem.OTD_CALL_INTERVAL_S) == batches - 1
     assert np.all(g.z == 12.5)
-    assert g.info["epoch"] == "February 2000" and g.info["vertical_datum"] == "EGM96"
+    assert g.info["epoch"] == "11–22 February 2000" and g.info["vertical_datum"] == "EGM96"
+    assert g.info["sends_coordinates_to_third_party"] is True and g.info["disclaimer"] is None
 
 
 def test_opentopodata_null_elevations_become_nan(tmp_path):
@@ -697,10 +1120,37 @@ def test_copernicus_on_kedah_fixture(tmp_path):
     result = run_screening(FIXTURES / "flat_site_kedah.kml", out, s,
                            {"report_id": "net", "scheme": "lss", "input_filename": "flat_site_kedah.kml"})
     assert result["dem"]["provider"] == "copernicus"
-    assert result["location"]["state"] == "Kedah"
+    assert result["dem"]["disclaimer"] == dem.COPERNICUS_DISCLAIMER
+    assert result["dem"]["sends_coordinates_to_third_party"] is False
+    assert result["location"] == {**result["location"], "state": "Kedah", "district": "Kota Setar"}
+    assert {"all_class_i", "indicative_capacity", "eia_area_items", "route_grade"} <= set(codes(result))
     site = result["sites"][0]
     assert -5 < site["elev_min_m"] <= site["elev_max_m"] < 30          # coastal paddy plain
     assert site["kpkt_pct"]["I"] > 95 and site["cells"] > 300
     assert result["routes"][0]["length_km"] == pytest.approx(2.03, abs=0.02)
     assert all((out / f).stat().st_size > 20_000 for f in FIGURE_FILES)
     _strict_json(out / "result.json")
+
+
+@pytest.mark.parametrize("provider", ["copernicus", "opentopodata"])
+def test_figure_footer_does_not_overlap_axis_labels(provider):
+    """The layout keeps the axis label above the (one- or two-line) footer stamp, also with a
+    colour bar and an equal-aspect map, as on the elevation figure."""
+    from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import Normalize
+
+    from app.terrain import figures
+
+    stamp = flags.figure_stamp({"provider": provider, "name": "DEM", "epoch": "2000"})
+    fig = figures._new_figure((10.3, 7.0))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_aspect("equal")
+    ax.set_xlim(0, 1.5)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Easting (km)", fontsize=8.5)
+    fig.colorbar(ScalarMappable(norm=Normalize(0, 1), cmap=figures.ELEV_CMAP), ax=ax, extend="both")
+    figures._footer(fig, stamp)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    footer_top = max(t.get_window_extent(renderer).y1 for t in fig.texts)
+    assert ax.xaxis.label.get_window_extent(renderer).y0 > footer_top + 5      # pixels

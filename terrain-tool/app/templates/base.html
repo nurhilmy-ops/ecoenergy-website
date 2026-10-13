@@ -17,7 +17,7 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
-  <div class="wrap nav">
+  <div class="wrap nav{% if admin %} wrap-wide{% endif %}">
     <div class="brand-row">
       <a class="brand" href="{{ settings.site_url }}" aria-label="EcoEnergy Consultancy home">
         <img src="/static/logo-mark.svg" alt="" width="32" height="32">
@@ -43,7 +43,7 @@
 </header>
 
 <main id="main" tabindex="-1">
-  <div class="wrap">
+  <div class="wrap{% if admin %} wrap-wide{% endif %}">
     {% if flash %}
     <div class="alert alert-{{ flash[0] }}" role="status">{{ flash[1] }}</div>
     {% endif %}
@@ -52,7 +52,7 @@
 </main>
 
 <footer class="site-footer">
-  <div class="wrap">
+  <div class="wrap{% if admin %} wrap-wide{% endif %}">
     <p>© {{ year }} EcoEnergy Consultancy Sdn. Bhd.</p>
     <p>Desktop screening — not a survey</p>
     <div class="foot-links">

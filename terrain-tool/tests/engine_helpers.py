@@ -124,3 +124,49 @@ def plane_fetcher(slope_deg: float, base: float = 50.0, direction: str = "east",
     if direction == "east":
         return function_fetcher(lambda LON, LAT, X, Y: base + t * X, **kw)
     return function_fetcher(lambda LON, LAT, X, Y: base + t * Y, **kw)
+
+
+# ---------------------------------------------------------------------------
+# result dicts for flag unit tests (no DEM, no geometry)
+# ---------------------------------------------------------------------------
+FLAT_BINS = {"0-2": 100.0, "2-5": 0.0, "5-10": 0.0, "10-15": 0.0, "15-25": 0.0,
+             "25-35": 0.0, ">35": 0.0}
+
+
+def site_result(name: str = "Lot 1", *, bins: dict | None = None, elev_min: float = 10.0,
+                elev_max: float = 20.0, area_ha: float = 30.0, relief: float | None = None,
+                grades: dict | None = None, cells: int = 400) -> dict:
+    """A result.json site entry; KPKT shares are summed from the slope bins."""
+    b = dict(FLAT_BINS if bins is None else bins)
+    site = {
+        "name": name, "area_ha": area_ha, "elev_min_m": elev_min, "elev_max_m": elev_max,
+        "relief_m": elev_max - elev_min if relief is None else relief,
+        "slope_p90_deg": 1.0, "cells": cells, "slope_bins_pct": b,
+        "kpkt_pct": {"I": b["0-2"] + b["2-5"] + b["5-10"] + b["10-15"], "II": b["15-25"],
+                     "III": b["25-35"], "IV": b[">35"]},
+    }
+    if grades is not None:
+        site["steeper_than_grade_pct"] = grades
+    return site
+
+
+def result_with(sites: list[dict], *, state: str | None = "Selangor", scheme: str | None = "lss",
+                routes: list[dict] | None = None, provider: str = "copernicus") -> dict:
+    """A minimal result dict that flags.build_flags / build_followups / build_caveats accept."""
+    return {
+        "meta": {"scheme": scheme},
+        "dem": {"provider": provider, "name": "Copernicus DEM GLO-30",
+                "model_type": "DSM (surface model: includes tree canopy and buildings)",
+                "epoch": "December 2010 – January 2015 (TanDEM-X acquisitions)",
+                "vertical_datum": "EGM2008", "nominal_resolution_m": 30, "grid_spacing_m": 30.7,
+                "nodata_pct": 0.0, "sends_coordinates_to_third_party": provider == "opentopodata"},
+        "location": {"state": state, "district": None, "utm_epsg": "EPSG:32647"},
+        "totals": {"total_area_ha": round(sum(s["area_ha"] for s in sites), 2)},
+        "sites": sites, "routes": routes or [], "contour_interval_m": 5.0,
+        "kpkt_overall_pct": {"I": 100.0, "II": 0.0, "III": 0.0, "IV": 0.0},
+    }
+
+
+def route_result(name: str = "Access", max_grade_pct: float = 5.0) -> dict:
+    return {"name": name, "length_km": 1.0, "elev_min_m": 10.0, "elev_max_m": 50.0,
+            "total_ascent_m": 40.0, "max_grade_pct": max_grade_pct}

@@ -180,6 +180,19 @@
   <div class="actions"><a class="btn" href="{{ consult_link }}">Book a free consult</a></div>
 </section>
 
+<section class="section" id="followup" aria-labelledby="followup-title">
+  <h2 id="followup-title" class="h3">Follow-up about this site</h2>
+  <div class="card followup-card">
+    <p class="state">
+      {% if job.followup_consent %}<span class="yes">Allowed.</span> EcoEnergy staff may email you about this site.
+      <small lang="ms">Dibenarkan. Kakitangan EcoEnergy boleh menghubungi anda melalui e-mel berkenaan tapak ini.</small>
+      {% else %}<span class="no">Not allowed.</span> EcoEnergy staff will not contact you about this site.
+      <small lang="ms">Tidak dibenarkan. Kakitangan EcoEnergy tidak akan menghubungi anda berkenaan tapak ini.</small>{% endif %}
+    </p>
+    {% with back=None, compact=False %}{% include "_followup_form.html" %}{% endwith %}
+  </div>
+</section>
+
 <section class="section" aria-labelledby="data-title">
   <h2 id="data-title" class="h3">Data and attribution</h2>
   <dl class="dl small">
@@ -190,9 +203,17 @@
     {% if result.contour_interval_m %}<dt>Contours</dt><dd>{{ result.contour_interval_m|num(1) }} m interval</dd>{% endif %}
     {% if loc.utm_epsg %}<dt>Projection</dt><dd>{{ loc.utm_epsg }}</dd>{% endif %}
     {% if dem.attribution %}<dt>DEM</dt><dd>{{ dem.attribution }}</dd>{% endif %}
+    {# dem.disclaimer and dem.sends_coordinates_to_third_party arrived after schema_version 1
+       was first written; .get() keeps older result.json files rendering. #}
+    {% if dem.get('disclaimer') %}<dt>DEM notice</dt><dd>{{ dem.get('disclaimer') }}</dd>{% endif %}
     {% if loc.boundary_attribution %}<dt>Boundaries</dt><dd>{{ loc.boundary_attribution }}</dd>{% endif %}
     <dt>Report ID</dt><dd><code>{{ job.id }}</code></dd>
   </dl>
+  {% if dem.get('sends_coordinates_to_third_party') %}
+  <p class="data-note">To read elevations for this report, your site's coordinates were sent to an external
+    elevation service ({{ dem.get('name') or dem.get('provider') or 'see above' }}). Your email address and
+    other details about you were not sent.</p>
+  {% endif %}
 </section>
 
 <section class="section narrow" aria-label="Delete report">

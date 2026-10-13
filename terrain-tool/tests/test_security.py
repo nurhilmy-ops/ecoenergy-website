@@ -11,6 +11,7 @@ import pytest
 from app import jobs, security
 from app.db import db, iso, utcnow
 from app.mailer import newsletter_headers
+from conftest import rows as rows_for
 from app.security import (
     InvalidEmail, client_ip, is_disposable, make_unsubscribe_token, normalise_email, origin_of,
     redact_query, safe_next_path, sha256_hex, verify_unsubscribe_token,
@@ -425,37 +426,83 @@ def test_admin_auth_and_pages(flow, make_flow, settings):
     assert flow.client.get("/admin/", headers=basic("root", settings.admin_password)).status_code == 401
     auth = basic(settings.admin_user, settings.admin_password)
 
-    # Data: one subscribed lead from LinkedIn with a done job and a formula-like note,
-    # one unverified visitor from Threads.
+    # Data: one subscribed lead from LinkedIn with two screenings — one with staff follow-up
+    # ticked and a formula-like note, one without — and one unverified visitor from Threads.
     flow.request_link("lead@example.com", newsletter=True, utm_source="linkedin", utm_medium="social")
     flow.confirm(flow.latest_token("lead@example.com"))
-    flow.upload_job(scheme="cress", stage="exploring", notes="=HYPERLINK(\"http://x\")", site_label="Lot 7")
+    flow.upload_job(scheme="cress", stage="exploring", notes="=HYPERLINK(\"http://x\")", site_label="Lot 7",
+                    followup="yes")
+    jobs.run_once(settings)
+    flow.upload_job(scheme="lss", site_label="Quiet parcel")
     jobs.run_once(settings)
     make_flow().request_link("lurker@example.com", utm_source="threads")
 
     overview = flow.client.get("/admin/", headers=auth)
     assert overview.status_code == 200 and "Channel performance" in overview.text
     assert "linkedin" in overview.text and "threads" in overview.text
+    assert "Follow-up allowed" in overview.text
     subs = flow.client.get("/admin/subscribers", headers=auth)
     assert subs.status_code == 200 and "lead@example.com" in subs.text and "lurker@example.com" in subs.text
     assert "Channel performance" in subs.text
     leads = flow.client.get("/admin/leads", headers=auth)
     assert leads.status_code == 200 and "lead@example.com" in leads.text and "lurker@example.com" not in leads.text
     assert "CRESS" in leads.text and "Selangor" in leads.text
+    # One row per screening, each with a clear Follow-up yes/no; "Do not contact" on the no.
+    body = leads.text[leads.text.index("<tbody>"):]
+    assert body.count("<tr>") == 2
+    assert body.count('<span class="yes">Yes</span>') == 1
+    assert body.count('<span class="no">No</span>') == 1 and body.count("Do not contact") == 1
+    assert "contains only screenings whose follow-up consent is currently granted" in leads.text
 
     news_csv = flow.client.get("/admin/export/newsletter.csv", headers=auth)
     assert news_csv.status_code == 200 and "attachment" in news_csv.headers["content-disposition"]
-    news_rows = list(csv.DictReader(io.StringIO(news_csv.text.lstrip("﻿"))))
+    news_rows = list(csv.DictReader(io.StringIO(news_csv.text.lstrip("\ufeff"))))
     assert [r["email"] for r in news_rows] == ["lead@example.com"]
     assert news_rows[0]["unsubscribe_url"].startswith("http://testserver/unsubscribe?u=")
 
+    # The leads CSV carries only the screening with follow-up granted.
     leads_csv = flow.client.get("/admin/export/leads.csv", headers=auth)
-    lead_rows = list(csv.DictReader(io.StringIO(leads_csv.text.lstrip("﻿"))))
+    lead_rows = list(csv.DictReader(io.StringIO(leads_csv.text.lstrip("\ufeff"))))
     assert len(lead_rows) == 1
     row = lead_rows[0]
     assert row["email"] == "lead@example.com" and row["scheme"] == "cress" and row["state"] == "Selangor"
+    assert row["site_label"] == "Lot 7" and row["followup_granted_at"]
+    assert row["followup_notice_version"] == settings.notice_version
     assert row["total_area_ha"] == "123.4" and row["kpkt_class1_pct"] == "96.5"
     assert row["notes"].startswith("'=")                     # CSV formula injection neutralised
+
+    # Withdrawing follow-up removes the screening from the CSV at once; the newsletter CSV is
+    # unaffected (separate consent).
+    job_id = rows_for(settings, "SELECT id FROM jobs WHERE followup_consent = 1")[0]["id"]
+    flow.client.post(f"/reports/{job_id}/followup", data={"csrf": flow.csrf(), "action": "withdraw"})
+    leads_csv = flow.client.get("/admin/export/leads.csv", headers=auth)
+    assert list(csv.DictReader(io.StringIO(leads_csv.text.lstrip("\ufeff")))) == []
+    news_csv = flow.client.get("/admin/export/newsletter.csv", headers=auth)
+    assert len(list(csv.DictReader(io.StringIO(news_csv.text.lstrip("\ufeff"))))) == 1
+    leads = flow.client.get("/admin/leads", headers=auth)
+    assert leads.text.count("Do not contact") >= 2
+
+
+def test_admin_leads_csv_skips_unverified_deleted_and_legacy_bundled_consent(flow, settings):
+    """A screening whose report was deleted, or whose only follow-up record is the old bundled
+    account-level grant (job_id NULL, before consent was unbundled), is not exported."""
+    auth = basic(settings.admin_user, settings.admin_password)
+    flow.login("legacy@example.com")
+    kept = flow.upload_job(followup="yes")
+    deleted = flow.upload_job(followup="yes")
+    legacy = flow.upload_job()
+    jobs.run_once(settings)
+    flow.client.post(f"/reports/{deleted}/delete", data={"csrf": flow.csrf()})
+    with db(settings.db_path) as conn:
+        sub_id = conn.execute("SELECT id FROM subscribers").fetchone()["id"]
+        conn.execute("INSERT INTO consents (subscriber_id, purpose, action, notice_version, wording, created_at) "
+                     "VALUES (?, 'site_followup', 'granted', '2026-10-draft-1', 'old bundled wording', '2026-10-01')",
+                     (sub_id,))
+    leads_csv = flow.client.get("/admin/export/leads.csv", headers=auth)
+    lead_rows = list(csv.DictReader(io.StringIO(leads_csv.text.lstrip("\ufeff"))))
+    assert len(lead_rows) == 1
+    assert rows_for(settings, "SELECT followup_consent FROM jobs WHERE id = ?", (kept,))[0]["followup_consent"] == 1
+    assert rows_for(settings, "SELECT followup_consent FROM jobs WHERE id = ?", (legacy,))[0]["followup_consent"] == 0
 
 
 def test_admin_brute_force_lockout(app_factory):

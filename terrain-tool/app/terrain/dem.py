@@ -41,12 +41,26 @@ NO_COVERAGE_MESSAGE = (
 # --- Copernicus DEM GLO-30 (strings kept here so they can be corrected in one place) ---
 COPERNICUS_NAME = "Copernicus DEM GLO-30"
 COPERNICUS_MODEL_TYPE = "DSM (surface model: includes tree canopy and buildings)"
-COPERNICUS_EPOCH = "2011–2015 (TanDEM-X acquisitions)"
+# Copernicus DEM Product Handbook (GEO1988-CopernicusDEM-SPE-002, issue 5.0) s.2.1: the
+# TanDEM-X / WorldDEM source data were acquired between December 2010 and January 2015.
+COPERNICUS_EPOCH = "December 2010 – January 2015 (TanDEM-X acquisitions)"
 COPERNICUS_VERTICAL_DATUM = "EGM2008"
 COPERNICUS_NOMINAL_RES_M = 30
+# Licence for the use of the Copernicus WorldDEM-30 (COP-DEM-GLO-30-F), Art. 6(b): the
+# notice required where the data have been adapted or modified (our slopes, maps and
+# contours are adaptations). Kept verbatim.
 COPERNICUS_ATTRIBUTION = (
-    "Copernicus DEM GLO-30 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH "
-    "2014–2018, provided under COPERNICUS by the European Union and ESA; all rights reserved.")
+    "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and "
+    "Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all "
+    "rights reserved.")
+# Same licence, Art. 6(c): sentence that must appear in a licence or legal notice when the
+# data (modified or not) are communicated to the public. Kept verbatim.
+COPERNICUS_DISCLAIMER = (
+    "The organisations in charge of the Copernicus programme by law or by delegation do not "
+    "incur any liability for any use of the Copernicus WorldDEM-30.")
+# Short credit for the figure footers (the full Art. 6(b) notice is in every report).
+COPERNICUS_STAMP_CREDIT = (
+    "Copernicus WorldDEM-30 © DLR/Airbus, provided under COPERNICUS by EU & ESA")
 # Posts per degree (1 arc-second). Holds for tiles between 50°S and 50°N, i.e. all of Malaysia.
 COPERNICUS_POSTS_PER_DEG = 3600
 COPERNICUS_GDAL_ENV = dict(
@@ -60,7 +74,9 @@ COPERNICUS_GDAL_ENV = dict(
 # --- SRTM via OpenTopoData ---
 SRTM_NAME = "SRTM 1 arc-second (via OpenTopoData)"
 SRTM_MODEL_TYPE = "DSM-like radar surface model (C-band: partly includes tree canopy and buildings)"
-SRTM_EPOCH = "February 2000"
+# USGS EROS: SRTM flew on Space Shuttle Endeavour (STS-99), 11-22 February 2000.
+SRTM_EPOCH = "11–22 February 2000"
+# SRTM v3 User Guide (LP DAAC): heights in metres referenced to the WGS84/EGM96 geoid.
 SRTM_VERTICAL_DATUM = "EGM96"
 SRTM_NOMINAL_RES_M = 30
 SRTM_ATTRIBUTION = ("SRTM 1 arc-second Global elevation data courtesy of NASA/USGS; "
@@ -79,6 +95,12 @@ GEOTIFF_EPOCH = "unknown"
 GEOTIFF_VERTICAL_DATUM = "unknown"
 GEOTIFF_ATTRIBUTION = "Elevation data supplied by the operator."
 
+# Whether exact site coordinates leave the server to reach the DEM. OpenTopoData is sent
+# the analysis grid points (site coordinates) over HTTPS. The Copernicus provider only
+# requests 1°×1° tile files / byte ranges by tile name from AWS S3, and the geotiff
+# provider reads a local file, so neither discloses the site itself.
+SENDS_COORDINATES = {"copernicus": False, "opentopodata": True, "geotiff": False}
+
 
 @dataclass
 class DemGrid:
@@ -86,7 +108,8 @@ class DemGrid:
     lats: np.ndarray          # 1-D, ascending, cell centres (degrees)
     z: np.ndarray             # 2-D float64 [lat, lon]; NaN = no data
     info: dict                # provider, name, model_type, epoch, vertical_datum,
-                              # nominal_resolution_m, attribution
+                              # nominal_resolution_m, attribution; optional: disclaimer
+                              # (str|None), sends_coordinates_to_third_party (bool)
 
     def validate(self) -> None:
         """Raise ValueError if the grid is not a regular ascending lon/lat grid."""
@@ -236,6 +259,8 @@ def fetch_copernicus(bbox: Bbox, settings: Settings) -> DemGrid:
         "vertical_datum": COPERNICUS_VERTICAL_DATUM,
         "nominal_resolution_m": COPERNICUS_NOMINAL_RES_M,
         "attribution": COPERNICUS_ATTRIBUTION,
+        "disclaimer": COPERNICUS_DISCLAIMER,
+        "sends_coordinates_to_third_party": SENDS_COORDINATES["copernicus"],
     })
 
 
@@ -321,6 +346,8 @@ def fetch_opentopodata(bbox: Bbox, settings: Settings, *, session=None,
         "vertical_datum": SRTM_VERTICAL_DATUM,
         "nominal_resolution_m": SRTM_NOMINAL_RES_M,
         "attribution": SRTM_ATTRIBUTION,
+        "disclaimer": None,
+        "sends_coordinates_to_third_party": SENDS_COORDINATES["opentopodata"],
     })
 
 
@@ -374,6 +401,8 @@ def fetch_geotiff(bbox: Bbox, settings: Settings) -> DemGrid:
         "vertical_datum": GEOTIFF_VERTICAL_DATUM,
         "nominal_resolution_m": max(1, round(res_m)),
         "attribution": GEOTIFF_ATTRIBUTION,
+        "disclaimer": None,
+        "sends_coordinates_to_third_party": SENDS_COORDINATES["geotiff"],
     }
     info.update(settings.extra.get("dem_geotiff_info", {}) if settings.extra else {})
     return DemGrid(lons=lons, lats=lats, z=z, info=info)

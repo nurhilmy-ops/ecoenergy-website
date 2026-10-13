@@ -191,5 +191,8 @@ def render_summary_md(result: dict) -> str:
     for f in result["figures"]:
         lines += [f"### {_md(f['title'])}", "", f"![{_md(f['title'])}]({f['file']})", "",
                   _md(f["caption"]), ""]
-    lines += ["---", "", f"{_md(d['attribution'])}  ", f"{_md(loc['boundary_attribution'])}", ""]
+    lines += ["---", "", f"{_md(d['attribution'])}  "]
+    if d.get("disclaimer"):
+        lines.append(f"{_md(d['disclaimer'])}  ")
+    lines += [f"{_md(loc['boundary_attribution'])}", ""]
     return "\n".join(lines)

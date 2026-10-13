@@ -15,7 +15,9 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
     volumes:
-      - ./data:/app/data
+      # Named volume: created with the image's /app/data ownership, so the non-root app user
+      # can write to it on Linux hosts too. `docker compose down -v` deletes it.
+      - terrain-data:/app/data
     depends_on:
       - mailpit
 
@@ -24,3 +26,6 @@ services:
     ports:
       - "8025:8025"   # web inbox
       - "1025:1025"   # SMTP
+
+volumes:
+  terrain-data:

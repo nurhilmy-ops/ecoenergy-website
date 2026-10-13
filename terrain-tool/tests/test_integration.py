@@ -34,12 +34,14 @@ TOP_KEYS = {"schema_version", "meta", "dem", "location", "totals", "sites", "kpk
 META_KEYS = {"report_id", "generated_at", "site_label", "scheme", "stage", "input_filename",
              "input_sha256"}
 DEM_KEYS = {"provider", "name", "model_type", "epoch", "vertical_datum", "nominal_resolution_m",
-            "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution"}
+            "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution",
+            # added to schema_version 1 later (templates read them with .get())
+            "disclaimer", "sends_coordinates_to_third_party"}
 LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg", "boundary_attribution"}
 TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km"}
 SITE_KEYS = {"name", "area_ha", "perimeter_m", "centroid", "elev_min_m", "elev_max_m", "elev_mean_m",
              "relief_m", "slope_mean_deg", "slope_p90_deg", "slope_max_deg", "kpkt_pct",
-             "slope_bins_pct", "cells"}
+             "slope_bins_pct", "steeper_than_grade_pct", "cells"}
 ROUTE_KEYS = {"name", "length_km", "elev_min_m", "elev_max_m", "total_ascent_m", "max_grade_pct"}
 POINT_KEYS = {"name", "lon", "lat", "elev_m"}
 KPKT = ("I", "II", "III", "IV")
@@ -99,6 +101,8 @@ def check_contract(result: dict) -> None:
     assert result["schema_version"] == 1
     assert set(result["meta"]) == META_KEYS
     assert set(result["dem"]) == DEM_KEYS
+    assert result["dem"]["disclaimer"] is None or isinstance(result["dem"]["disclaimer"], str)
+    assert isinstance(result["dem"]["sends_coordinates_to_third_party"], bool)
     assert set(result["location"]) == LOCATION_KEYS
     assert set(result["totals"]) == TOTALS_KEYS
     for site in result["sites"]:
@@ -107,6 +111,8 @@ def check_contract(result: dict) -> None:
         assert tuple(site["slope_bins_pct"]) == BINS
         assert sum(site["kpkt_pct"].values()) == pytest.approx(100, abs=0.5)
         assert sum(site["slope_bins_pct"].values()) == pytest.approx(100, abs=0.5)
+        assert tuple(site["steeper_than_grade_pct"]) == ("10", "15")
+        assert site["steeper_than_grade_pct"]["10"] >= site["steeper_than_grade_pct"]["15"]
     for route in result["routes"]:
         assert set(route) == ROUTE_KEYS
     for point in result["points"]:
@@ -147,7 +153,9 @@ def test_real_pipeline_through_http(tmp_path, real_app):
     assert result["meta"]["report_id"] == job_id
     assert result["meta"]["scheme"] == "lss" and result["meta"]["site_label"] == "Plane test"
     assert result["dem"]["provider"] == "geotiff"
+    assert result["dem"]["sends_coordinates_to_third_party"] is False     # a local file
     assert result["location"]["state"] == "Kedah"
+    assert "DOSM" in result["location"]["boundary_attribution"]
     # Geometry comes from the KML and does not depend on the DEM.
     assert result["totals"]["total_area_ha"] == pytest.approx(42.16, abs=0.3)
     assert result["routes"][0]["length_km"] == pytest.approx(2.03, abs=0.03)
@@ -161,6 +169,9 @@ def test_real_pipeline_through_http(tmp_path, real_app):
     page = flow.client.get(f"/reports/{job_id}")
     assert page.status_code == 200
     assert "Lot A paddy" in page.text and "Plane test" in page.text
+    assert "Department of Statistics Malaysia (DOSM)" in page.text
+    assert "coordinates were sent" not in page.text
+    assert "Not allowed." in page.text                  # follow-up box was left unticked
     assert next(f["title"] for f in result["flags"] if f["code"] == "kpkt_class_ii") in page.text
     for name in FIGURES:
         assert f"/reports/{job_id}/files/{name}" in page.text

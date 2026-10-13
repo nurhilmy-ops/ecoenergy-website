@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import sqlite3
 import threading
 import time
 from datetime import timedelta
@@ -52,15 +53,22 @@ def input_path(settings: Settings, job_id: str) -> Path | None:
 
 def enqueue_job(settings: Settings, job_id: str, subscriber_id: int, *, input_filename: str,
                 input_sha256: str, site_label: str | None = None, scheme: str | None = None,
-                stage: str | None = None, notes: str | None = None) -> None:
-    """Insert a queued job; the input file must already be at {jobs_dir}/{job_id}/input.*"""
-    with db(settings.db_path) as conn:
-        conn.execute(
-            "INSERT INTO jobs (id, subscriber_id, status, created_at, delete_after, input_filename, "
-            "input_sha256, site_label, scheme, stage, notes) VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)",
-            (job_id, subscriber_id, now_iso(), iso_in(days=settings.retention_days), input_filename,
-             input_sha256, site_label, scheme, stage, notes),
-        )
+                stage: str | None = None, notes: str | None = None, followup_consent: bool = False,
+                conn: sqlite3.Connection | None = None) -> None:
+    """Insert a queued job; the input file must already be at {jobs_dir}/{job_id}/input.*
+
+    Pass ``conn`` to insert inside the caller's transaction (the upload handler writes the
+    job and its follow-up consent row atomically)."""
+    sql = ("INSERT INTO jobs (id, subscriber_id, status, created_at, delete_after, input_filename, "
+           "input_sha256, site_label, scheme, stage, notes, followup_consent) "
+           "VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    params = (job_id, subscriber_id, now_iso(), iso_in(days=settings.retention_days), input_filename,
+              input_sha256, site_label, scheme, stage, notes, 1 if followup_consent else 0)
+    if conn is not None:
+        conn.execute(sql, params)
+        return
+    with db(settings.db_path) as own:
+        own.execute(sql, params)
 
 
 def claim_next(settings: Settings) -> dict | None:
@@ -209,11 +217,15 @@ def run_once(settings: Settings) -> bool:
 
 
 def delete_job_data(settings: Settings, job_id: str) -> None:
-    """Remove a job's files and site-derived fields; the row stays as status 'deleted'."""
+    """Remove a job's files and site-derived fields; the row stays as status 'deleted'.
+
+    Follow-up about the site ends with it (``followup_consent`` back to 0): there is no
+    site left to talk about, and a deleted report has no control to change the choice."""
     shutil.rmtree(job_dir(settings, job_id), ignore_errors=True)
     nulls = ", ".join(f"{f} = NULL" for f in SITE_DATA_FIELDS)
     with db(settings.db_path) as conn:
-        conn.execute(f"UPDATE jobs SET status = 'deleted', {nulls} WHERE id = ?", (job_id,))
+        conn.execute(f"UPDATE jobs SET status = 'deleted', followup_consent = 0, {nulls} WHERE id = ?",
+                     (job_id,))
 
 
 def sweep(settings: Settings) -> dict[str, int]:

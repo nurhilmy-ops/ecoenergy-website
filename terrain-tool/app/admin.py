@@ -82,24 +82,37 @@ FROM subscribers s
 ORDER BY s.created_at DESC, s.id DESC
 """
 
-# One row per verified subscriber with at least one job, describing their latest job.
-LEADS_SQL = """
+# One row per live (not deleted) screening by a verified subscriber, newest first. Staff
+# follow-up is a per-report opt-in (jobs.followup_consent); followup_since is when the
+# current choice was recorded in the consent ledger.
+LEADS_BASE_SQL = """
 SELECT s.id AS subscriber_id, s.email, s.newsletter_status, s.utm_source, s.utm_medium, s.utm_campaign,
-       j.created_at AS latest_job_at, j.status AS latest_job_status, j.scheme, j.stage, j.site_label,
+       j.created_at AS job_created_at, j.status AS job_status, j.followup_consent,
+       j.scheme, j.stage, j.site_label,
        j.state, j.district, j.total_area_ha, j.kpkt_class1_pct, j.centroid_lat, j.centroid_lon, j.notes,
-       (SELECT COUNT(*) FROM jobs x WHERE x.subscriber_id = s.id) AS jobs_count
-FROM subscribers s
-JOIN jobs j ON j.id = (SELECT id FROM jobs WHERE subscriber_id = s.id ORDER BY created_at DESC, id DESC LIMIT 1)
-WHERE s.verified_at IS NOT NULL
-ORDER BY j.created_at DESC
+       (SELECT c.created_at FROM consents c
+         WHERE c.job_id = j.id AND c.purpose = 'site_followup' ORDER BY c.id DESC LIMIT 1) AS followup_since,
+       (SELECT c.notice_version FROM consents c
+         WHERE c.job_id = j.id AND c.purpose = 'site_followup' ORDER BY c.id DESC LIMIT 1)
+         AS followup_notice_version,
+       (SELECT COUNT(*) FROM jobs x WHERE x.subscriber_id = s.id AND x.status != 'deleted') AS jobs_count
+FROM jobs j
+JOIN subscribers s ON s.id = j.subscriber_id
+WHERE s.verified_at IS NOT NULL AND j.status != 'deleted' {extra}
+ORDER BY j.created_at DESC, j.id DESC
 """
+LEADS_SQL = LEADS_BASE_SQL.format(extra="")
+# The CSV handed to staff for outreach: ONLY screenings whose follow-up consent is granted now.
+LEADS_EXPORT_SQL = LEADS_BASE_SQL.format(extra="AND j.followup_consent = 1")
 
 CHANNELS_SQL = """
 SELECT COALESCE(NULLIF(s.utm_source, ''), '(none)') AS source,
        COUNT(*) AS subscribers,
        SUM(CASE WHEN s.verified_at IS NOT NULL THEN 1 ELSE 0 END) AS verified,
        SUM(CASE WHEN EXISTS (SELECT 1 FROM jobs j WHERE j.subscriber_id = s.id) THEN 1 ELSE 0 END) AS with_jobs,
-       SUM(CASE WHEN s.newsletter_status = 'subscribed' THEN 1 ELSE 0 END) AS newsletter
+       SUM(CASE WHEN s.newsletter_status = 'subscribed' THEN 1 ELSE 0 END) AS newsletter,
+       SUM(CASE WHEN EXISTS (SELECT 1 FROM jobs j WHERE j.subscriber_id = s.id AND j.status != 'deleted'
+                              AND j.followup_consent = 1) THEN 1 ELSE 0 END) AS followup
 FROM subscribers s
 GROUP BY source
 ORDER BY subscribers DESC, source
@@ -133,7 +146,8 @@ def _rows(settings: Settings, sql: str) -> list[dict]:
 def overview(request: Request):
     settings = _settings(request)
     channels = _rows(settings, CHANNELS_SQL)
-    totals = {k: sum(c[k] or 0 for c in channels) for k in ("subscribers", "verified", "with_jobs", "newsletter")}
+    totals = {k: sum(c[k] or 0 for c in channels)
+              for k in ("subscribers", "verified", "with_jobs", "followup", "newsletter")}
     return _render(request, "admin/overview.html", channels=channels, totals=totals)
 
 
@@ -191,16 +205,18 @@ def export_newsletter(request: Request):
 
 @router.get("/export/leads.csv")
 def export_leads(request: Request):
-    rows = _rows(_settings(request), LEADS_SQL)
+    """Screenings whose staff follow-up consent is currently granted, and nothing else."""
+    rows = _rows(_settings(request), LEADS_EXPORT_SQL)
     stamp = now_iso()[:10]
     return _csv_response(
-        f"leads-{stamp}.csv",
-        ["email", "latest_job_at", "latest_job_status", "jobs_count", "scheme", "stage", "site_label",
-         "state", "district", "total_area_ha", "kpkt_class1_pct", "centroid_lat", "centroid_lon", "notes",
-         "newsletter_status", "utm_source", "utm_medium", "utm_campaign"],
-        [[r["email"], r["latest_job_at"], r["latest_job_status"], r["jobs_count"], r["scheme"], r["stage"],
-          r["site_label"], r["state"], r["district"], r["total_area_ha"], r["kpkt_class1_pct"],
-          r["centroid_lat"], r["centroid_lon"], r["notes"], r["newsletter_status"], r["utm_source"],
-          r["utm_medium"], r["utm_campaign"]] for r in rows],
+        f"leads-followup-{stamp}.csv",
+        ["email", "job_created_at", "job_status", "followup_granted_at", "followup_notice_version",
+         "scheme", "stage", "site_label", "state", "district", "total_area_ha", "kpkt_class1_pct",
+         "centroid_lat", "centroid_lon", "notes", "newsletter_status", "utm_source", "utm_medium",
+         "utm_campaign"],
+        [[r["email"], r["job_created_at"], r["job_status"], r["followup_since"], r["followup_notice_version"],
+          r["scheme"], r["stage"], r["site_label"], r["state"], r["district"], r["total_area_ha"],
+          r["kpkt_class1_pct"], r["centroid_lat"], r["centroid_lon"], r["notes"], r["newsletter_status"],
+          r["utm_source"], r["utm_medium"], r["utm_campaign"]] for r in rows],
     )
 

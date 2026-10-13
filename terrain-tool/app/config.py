@@ -46,10 +46,10 @@ class Settings:
     trust_proxy_headers: bool = False           # honour X-Forwarded-For for client IP
 
     # --- notice / consent ---
-    notice_version: str = "2026-10-draft-1"     # bump whenever the privacy notice text changes
+    notice_version: str = "2026-10-draft-2"     # bump whenever the privacy notice text changes
 
     # --- email ---
-    mail_backend: str = "outbox"                # outbox (dev: stored in db, shown at /dev/outbox) | smtp
+    mail_backend: str = "outbox"                # outbox (dev: stored in db, shown at /dev/outbox) | smtp | ses
     mail_from: str = "EcoEnergy Consultancy <no-reply@ecoconsultancy.services>"
     mail_reply_to: str = "contact@ecoconsultancy.services"
     smtp_host: str = "localhost"
@@ -57,6 +57,7 @@ class Settings:
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_starttls: bool = False
+    ses_region: str = "ap-southeast-5"          # MAIL_BACKEND=ses: SES API region (Malaysia has no SES SMTP endpoint)
 
     # --- magic links & sessions ---
     token_ttl_hours: int = 72
@@ -95,8 +96,8 @@ class Settings:
     worker_poll_seconds: float = 1.0
 
     # --- admin ---
-    admin_user: str = ""
-    admin_password: str = ""                    # admin pages disabled while empty
+    admin_user: str = "admin"                   # HTTP Basic user for /admin
+    admin_password: str = ""                    # admin pages disabled (404) while empty
 
     # --- links ---
     consult_url: str = "https://www.ecoconsultancy.services/consult/"

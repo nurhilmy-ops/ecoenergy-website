@@ -19,7 +19,7 @@ from shapely.geometry import LineString, Polygon
 from shapely.geometry.polygon import orient
 
 from ..config import Settings
-from .dem import NO_COVERAGE_MESSAGE, DemGrid
+from .dem import NO_COVERAGE_MESSAGE, SENDS_COORDINATES, DemGrid
 from .kml import Feature, ScreeningError, SiteInput, feature_geometry
 
 GEOD = Geod(ellps="WGS84")
@@ -31,6 +31,12 @@ KPKT_EDGES_DEG = (0.0, 15.0, 25.0, 35.0, math.inf)
 SLOPE_BINS = (("0-2", 0.0, 2.0), ("2-5", 2.0, 5.0), ("5-10", 5.0, 10.0),
               ("10-15", 10.0, 15.0), ("15-25", 15.0, 25.0), ("25-35", 25.0, 35.0),
               (">35", 35.0, math.inf))
+# Share of each site steeper than these grades (percent rise over run), reported as
+# "steeper_than_grade_pct": {"10": ..., "15": ...}. Used by app.terrain.flags for
+# ground-mounted PV context: 15% is the standard N-S tolerance in two single-axis tracker
+# datasheets, 10% the standard condition of one fixed-tilt structure and NREL's 2024
+# Reference-scenario exclusion. 10% = 5.71°, 15% = 8.53°.
+GRADE_SHARE_PCT = (10, 15)
 
 # Analysis frame = features bbox + max(150 m, 10% of extent): enough context for the
 # maps and keeps the slope at site edges free of grid-edge effects.
@@ -64,6 +70,7 @@ class SiteStats:
     slope_max: float
     kpkt_pct: dict[str, float]
     bins_pct: dict[str, float]
+    grade_pct: dict[str, float] = field(default_factory=dict)   # % steeper than GRADE_SHARE_PCT
 
     @property
     def relief(self) -> float:
@@ -180,6 +187,13 @@ def _class_pct(slopes: np.ndarray, edges) -> list[float]:
             for lo, hi in zip(edges[:-1], edges[1:])]
 
 
+def _steeper_pct(slopes: np.ndarray, deg: float) -> float:
+    s = slopes[np.isfinite(slopes)]
+    if s.size == 0:
+        return math.nan
+    return 100.0 * float(np.count_nonzero(s > deg)) / s.size
+
+
 def _fill_nearest(z: np.ndarray) -> np.ndarray:
     nan = np.isnan(z)
     if not nan.any():
@@ -267,7 +281,9 @@ def _site_stats(f: Feature, dem: DemGrid, slope: np.ndarray, slope_filled: np.nd
         name=f.name, polygon=poly, area_ha=abs(area) / 1e4, perimeter_m=abs(perim),
         centroid=(c.x, c.y), cells=cells, small=cells < SMALL_SITE_MIN_CELLS,
         elev_min=emin, elev_max=emax, elev_mean=emean,
-        slope_mean=smean, slope_p90=sp90, slope_max=smax, kpkt_pct=kpkt, bins_pct=bins)
+        slope_mean=smean, slope_p90=sp90, slope_max=smax, kpkt_pct=kpkt, bins_pct=bins,
+        grade_pct={str(g): _steeper_pct(slopes, math.degrees(math.atan(g / 100.0)))
+                   for g in GRADE_SHARE_PCT})
     return stats, mask
 
 
@@ -449,6 +465,12 @@ def result_sections(an: Analysis) -> dict:
             "cells_analysed": an.cells,
             "nodata_pct": num(an.nodata_pct, 1),
             "attribution": info["attribution"],
+            # Licence notice that must accompany the data (Copernicus Art. 6(c)); null if none.
+            "disclaimer": info.get("disclaimer") or None,
+            # True when exact site coordinates were sent to an outside service (OpenTopoData).
+            "sends_coordinates_to_third_party": bool(info.get(
+                "sends_coordinates_to_third_party",
+                SENDS_COORDINATES.get(info["provider"], False))),
         },
         "location": {
             "centroid_lon": num(an.centroid[0], 6),
@@ -479,6 +501,7 @@ def result_sections(an: Analysis) -> dict:
             "slope_max_deg": num(s.slope_max, 1),
             "kpkt_pct": _pct_dict(s.kpkt_pct),
             "slope_bins_pct": _pct_dict(s.bins_pct),
+            "steeper_than_grade_pct": _pct_dict(s.grade_pct),
             "cells": s.cells,
         } for s in an.sites],
         "kpkt_overall_pct": _pct_dict(an.kpkt_overall),

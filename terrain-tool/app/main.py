@@ -75,11 +75,20 @@ MYT = timezone(timedelta(hours=8), "MYT")     # Malaysia has no daylight saving
 
 # The exact wording shown next to each consent, as (English, Bahasa Malaysia). The
 # consent ledger stores consent_wording(key), i.e. both lines exactly as displayed.
+# Each optional purpose has its own control (PDP Regulations 2013 reg 3(2)): the newsletter
+# box on the landing page, and staff follow-up per report on the upload page.
 CONSENT = {
     "service": ("Your email is required so we can send your access link and report.",
                 "E-mel anda diperlukan untuk menghantar pautan akses dan laporan anda."),
-    "site_followup": ("EcoEnergy may follow up with you about the site you submit.",
-                      "EcoEnergy mungkin menghubungi anda berkenaan tapak yang anda hantar."),
+    # Staff follow-up about one submitted site: unticked box on the upload page, stored per job.
+    "site_followup": ("EcoEnergy staff may email me about this site (optional).",
+                      "Kakitangan EcoEnergy boleh menghubungi saya melalui e-mel berkenaan tapak ini "
+                      "(pilihan)."),
+    "site_followup_on": ("Allow EcoEnergy staff to email me about this site.",
+                         "Benarkan kakitangan EcoEnergy menghubungi saya melalui e-mel berkenaan tapak ini."),
+    "site_followup_off": ("Stop EcoEnergy staff from emailing me about this site.",
+                          "Hentikan kakitangan EcoEnergy daripada menghubungi saya melalui e-mel berkenaan "
+                          "tapak ini."),
     "newsletter": ("Also send me EcoEnergy's solar policy and scheme insights by email (optional). "
                    "Unsubscribe any time.",
                    "Hantar juga kepada saya pandangan dasar dan skim solar EcoEnergy melalui e-mel "
@@ -107,6 +116,9 @@ MESSAGES = {
     "deleted": ("success", "Your report, site file and results have been deleted."),
     "newsletter_on": ("success", "You are subscribed to EcoEnergy insights. You can unsubscribe any time."),
     "newsletter_off": ("success", "You have been unsubscribed from EcoEnergy insights."),
+    "followup_on": ("success", "EcoEnergy staff may now email you about this site. You can change this "
+                               "any time."),
+    "followup_off": ("success", "EcoEnergy staff will not contact you about this site."),
 }
 
 GENERIC_UPLOAD_ERROR = ("We couldn't read that file. Please check it opens in Google Earth "
@@ -214,12 +226,14 @@ def require_csrf(session: Session | None, form: dict[str, Any]) -> None:
 
 
 def add_consent(conn, subscriber_id: int, purpose: str, action: str, wording: str,
-                notice_version: str, ip: str | None, user_agent: str | None) -> None:
+                notice_version: str, ip: str | None, user_agent: str | None,
+                job_id: str | None = None) -> None:
+    """Append one ledger row. ``job_id`` is set for per-report consents (site_followup)."""
     conn.execute(
         "INSERT INTO consents (subscriber_id, purpose, action, notice_version, wording, ip, "
-        "user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "user_agent, created_at, job_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (subscriber_id, purpose, action, notice_version, wording, ip, (user_agent or "")[:300] or None,
-         now_iso()),
+         now_iso(), job_id),
     )
 
 
@@ -357,8 +371,9 @@ def register_link_request(settings: Settings, email: str, newsletter: bool, utm:
         )
         sub = conn.execute("SELECT id, newsletter_status FROM subscribers WHERE email = ?",
                            (email,)).fetchone()
-        for purpose in ("service", "site_followup"):
-            add_consent(conn, sub["id"], purpose, "granted", consent_wording(purpose), version, ip, user_agent)
+        # Only the service itself here. Staff follow-up is a separate opt-in per report on the
+        # upload page, and the newsletter only when its own box is ticked.
+        add_consent(conn, sub["id"], "service", "granted", consent_wording("service"), version, ip, user_agent)
         if newsletter:
             add_consent(conn, sub["id"], "newsletter", "granted", consent_wording("newsletter"), version,
                         ip, user_agent)
@@ -425,17 +440,24 @@ def _start_confirm(request: Request, form: dict[str, str]) -> Response:
     return response
 
 
+# Account-level purposes confirmed by the magic link (double opt-in). Per-report consents
+# (site_followup) are given by an already verified, signed-in visitor and need no confirmation.
+EMAIL_CONFIRMED_PURPOSES = ("service", "newsletter")
+
+
 def confirm_subscriber(conn, subscriber_id: int, ip: str, user_agent: str | None) -> None:
-    """Mark the address verified and confirm every consent whose latest action is 'granted'
-    (double opt-in: a pending newsletter becomes 'subscribed' only here)."""
+    """Mark the address verified and confirm every account-level consent whose latest action
+    is 'granted' (double opt-in: a pending newsletter becomes 'subscribed' only here)."""
     sub = conn.execute("SELECT verified_at, newsletter_status FROM subscribers WHERE id = ?",
                        (subscriber_id,)).fetchone()
     if sub["verified_at"] is None:
         conn.execute("UPDATE subscribers SET verified_at = ? WHERE id = ?", (now_iso(), subscriber_id))
+    marks = ", ".join("?" for _ in EMAIL_CONFIRMED_PURPOSES)
     latest = conn.execute(
         "SELECT * FROM consents WHERE id IN "
-        "(SELECT MAX(id) FROM consents WHERE subscriber_id = ? GROUP BY purpose)",
-        (subscriber_id,),
+        "(SELECT MAX(id) FROM consents WHERE subscriber_id = ? AND job_id IS NULL "
+        f"AND purpose IN ({marks}) GROUP BY purpose)",
+        (subscriber_id, *EMAIL_CONFIRMED_PURPOSES),
     ).fetchall()
     for c in latest:
         if c["action"] == "granted":
@@ -515,6 +537,7 @@ def _upload_submit(request: Request, session: Session, form) -> Response:
         "scheme": form.get("scheme") if form.get("scheme") in SCHEMES else "",
         "stage": form.get("stage") if form.get("stage") in STAGES else "",
         "notes": clean_text(form.get("notes")),
+        "followup": form.get("followup") == "yes",      # unticked unless the visitor ticks it
     }
 
     def fail(message: str, status_code: int = 400) -> HTMLResponse:
@@ -571,10 +594,16 @@ def _upload_submit(request: Request, session: Session, form) -> Response:
             ("job_ip", ip, settings.rate_jobs_per_ip_day, 86400),
         ]):
             return fail(limit_msg, 429)
-        jobs.enqueue_job(settings, job_id, session.subscriber_id, input_filename=filename,
-                         input_sha256=sha, site_label=values["site_label"] or None,
-                         scheme=values["scheme"] or None, stage=values["stage"] or None,
-                         notes=values["notes"] or None)
+        with tx(settings.db_path) as conn:
+            jobs.enqueue_job(settings, job_id, session.subscriber_id, input_filename=filename,
+                             input_sha256=sha, site_label=values["site_label"] or None,
+                             scheme=values["scheme"] or None, stage=values["stage"] or None,
+                             notes=values["notes"] or None, followup_consent=values["followup"],
+                             conn=conn)
+            if values["followup"]:
+                add_consent(conn, session.subscriber_id, "site_followup", "granted",
+                            consent_wording("site_followup"), settings.notice_version, ip,
+                            request.headers.get("user-agent"), job_id=job_id)
         job_path = None          # committed: keep the files
     finally:
         if job_path is not None:
@@ -687,6 +716,42 @@ def _report_delete(request: Request, job_id: str, form: dict[str, str]) -> Respo
     return RedirectResponse("/reports?m=deleted", status_code=303)
 
 
+@router.post("/reports/{job_id}/followup")
+async def report_followup(request: Request, job_id: str):
+    form = await read_form(request)
+    return await run_in_threadpool(_report_followup, request, job_id, form)
+
+
+def _report_followup(request: Request, job_id: str, form: dict[str, str]) -> Response:
+    """Change staff follow-up for one report. Appends granted / withdrawn ledger rows (PDPA s.38
+    withdrawal) only when the choice actually changes, so repeated clicks add nothing."""
+    settings = settings_of(request)
+    session = current_session(request)
+    if session is None:
+        return login_redirect()
+    require_csrf(session, form)
+    action = form.get("action")
+    if action not in {"grant", "withdraw"}:
+        raise HTTPException(status_code=400)
+    if owned_job(settings, session, job_id) is None:
+        raise HTTPException(status_code=404)
+    granted = action == "grant"
+    with tx(settings.db_path) as conn:
+        cur = conn.execute(
+            "UPDATE jobs SET followup_consent = ? WHERE id = ? AND subscriber_id = ? "
+            "AND status != 'deleted' AND followup_consent != ?",
+            (int(granted), job_id, session.subscriber_id, int(granted)))
+        if cur.rowcount == 1:
+            key = "site_followup_on" if granted else "site_followup_off"
+            add_consent(conn, session.subscriber_id, "site_followup", "granted" if granted else "withdrawn",
+                        consent_wording(key), settings.notice_version, client_ip(request, settings),
+                        request.headers.get("user-agent"), job_id=job_id)
+    code = "followup_on" if granted else "followup_off"
+    if form.get("back") == "account":
+        return RedirectResponse(f"/account?m={code}#reports-title", status_code=303)
+    return RedirectResponse(f"/reports/{job_id}?m={code}#followup", status_code=303)
+
+
 # --- account -------------------------------------------------------------------
 
 
@@ -694,8 +759,10 @@ def subscriber_data(settings: Settings, subscriber_id: int) -> dict:
     with db(settings.db_path) as conn:
         sub = dict(conn.execute("SELECT * FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone())
         consents = [dict(r) for r in conn.execute(
-            "SELECT purpose, action, notice_version, wording, ip, user_agent, created_at "
-            "FROM consents WHERE subscriber_id = ? ORDER BY id", (subscriber_id,))]
+            "SELECT c.purpose, c.action, c.notice_version, c.wording, c.ip, c.user_agent, c.created_at, "
+            "c.job_id, COALESCE(j.site_label, j.input_filename) AS job_label "
+            "FROM consents c LEFT JOIN jobs j ON j.id = c.job_id "
+            "WHERE c.subscriber_id = ? ORDER BY c.id", (subscriber_id,))]
         job_rows = [dict(r) for r in conn.execute(
             "SELECT * FROM jobs WHERE subscriber_id = ? ORDER BY created_at DESC", (subscriber_id,))]
     return {"subscriber": sub, "consents": consents, "jobs": job_rows}
@@ -948,7 +1015,9 @@ def error_page(request: Request, status_code: int, headers: dict | None = None) 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    init_db(settings.db_path)
+    added = init_db(settings.db_path)
+    if added:
+        log.info("Database upgraded: added %s", ", ".join(added))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

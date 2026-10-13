@@ -36,7 +36,9 @@ NODATA_RGB = to_rgb("#C9D3DD")          # blue-grey: open sea / voids, distinct 
 
 DPI = 150
 MAP_MAX_W, MAP_MAX_H, MAP_MIN_H = 8.0, 8.6, 4.2   # inches for the map panel itself
-FOOTER_RECT = (0, 0.03, 1, 0.97)          # keep the bottom 3% for the footer stamp
+FOOTER_RECT = (0, 0.03, 1, 0.97)          # bottom 3% for the footer stamp (resized per stamp)
+FOOTER_FONT_PT = 7
+FOOTER_GAP_IN = 0.1                       # clear space between the footer and the plot decorations
 
 # Sequential ramps: one hue family, lightness monotonic (light = low/gentle, dark =
 # high/steep), adjacent steps >= 0.06 OKLCH L apart, so they read in greyscale print and
@@ -138,7 +140,13 @@ def _titles(fig: Figure, ax, title: str, subtitle: str) -> None:
 
 
 def _footer(fig: Figure, stamp: str) -> None:
-    fig.text(0.01, 0.008, _mpl(stamp), fontsize=7, color=INK_MUTED, ha="left", va="bottom")
+    """Footer stamp (one or two lines) at the bottom-left. The constrained layout is
+    confined to the area above the stamp's measured height, so axis labels never overlap it."""
+    text = fig.text(0.01, 0.008, _mpl(stamp), fontsize=FOOTER_FONT_PT, color=INK_MUTED,
+                    ha="left", va="bottom", linespacing=1.35)
+    top = text.get_window_extent(fig.canvas.get_renderer()).y1 / fig.bbox.height
+    frac = min(0.2, top + FOOTER_GAP_IN / fig.get_figheight())
+    fig.get_layout_engine().set(rect=(0, frac, 1, 1 - frac))
 
 
 def _map_axes(fig: Figure, frame: _Frame, epsg: str):
@@ -389,9 +397,9 @@ def draw_slope_classes(an: Analysis, path: Path, stamp: str) -> None:
 
     class_i = an.kpkt_overall.get("I")
     if class_i is not None and math.isfinite(class_i):
-        title = f"Slope classes — {class_i:.1f}% of site area is KPKT Class I (< 15°)"
+        title = f"Slope classes — by slope, {class_i:.1f}% of site area is KPKT Class I (< 15°)"
     else:
-        title = "Slope classes (KPKT)"
+        title = "Slope classes (KPKT, by slope only)"
     scope = ("Statistics count DEM cells inside the site boundaries only (grey: buffer)"
              if an.sites else "No site polygon supplied: slope shown for the whole frame")
     _titles(fig, ax, title, f"{scope} · grid ≈ {an.grid_spacing_m:.0f} m, short steep "

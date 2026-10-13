@@ -55,6 +55,9 @@ STAGE_LABELS = {
     "other": "Other",
 }
 
+# Labels the engine's boundary attribution may start with (the last one is the default title).
+BOUNDARY_LABELS = ("State and district boundaries:", "Administrative boundaries:")
+
 LEVELS = ("warning", "caution", "info")
 LEVEL_LABELS = {"warning": "Warning", "caution": "Caution", "info": "Information"}
 KPKT_CLASSES = ("I", "II", "III", "IV")
@@ -569,6 +572,9 @@ def _sources(result: dict) -> list[Block]:
     items: list[ListItem] = []
     if dem.get("attribution"):
         items.append(ListItem(clean(dem["attribution"], 600), title="Elevation data:"))
+    if dem.get("disclaimer"):
+        # Licence notice the DEM provider requires in a legal notice (Copernicus Art. 6(c)).
+        items.append(ListItem(clean(dem["disclaimer"], 600), title="Elevation data notice:"))
     model = [clean(dem.get("name"), 200) or DASH]
     for key, fmt in (("model_type", "{}"), ("epoch", "acquired {}"),
                      ("vertical_datum", "vertical datum {}")):
@@ -581,8 +587,9 @@ def _sources(result: dict) -> list[Block]:
     items.append(ListItem("; ".join(model) + ".", title="Elevation model:"))
     boundaries = clean(loc.get("boundary_attribution"), 600)
     if boundaries:
-        # The engine's attribution already starts with "Administrative boundaries:".
-        prefix = "Administrative boundaries:"
+        # The engine's attribution starts with its own label, e.g. "State and district
+        # boundaries:"; use it as the item title instead of repeating it.
+        prefix = next((p for p in BOUNDARY_LABELS if boundaries.startswith(p)), BOUNDARY_LABELS[-1])
         items.append(ListItem(boundaries.removeprefix(prefix).strip(), title=prefix))
     if loc.get("utm_epsg"):
         items.append(ListItem(f"areas, lengths and slopes are computed on a local UTM grid "

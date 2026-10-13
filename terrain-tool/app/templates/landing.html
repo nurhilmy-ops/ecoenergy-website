@@ -59,8 +59,8 @@
       {% if turnstile %}<div class="cf-turnstile" data-sitekey="{{ settings.turnstile_site_key }}" data-theme="dark"></div>{% endif %}
       <button class="btn btn-block" type="submit">Email me my link</button>
       <div class="notice">
-        <p>{{ CONSENT.service[0] }} {{ CONSENT.site_followup[0] }} <a href="/privacy">Privacy notice</a>.</p>
-        <p lang="ms">{{ CONSENT.service[1] }} {{ CONSENT.site_followup[1] }} <a href="/privacy#bm">Notis privasi</a>.</p>
+        <p>{{ CONSENT.service[0] }} Whether EcoEnergy may contact you about your site is your choice, on the upload page. For business users aged 18 and above. <a href="/privacy">Privacy notice</a>.</p>
+        <p lang="ms">{{ CONSENT.service[1] }} Sama ada EcoEnergy boleh menghubungi anda berkenaan tapak anda adalah pilihan anda, di halaman muat naik. Untuk pengguna perniagaan berumur 18 tahun ke atas. <a href="/privacy#bm">Notis privasi</a>.</p>
       </div>
     </form>
   </section>
@@ -74,6 +74,6 @@
     <li>Upload your KML/KMZ — boundaries, routes and points.</li>
     <li>Read the results on screen and download the PDF or Word report.</li>
   </ol>
-  <p class="muted small mt">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never share your site with third parties.</p>
+  <p class="muted small mt">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never sell your data.{% if settings.dem_provider == 'opentopodata' %} To read elevations, your site's coordinates are sent to the OpenTopoData service.{% endif %}</p>
 </section>
 {% endblock %}

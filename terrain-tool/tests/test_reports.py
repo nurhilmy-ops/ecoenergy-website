@@ -101,8 +101,10 @@ def test_pdf_contains_every_section_and_engine_text(sample):
                    "Lot 4521 (oil palm, north)", "33 kV cable route to PMU", "Proposed PMU tie-in",
                    "60.97 ha", "Class I 94.2%", "Licensed Land Surveyors Act 1958",
                    "Book a free 30-minute scheme-fit consult",
-                   "Analysis: EcoEnergy terrain screening engine v1", "Copernicus DEM GLO-30 © DLR",
-                   "geoBoundaries (gbOpen)", "not for submission to any authority"):
+                   "Analysis: EcoEnergy terrain screening engine v1",
+                   "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014",
+                   "Department of Statistics Malaysia (DOSM)", "No endorsement by DOSM is implied.",
+                   "not for submission to any authority"):
         assert needle in text, needle
 
 
@@ -321,8 +323,9 @@ def test_content_order_and_cta(tmp_path):
     blocks = content.blocks
     assert isinstance(blocks[0], c.Cover)
     assert [b.text for b in blocks if isinstance(b, c.Heading) and b.level == 1] == H1_ORDER
-    assert [b.level for b in blocks if isinstance(b, c.Callout)] == \
-        ["warning", "warning", "caution", "caution", "info", "info", "info"]
+    expected_levels = [f["level"] for f in load_sample()["flags"]]
+    assert [b.level for b in blocks if isinstance(b, c.Callout)] == expected_levels
+    assert expected_levels == ["warning"] * 3 + ["caution"] * 3 + ["info"] * 5
     figures = [b for b in blocks if isinstance(b, c.Figure)]
     assert [f.path.name for f in figures] == list(FIGURE_SIZES)
     assert all(f.size_px and f.size_px[0] > 0 for f in figures)
@@ -367,3 +370,50 @@ def test_reports_from_real_engine_output(tmp_path):
         assert flag["title"] in text
     assert sum(len(p.images) for p in PdfReader(str(paths["pdf"])).pages) == 4
     assert len(Document(str(paths["docx"])).inline_shapes) == 4
+
+
+# ---------------------------------------------------------------------------
+# DEM licence notice, boundary attribution and the fixture's engine wording
+# ---------------------------------------------------------------------------
+def test_dem_disclaimer_and_boundaries_in_both_formats(sample):
+    from app.terrain.boundaries import BOUNDARY_ATTRIBUTION
+    from app.terrain.dem import COPERNICUS_ATTRIBUTION, COPERNICUS_DISCLAIMER
+
+    result = sample["result"]
+    assert result["dem"]["disclaimer"] == COPERNICUS_DISCLAIMER
+    assert result["dem"]["attribution"] == COPERNICUS_ATTRIBUTION
+    assert result["location"]["boundary_attribution"] == BOUNDARY_ATTRIBUTION
+    pdf, docx = sample["pdf_text"], docx_text(sample["docx"])
+    for text in (pdf, docx):
+        assert "Elevation data notice: " + COPERNICUS_DISCLAIMER in text
+        assert "Elevation data: " + COPERNICUS_ATTRIBUTION in text
+        # the label is used once as the item title, not repeated inside the text
+        assert ("State and district boundaries: Department of Statistics Malaysia (DOSM) open data"
+                in text)
+        assert "Administrative boundaries:" not in text
+        assert "geoBoundaries" not in text
+
+
+def test_sources_without_disclaimer_or_with_legacy_boundary_label(tmp_path):
+    result = load_sample()
+    result["dem"]["disclaimer"] = None
+    result["location"]["boundary_attribution"] = "Administrative boundaries: Example source."
+    write_placeholder_figures(tmp_path)
+    content = c.build_content(result, tmp_path, report_settings(tmp_path))
+    lists = [b for b in content.blocks if isinstance(b, c.BulletList)]
+    items = [i for lst in lists for i in lst.items]
+    assert not any(i.title == "Elevation data notice:" for i in items)
+    boundary = next(i for i in items if i.title == "Administrative boundaries:")
+    assert boundary.text == "Example source."
+
+
+def test_sample_fixture_uses_the_engine_wording():
+    """sample_result.json carries exactly what app.terrain.flags writes for its numbers, so
+    the report tests render real wording (regenerate the fixture when wording changes)."""
+    from app.terrain import flags
+
+    result = load_sample()
+    assert result["flags"] == flags.build_flags(result)
+    assert result["followups"] == flags.build_followups(result)
+    assert result["caveats"] == flags.build_caveats(result)
+    assert result["figures"] == flags.figure_entries(result)

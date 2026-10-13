@@ -264,3 +264,33 @@ pre.mail{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);fon
 h2.h3{font-size:21px;line-height:1.25;margin-bottom:14px}
 .mt{margin-top:18px}
 .mt-lg{margin-top:32px}
+/* Optional per-report consent: its own bordered box so it reads as a separate choice. */
+.consent-box{margin:4px 0 22px;padding:16px;border:1px dashed rgba(212,162,58,.55);border-radius:var(--radius-sm);background:rgba(212,162,58,.04);min-width:0}
+.consent-box legend{float:left;width:100%;padding:0;margin:0 0 12px;line-height:1.6}
+.consent-box legend+*{clear:both}
+.consent-box .check{background:rgba(8,21,39,.55)}
+.followup-card{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between}
+.followup-card .state{margin:0;color:var(--paper);font-size:16px}
+.followup-card .state small{display:block;color:var(--cloud-dim);font-size:13.5px;margin-top:4px}
+.followup-card form{margin:0}
+.badge-dnc{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:3px 9px;background:rgba(224,122,95,.16);color:#F3B4A3;border:1px solid rgba(224,122,95,.55);white-space:nowrap}
+.yes{color:#9FDDB6;font-weight:600}
+.no{color:var(--cloud);font-weight:600}
+.data-note{margin:14px 0 0;padding:10px 14px;border-left:3px solid var(--gold);background:rgba(212,162,58,.06);color:var(--cloud);font-size:14px}
+.followup-form{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.followup-form.compact{max-width:30ch}
+.followup-form .fu-text{color:var(--cloud-dim);font-size:12.5px;line-height:1.4}
+.followup-form .fu-text [lang=ms]{display:block;margin-top:2px}
+.followup-form .fu-bm{color:var(--cloud-dim);font-size:12.5px;line-height:1.4}
+.followup-cell{min-width:220px}
+.followup-cell .followup-form{margin-top:8px}
+@media(min-width:821px){.tiles-5{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.lang-jump{margin:-4px 0 8px;font-family:var(--mono);font-size:12.5px;letter-spacing:.06em}
+.privacy .contact-dl{margin:6px 0 10px;font-size:15.5px}
+.privacy .contact-dl dd{color:var(--cloud)}
+.privacy ol[type=a] li::marker{color:var(--gold);font-weight:600}
+.table-compact{font-size:14px}
+.table-compact th,.table-compact td{padding:10px 10px}
+.table-compact .wrap-text{min-width:130px}
+.wrap-wide{max-width:1440px}
+.consent-box .legend-bm{display:block;color:var(--cloud-dim);margin-top:2px}

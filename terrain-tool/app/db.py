@@ -26,17 +26,19 @@ CREATE TABLE IF NOT EXISTS subscribers (
     referrer          TEXT
 );
 
--- Append-only consent ledger (PDP Regulations 2013: consent must be recorded and maintained).
+-- Append-only consent ledger (PDP Regulations 2013 reg 3(1): consent must be recorded and
+-- maintained; reg 3(5): the burden of proving consent is on us).
 CREATE TABLE IF NOT EXISTS consents (
     id             INTEGER PRIMARY KEY,
     subscriber_id  INTEGER NOT NULL REFERENCES subscribers(id) ON DELETE CASCADE,
-    purpose        TEXT NOT NULL,      -- service | site_followup | newsletter
+    purpose        TEXT NOT NULL,      -- service | newsletter (account level) | site_followup (per job)
     action         TEXT NOT NULL,      -- granted | confirmed | withdrawn
     notice_version TEXT NOT NULL,
     wording        TEXT NOT NULL,      -- exact text the person saw/ticked
     ip             TEXT,
     user_agent     TEXT,
-    created_at     TEXT NOT NULL
+    created_at     TEXT NOT NULL,
+    job_id         TEXT                -- set for per-report consents (site_followup); NULL otherwise
 );
 
 CREATE TABLE IF NOT EXISTS tokens (
@@ -72,6 +74,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     stage           TEXT,                  -- exploring | land_secured | bidding | other | NULL
     notes           TEXT,
     error           TEXT,                  -- user-safe failure message
+    followup_consent INTEGER NOT NULL DEFAULT 0,  -- 1 while staff may email about this site (opt-in
+                                                  -- on the upload page; ledger rows carry job_id)
     -- derived lead summary (cleared when the job's site data is deleted)
     total_area_ha   REAL,
     state           TEXT,
@@ -165,7 +169,46 @@ def tx(db_path: Path) -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
-def init_db(db_path: Path) -> None:
+# Columns added after the first local model. init_db adds any that an existing database
+# lacks, so an owner's data/app.db keeps working after an upgrade. Add new columns to both
+# SCHEMA (fresh databases) and here (existing ones); SQLite's ADD COLUMN needs a constant
+# default for NOT NULL columns.
+COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
+    ("jobs", "followup_consent", "INTEGER NOT NULL DEFAULT 0"),
+    ("consents", "job_id", "TEXT"),
+)
+
+# Objects that depend on migrated columns, created after the columns exist.
+POST_MIGRATION = """
+CREATE INDEX IF NOT EXISTS consents_job_idx ON consents(job_id);
+"""
+
+
+def table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def migrate(conn: sqlite3.Connection) -> list[str]:
+    """Idempotent: add missing columns inside one write transaction (safe if two processes
+    start at once). Returns the "table.column" names that were added."""
+    added: list[str] = []
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        for table, column, ddl in COLUMN_MIGRATIONS:
+            if column not in table_columns(conn, table):
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+                added.append(f"{table}.{column}")
+        conn.execute("COMMIT")
+    except BaseException:
+        conn.execute("ROLLBACK")
+        raise
+    conn.executescript(POST_MIGRATION)
+    return added
+
+
+def init_db(db_path: Path) -> list[str]:
+    """Create the schema, then bring an older database up to date. Returns added columns."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with db(db_path) as conn:
         conn.executescript(SCHEMA)
+        return migrate(conn)

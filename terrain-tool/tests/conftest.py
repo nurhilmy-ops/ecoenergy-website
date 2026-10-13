@@ -61,13 +61,17 @@ def fake_result(meta: dict) -> dict:
         "dem": {
             "provider": "copernicus", "name": "Copernicus DEM GLO-30",
             "model_type": "DSM (surface: includes tree canopy and buildings)",
-            "epoch": "2011–2015 (TanDEM-X acquisitions)", "vertical_datum": "EGM2008",
+            "epoch": "December 2010 – January 2015 (TanDEM-X acquisitions)", "vertical_datum": "EGM2008",
             "nominal_resolution_m": 30, "grid_spacing_m": 30.7, "cells_analysed": 1234,
             "nodata_pct": 0.0, "attribution": "Fake DEM attribution © DLR e.V. / ESA",
+            # Added to schema_version 1 later; templates read them with .get().
+            "disclaimer": ("The organisations in charge of the Copernicus programme by law or by delegation "
+                           "do not incur any liability for any use of the Copernicus WorldDEM-30"),
+            "sends_coordinates_to_third_party": False,
         },
         "location": {
             "centroid_lon": 101.505, "centroid_lat": 2.905, "state": "Selangor", "district": "Kuala Langat",
-            "utm_epsg": "EPSG:32647", "boundary_attribution": "Fake boundaries (geoBoundaries)",
+            "utm_epsg": "EPSG:32647", "boundary_attribution": "Fake boundaries (DOSM)",
         },
         "totals": {"polygon_count": 1, "line_count": 1, "point_count": 0, "total_area_ha": 123.4,
                    "total_line_km": 1.9},

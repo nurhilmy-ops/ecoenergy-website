@@ -44,7 +44,7 @@
   {% if jobs %}
   <div class="table-wrap">
     <table>
-      <thead><tr><th scope="col">Site</th><th scope="col">Uploaded</th><th scope="col">Status</th><th scope="col">Scheme</th><th scope="col">Location</th><th scope="col">Deleted / deletes on</th></tr></thead>
+      <thead><tr><th scope="col">Site</th><th scope="col">Uploaded</th><th scope="col">Status</th><th scope="col">Scheme</th><th scope="col">Location</th><th scope="col">Staff follow-up</th><th scope="col">Deleted / deletes on</th></tr></thead>
       <tbody>
       {% for job in jobs %}
         <tr>
@@ -53,10 +53,15 @@
           <td><span class="status status-{{ job.status }}">{{ job.status }}</span></td>
           <td>{{ SCHEMES.get(job.scheme, '—') if job.scheme else '—' }}</td>
           <td>{{ [job.district, job.state]|select|join(', ') or '—' }}</td>
+          <td class="followup-cell">{% if job.status != 'deleted' %}
+            <span class="{{ 'yes' if job.followup_consent else 'no' }}">{{ 'Allowed' if job.followup_consent else 'Not allowed' }}</span>
+            {% with back='account', compact=True %}{% include "_followup_form.html" %}{% endwith %}
+            {% else %}<span class="muted">—</span>{% endif %}</td>
           <td>{{ job.delete_after|dt(False) }}</td>
         </tr>
       {% endfor %}
       </tbody>
+      <caption>Staff follow-up is your choice per report: EcoEnergy staff email you about a site only while it says Allowed. / Susulan kakitangan ialah pilihan anda bagi setiap laporan.</caption>
     </table>
   </div>
   {% else %}<p class="muted">No reports yet.</p>{% endif %}
@@ -66,10 +71,12 @@
   <h2 id="consent-title" class="h3">Consent history</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Action</th><th scope="col">Notice version</th><th scope="col">Wording</th></tr></thead>
+      <thead><tr><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Report</th><th scope="col">Action</th><th scope="col">Notice version</th><th scope="col">Wording</th></tr></thead>
       <tbody>
       {% for c in consents %}
-        <tr><td class="nowrap">{{ c.created_at|dt }}</td><td>{{ c.purpose }}</td><td>{{ c.action }}</td><td class="nowrap"><code>{{ c.notice_version }}</code></td><td class="wrap-text small">{{ c.wording }}</td></tr>
+        <tr><td class="nowrap">{{ c.created_at|dt }}</td><td>{{ c.purpose }}</td>
+          <td class="small">{% if c.job_id %}{{ c.job_label or 'Deleted report' }}{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{{ c.action }}</td><td class="nowrap"><code>{{ c.notice_version }}</code></td><td class="wrap-text small">{{ c.wording }}</td></tr>
       {% endfor %}
       </tbody>
     </table>

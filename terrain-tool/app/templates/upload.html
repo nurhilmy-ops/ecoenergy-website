@@ -40,8 +40,19 @@
         <textarea id="notes" name="notes" maxlength="{{ max_notes }}" aria-describedby="notes-hint">{{ values.get('notes', '') }}</textarea>
         <span class="hint" id="notes-hint">Up to {{ max_notes }} characters — e.g. what you're trying to decide.</span>
       </div>
+      {# A separate, optional consent for this one site (PDP Regulations 2013 reg 3(2)): unticked,
+         set apart from the form fields, and changeable later on the report and account pages. #}
+      <fieldset class="consent-box">
+        <legend class="label">Follow-up about this site <span class="legend-bm" lang="ms">Susulan berkenaan tapak ini</span></legend>
+        <label class="check" for="followup">
+          <input type="checkbox" id="followup" name="followup" value="yes" aria-describedby="followup-hint" {% if values.get('followup') %}checked{% endif %}>
+          <span>{{ CONSENT.site_followup[0] }}
+            <small lang="ms">{{ CONSENT.site_followup[1] }}</small></span>
+        </label>
+        <span class="hint" id="followup-hint">Leave it unticked and we won't contact you about this site. You can change your choice later on the report or on your account page.</span>
+      </fieldset>
       <button class="btn btn-block" type="submit" {% if runs_left <= 0 %}disabled{% endif %}>Run terrain screening</button>
-      <p class="notice">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never share your site with third parties.</p>
+      <p class="notice">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never sell your data.{% if settings.dem_provider == 'opentopodata' %} To read elevations, your site's coordinates are sent to the OpenTopoData service.{% endif %} <a href="/privacy">Privacy notice</a>.</p>
     </form>
   </section>
 
