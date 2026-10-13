@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="{% block lang %}en{% endblock %}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Terrain Screening{% endblock %} · EcoEnergy Consultancy</title>
+<meta name="description" content="{% block description %}Free desktop terrain screening for Malaysian solar and land sites — upload a KML/KMZ, get elevation, KPKT slope classes and profiles.{% endblock %}">
+<meta name="robots" content="{% block robots %}noindex, nofollow{% endblock %}">
+<meta name="theme-color" content="#081527">
+<link rel="icon" type="image/svg+xml" href="/static/logo-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap nav">
+    <div class="brand-row">
+      <a class="brand" href="{{ settings.site_url }}" aria-label="EcoEnergy Consultancy home">
+        <img src="/static/logo-mark.svg" alt="" width="32" height="32">
+        <span class="brand-text">
+          <span class="brand-mark">Eco<b>Energy</b></span>
+          <span class="brand-sub">Consultancy</span>
+        </span>
+      </a>
+      <a class="product" href="{{ '/admin/' if admin else '/' }}">Terrain Screening{% if admin %} · Admin{% endif %}</a>
+    </div>
+    {% if session %}
+    <nav class="nav-links" aria-label="Your account">
+      <a href="/upload">New screening</a>
+      <a href="/reports">My reports</a>
+      <a href="/account">Account</a>
+      <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button type="submit">Log out</button>
+      </form>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <div class="wrap">
+    {% if flash %}
+    <div class="alert alert-{{ flash[0] }}" role="status">{{ flash[1] }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>© {{ year }} EcoEnergy Consultancy Sdn. Bhd.</p>
+    <p>Desktop screening — not a survey</p>
+    <div class="foot-links">
+      <a href="/privacy">Privacy notice / Notis privasi</a>
+      <a href="{{ settings.site_url }}">ecoconsultancy.services</a>
+    </div>
+  </div>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

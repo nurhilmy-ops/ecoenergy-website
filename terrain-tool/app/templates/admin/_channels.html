@@ -1,0 +1,15 @@
+<section aria-labelledby="channels-title">
+  <h2 id="channels-title" class="h3">Channel performance</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">utm_source</th><th scope="col" class="num">Subscribers</th><th scope="col" class="num">Verified</th><th scope="col" class="num">With jobs</th><th scope="col" class="num">Newsletter</th></tr></thead>
+      <tbody>
+      {% for c in channels %}
+        <tr><td>{{ c.source }}</td><td class="num">{{ c.subscribers }}</td><td class="num">{{ c.verified }}</td><td class="num">{{ c.with_jobs }}</td><td class="num">{{ c.newsletter }}</td></tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No subscribers yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

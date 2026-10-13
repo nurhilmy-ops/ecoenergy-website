@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Dev outbox{% endblock %}
+{% block content %}
+<p class="kicker">Development only</p>
+<h1>Outbox</h1>
+<p class="muted">Emails "sent" while <code>MAIL_BACKEND=outbox</code>. Newest first; rows older than 7 days are pruned.</p>
+{% if messages %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">#</th><th scope="col">When</th><th scope="col">To</th><th scope="col">Subject</th></tr></thead>
+    <tbody>
+    {% for m in messages %}
+      <tr><td>{{ m.id }}</td><td>{{ m.created_at|dt }}</td><td>{{ m.to_addr }}</td><td><a href="/dev/outbox/{{ m.id }}">{{ m.subject }}</a></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}<div class="card"><p class="muted">No messages yet. <a href="/">Request a link</a>.</p></div>{% endif %}
+{% endblock %}

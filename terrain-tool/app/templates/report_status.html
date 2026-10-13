@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Screening in progress{% endblock %}
+{% block head %}<noscript><meta http-equiv="refresh" content="10"></noscript>{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title"
+         id="job-status" data-status-url="/api/reports/{{ job.id }}/status" data-status="{{ job.status }}">
+  <p class="kicker">Terrain screening</p>
+  <h1 id="title">{{ job.site_label or job.input_filename or 'Your site' }}</h1>
+  <div class="progress">
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="status-text" role="status" aria-live="polite">
+      {% if job.status == 'running' %}Analysing terrain and drawing your maps…{% else %}Queued — your screening will start shortly…{% endif %}
+    </p>
+  </div>
+  <p class="muted small mt">This usually takes under a minute. This page updates by itself; you can also leave — we'll email you when the report is ready.</p>
+  <div class="mt-lg">{% include "_delete_report.html" %}</div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/js/status.js" defer></script>{% endblock %}

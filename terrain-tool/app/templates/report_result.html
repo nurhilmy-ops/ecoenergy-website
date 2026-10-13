@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Terrain screening — {{ label }}{% endblock %}
+{% block content %}
+{% set loc = result.location or {} %}
+{% set dem = result.dem or {} %}
+{% set totals = result.totals or {} %}
+{% set meta = result.meta or {} %}
+<section aria-labelledby="title">
+  <p class="kicker">Terrain screening report</p>
+  <h1 id="title">{{ label }}</h1>
+  <p class="meta-line">
+    {% if loc.district or loc.state %}<span>{{ [loc.district, loc.state]|select|join(', ') }}</span>{% endif %}
+    <span>{{ totals.total_area_ha|num(1, 'ha') }} total</span>
+    {% if dem.name %}<span>{{ dem.name }}{% if dem.nominal_resolution_m %} ({{ dem.nominal_resolution_m|num(0) }} m){% endif %}</span>{% endif %}
+    <span>Generated {{ (meta.generated_at or job.finished_at)|dt }}</span>
+    {% if job.scheme %}<span>{{ SCHEMES.get(job.scheme, job.scheme) }}</span>{% endif %}
+  </p>
+  <div class="actions">
+    <a class="btn" href="/reports/{{ job.id }}/download.pdf">Download PDF</a>
+    <a class="btn-ghost" href="/reports/{{ job.id }}/download.docx">Download Word</a>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="glance-title">
+  <h2 id="glance-title">At a glance</h2>
+  <div class="tiles">
+    <div class="tile"><span class="label">Total area</span><div class="value">{{ glance.total_area_ha|num(1) }} <small>ha</small></div></div>
+    <div class="tile"><span class="label">Elevation range</span><div class="value">{% if glance.elev_min is not none %}{{ glance.elev_min|num(0) }}–{{ glance.elev_max|num(0) }} <small>m</small>{% else %}—{% endif %}</div></div>
+    <div class="tile"><span class="label">KPKT Class I</span><div class="value">{{ glance.class1_pct|num(1) }}{% if glance.class1_pct is not none %} <small>%</small>{% endif %}</div></div>
+    <div class="tile"><span class="label">Max slope</span><div class="value">{{ glance.slope_max|num(1) }}{% if glance.slope_max is not none %} <small>°</small>{% endif %}</div></div>
+  </div>
+</section>
+
+{% if result.flags %}
+<section class="section" aria-labelledby="flags-title">
+  <h2 id="flags-title">Flags</h2>
+  <ul class="flags">
+    {% for flag in result.flags %}
+    {% set level = flag.level if flag.level in ('info', 'caution', 'warning') else 'info' %}
+    <li class="flag flag-{{ level }}">
+      <h3><span class="pill pill-{{ level }}">{{ level }}</span> {{ flag.title }}</h3>
+      <p>{{ flag.detail }}</p>
+      {% if flag.source %}<span class="src">Source: {{ flag.source }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if figures %}
+<section class="section" aria-labelledby="maps-title">
+  <h2 id="maps-title">Maps</h2>
+  <div class="figures">
+    {% for fig in figures %}
+    <figure class="figure paper">
+      <a href="/reports/{{ job.id }}/files/{{ fig.file }}"><img src="/reports/{{ job.id }}/files/{{ fig.file }}" alt="{{ fig.title }}" loading="lazy"></a>
+      <figcaption><strong>{{ fig.title }}</strong><p class="caption">{{ fig.caption }}</p></figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if result.sites %}
+<section class="section" aria-labelledby="sites-title">
+  <h2 id="sites-title">Sites</h2>
+  <div class="table-wrap">
+    <table>
+      {# Grouped headers keep the eleven columns narrow enough to fit at desktop width. #}
+      <thead>
+        <tr>
+          <th scope="col" rowspan="2">Site</th><th scope="col" rowspan="2" class="num">Area (ha)</th>
+          <th scope="col" rowspan="2" class="num">Elevation (m)</th><th scope="col" rowspan="2" class="num">Relief (m)</th>
+          <th scope="colgroup" colspan="3" class="group">Slope (°)</th>
+          <th scope="colgroup" colspan="4" class="group">KPKT class (% of site)</th>
+        </tr>
+        <tr>
+          <th scope="col" class="num">Mean</th><th scope="col" class="num">P90</th><th scope="col" class="num">Max</th>
+          {% for c in KPKT_CLASSES %}<th scope="col" class="num">{{ c }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in result.sites %}
+        <tr>
+          <th scope="row" class="wrap-text">{{ s.name or 'Site ' ~ loop.index }}</th>
+          <td class="num">{{ s.area_ha|num(1) }}</td>
+          <td class="num">{{ s.elev_min_m|num(0) }}–{{ s.elev_max_m|num(0) }}</td><td class="num">{{ s.relief_m|num(0) }}</td>
+          <td class="num">{{ s.slope_mean_deg|num(1) }}</td><td class="num">{{ s.slope_p90_deg|num(1) }}</td>
+          <td class="num">{{ s.slope_max_deg|num(1) }}</td>
+          {% for c in KPKT_CLASSES %}<td class="num">{{ (s.kpkt_pct or {}).get(c)|num(1) }}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+      {% if result.kpkt_overall_pct %}
+      <caption>KPKT classes (inside each polygon): I &lt; 15°, II 15–25°, III 25–35°, IV ≥ 35°. Overall, area-weighted:
+        {% for c in KPKT_CLASSES %}{{ c }} {{ result.kpkt_overall_pct.get(c)|num(1) }}%{{ ', ' if not loop.last }}{% endfor %}.</caption>
+      {% endif %}
+    </table>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="bins-title">
+  <h2 id="bins-title">Slope distribution</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Site</th>{% for b in SLOPE_BINS %}<th scope="col" class="num">{{ b }}°</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for s in result.sites %}
+        <tr><th scope="row" class="wrap-text">{{ s.name or 'Site ' ~ loop.index }}</th>
+          {% for b in SLOPE_BINS %}<td class="num">{{ (s.slope_bins_pct or {}).get(b)|num(1) }}%</td>{% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+      <caption>Share of each site's area in each slope band (degrees).</caption>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if result.routes %}
+<section class="section" aria-labelledby="routes-title">
+  <h2 id="routes-title">Routes</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Route</th><th scope="col" class="num">Length (km)</th><th scope="col" class="num">Elev. min (m)</th>
+        <th scope="col" class="num">Elev. max (m)</th><th scope="col" class="num">Total ascent (m)</th><th scope="col" class="num">Max grade (%)</th></tr></thead>
+      <tbody>
+      {% for r in result.routes %}
+        <tr><th scope="row" class="wrap-text">{{ r.name or 'Route ' ~ loop.index }}</th>
+          <td class="num">{{ r.length_km|num(2) }}</td><td class="num">{{ r.elev_min_m|num(0) }}</td><td class="num">{{ r.elev_max_m|num(0) }}</td>
+          <td class="num">{{ r.total_ascent_m|num(0) }}</td><td class="num">{{ r.max_grade_pct|num(1) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if result.points %}
+<section class="section" aria-labelledby="points-title">
+  <h2 id="points-title">Points</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Point</th><th scope="col" class="num">Latitude</th><th scope="col" class="num">Longitude</th><th scope="col" class="num">Elevation (m)</th></tr></thead>
+      <tbody>
+      {% for p in result.points %}
+        <tr><th scope="row" class="wrap-text">{{ p.name or 'Point ' ~ loop.index }}</th>
+          <td class="num">{{ p.lat|num(5) }}</td><td class="num">{{ p.lon|num(5) }}</td><td class="num">{{ p.elev_m|num(0) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<div class="grid-2 section">
+  {% if result.followups %}
+  <section class="card" aria-labelledby="follow-title">
+    <h2 id="follow-title" class="h3">Recommended follow-ups</h2>
+    <ul class="list-check">
+      {% for f in result.followups %}<li><strong>{{ f.title }}</strong> — {{ f.detail }}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  {% if result.caveats %}
+  <section class="card" aria-labelledby="caveats-title">
+    <h2 id="caveats-title" class="h3">Caveats</h2>
+    <ul class="list-check list-x">
+      {% for c in result.caveats %}<li>{{ c }}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+
+<section class="section cta-panel" aria-labelledby="cta-title">
+  <p class="kicker">Next step</p>
+  <h2 id="cta-title">Turn this screening into a <em>decision</em>.</h2>
+  <p class="lede">Book a free 30-minute scheme-fit consult. We'll review this site with you — scheme options, red flags and what to study next.</p>
+  <div class="actions"><a class="btn" href="{{ consult_link }}">Book a free consult</a></div>
+</section>
+
+<section class="section" aria-labelledby="data-title">
+  <h2 id="data-title" class="h3">Data and attribution</h2>
+  <dl class="dl small">
+    {% if dem.name %}<dt>Elevation data</dt><dd>{{ dem.name }}{% if dem.model_type %} — {{ dem.model_type }}{% endif %}</dd>{% endif %}
+    {% if dem.epoch %}<dt>Epoch</dt><dd>{{ dem.epoch }}</dd>{% endif %}
+    {% if dem.vertical_datum %}<dt>Vertical datum</dt><dd>{{ dem.vertical_datum }}</dd>{% endif %}
+    {% if dem.grid_spacing_m %}<dt>Grid</dt><dd>{{ dem.grid_spacing_m|num(1) }} m spacing · {{ dem.cells_analysed|num(0) }} cells analysed · {{ dem.nodata_pct|num(1) }}% no-data</dd>{% endif %}
+    {% if result.contour_interval_m %}<dt>Contours</dt><dd>{{ result.contour_interval_m|num(1) }} m interval</dd>{% endif %}
+    {% if loc.utm_epsg %}<dt>Projection</dt><dd>{{ loc.utm_epsg }}</dd>{% endif %}
+    {% if dem.attribution %}<dt>DEM</dt><dd>{{ dem.attribution }}</dd>{% endif %}
+    {% if loc.boundary_attribution %}<dt>Boundaries</dt><dd>{{ loc.boundary_attribution }}</dd>{% endif %}
+    <dt>Report ID</dt><dd><code>{{ job.id }}</code></dd>
+  </dl>
+</section>
+
+<section class="section narrow" aria-label="Delete report">
+  <p class="muted small">This report and your site file will be deleted automatically on {{ job.delete_after|dt(False) }}.</p>
+  {% include "_delete_report.html" %}
+</section>
+{% endblock %}

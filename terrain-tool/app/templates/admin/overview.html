@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<p class="kicker">Admin</p>
+<h1>Terrain tool overview</h1>
+{% include "admin/_nav.html" %}
+<div class="tiles">
+  <div class="tile"><span class="label">Subscribers</span><div class="value">{{ totals.subscribers }}</div></div>
+  <div class="tile"><span class="label">Verified</span><div class="value">{{ totals.verified }}</div></div>
+  <div class="tile"><span class="label">With jobs</span><div class="value">{{ totals.with_jobs }}</div></div>
+  <div class="tile"><span class="label">Newsletter</span><div class="value">{{ totals.newsletter }}</div></div>
+</div>
+<div class="section">{% include "admin/_channels.html" %}</div>
+{% endblock %}

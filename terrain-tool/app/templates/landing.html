@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Free terrain screening for your site{% endblock %}
+{% block robots %}index, follow{% endblock %}
+{% block head %}{% if turnstile %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
+{% block content %}
+{# Three grid areas: on narrow screens the form follows the intro instead of sitting
+   below the feature lists, so the call to action is on the first screen. #}
+<div class="grid-2 landing">
+  <section class="landing-intro" aria-labelledby="hero-title">
+    <p class="kicker">Free desktop tool · Malaysia</p>
+    <h1 id="hero-title">Know your site's terrain <em>before</em> you commit.</h1>
+    <p class="lede">Upload a KML or KMZ of your site and get a desktop terrain screening in minutes —
+      elevation, slope classes under the KPKT hillside guidelines, cross-section profiles and the flags
+      worth checking before you bid, buy or design.</p>
+  </section>
+
+  <div class="landing-details">
+    <div>
+      <h2 class="h3">What you get</h2>
+      <ul class="list-check">
+        <li><strong>Site layout map</strong> — your boundaries, routes and points on one sheet.</li>
+        <li><strong>Elevation map with contours</strong> — where the high and low ground sits.</li>
+        <li><strong>KPKT slope classification map</strong> — Class I to IV, with the share of each.</li>
+        <li><strong>Terrain cross-sections</strong> — profiles across the site and along routes.</li>
+        <li><strong>PDF and Word report</strong> — areas, slope statistics, flags and recommended follow-up studies.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2 class="h3">What it is not</h2>
+      <ul class="list-check list-x">
+        <li>It is <strong>not a topographic or land survey</strong>, a geotechnical investigation or an engineering design.</li>
+        <li>It uses open ~30 m satellite elevation data, which includes tree canopy and buildings. Use it to decide what to study next — not to finalise a layout.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section class="card accent landing-form" aria-labelledby="form-title">
+    <h2 id="form-title">Get your screening link</h2>
+    <p class="muted small">We'll email you a secure link. Confirm it, upload your site, and your results appear on screen.</p>
+    {% if error %}<div class="alert alert-error" role="alert" id="email-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/request-link" novalidate>
+      <div class="field">
+        <label class="label" for="email">Work email</label>
+        <input type="email" id="email" name="email" value="{{ email }}" autocomplete="email" required
+               maxlength="254" inputmode="email" {% if error %}aria-invalid="true" aria-describedby="email-error"{% endif %}>
+      </div>
+      <div class="field">
+        <label class="check" for="newsletter">
+          <input type="checkbox" id="newsletter" name="newsletter" value="yes" {% if newsletter %}checked{% endif %}>
+          <span>{{ CONSENT.newsletter[0] }}
+            <small lang="ms">{{ CONSENT.newsletter[1] }}</small></span>
+        </label>
+      </div>
+      {% for key in ("utm_source", "utm_medium", "utm_campaign") %}
+      <input type="hidden" name="{{ key }}" value="{{ utm.get(key) or '' }}">
+      {% endfor %}
+      <input type="hidden" name="ref" value="{{ ref }}">
+      {% if turnstile %}<div class="cf-turnstile" data-sitekey="{{ settings.turnstile_site_key }}" data-theme="dark"></div>{% endif %}
+      <button class="btn btn-block" type="submit">Email me my link</button>
+      <div class="notice">
+        <p>{{ CONSENT.service[0] }} {{ CONSENT.site_followup[0] }} <a href="/privacy">Privacy notice</a>.</p>
+        <p lang="ms">{{ CONSENT.service[1] }} {{ CONSENT.site_followup[1] }} <a href="/privacy#bm">Notis privasi</a>.</p>
+      </div>
+    </form>
+  </section>
+</div>
+
+<section class="section" aria-labelledby="how-title">
+  <h2 id="how-title">How it works</h2>
+  <ol class="steps">
+    <li>Enter your email and we send a secure link.</li>
+    <li>Open the link and press Continue to confirm it's you.</li>
+    <li>Upload your KML/KMZ — boundaries, routes and points.</li>
+    <li>Read the results on screen and download the PDF or Word report.</li>
+  </ol>
+  <p class="muted small mt">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never share your site with third parties.</p>
+</section>
+{% endblock %}

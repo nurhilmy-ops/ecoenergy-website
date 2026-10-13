@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Your account and data{% endblock %}
+{% block content %}
+<p class="kicker">Your data</p>
+<h1>Account</h1>
+<p class="lede">Everything we hold about you for the terrain screening tool, and the controls to change it.</p>
+
+<div class="grid-2 section">
+  <section class="card" aria-labelledby="hold-title">
+    <h2 id="hold-title" class="h3">What we hold</h2>
+    <dl class="dl">
+      <dt>Email</dt><dd>{{ subscriber.email }}</dd>
+      <dt>First request</dt><dd>{{ subscriber.created_at|dt }}</dd>
+      <dt>Email confirmed</dt><dd>{{ subscriber.verified_at|dt }}</dd>
+      <dt>Came from</dt><dd>{{ [subscriber.utm_source, subscriber.utm_medium, subscriber.utm_campaign]|select|join(' / ') or 'Direct' }}{% if subscriber.referrer %} (via {{ subscriber.referrer }}){% endif %}</dd>
+      <dt>Newsletter</dt><dd><span class="status">{{ subscriber.newsletter_status }}</span></dd>
+      <dt>Reports</dt><dd>{{ jobs|length }}</dd>
+    </dl>
+  </section>
+
+  <section class="card" aria-labelledby="news-title">
+    <h2 id="news-title" class="h3">Insights emails</h2>
+    {% if subscriber.newsletter_status == 'subscribed' %}
+    <p class="muted small">You receive EcoEnergy's solar policy and scheme insights. You can stop any time.</p>
+    <form method="post" action="/account/newsletter">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="action" value="unsubscribe">
+      <button class="btn-ghost" type="submit">{{ CONSENT.newsletter_off_account[0] }}</button>
+    </form>
+    {% else %}
+    <p class="muted small">Optional and separate from the tool. {% if subscriber.newsletter_status == 'pending' %}Your subscription is waiting for email confirmation.{% endif %}</p>
+    <form method="post" action="/account/newsletter">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="action" value="subscribe">
+      <button class="btn" type="submit">Subscribe</button>
+      <p class="notice">{{ CONSENT.newsletter_account[0] }}<br><span lang="ms">{{ CONSENT.newsletter_account[1] }}</span></p>
+    </form>
+    {% endif %}
+  </section>
+</div>
+
+<section class="section" aria-labelledby="reports-title">
+  <h2 id="reports-title" class="h3">Reports</h2>
+  {% if jobs %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Site</th><th scope="col">Uploaded</th><th scope="col">Status</th><th scope="col">Scheme</th><th scope="col">Location</th><th scope="col">Deleted / deletes on</th></tr></thead>
+      <tbody>
+      {% for job in jobs %}
+        <tr>
+          <td class="wrap-text">{% if job.status != 'deleted' %}<a href="/reports/{{ job.id }}">{{ job.site_label or job.input_filename or 'Untitled site' }}</a>{% else %}<span class="muted">Deleted</span>{% endif %}</td>
+          <td>{{ job.created_at|dt }}</td>
+          <td><span class="status status-{{ job.status }}">{{ job.status }}</span></td>
+          <td>{{ SCHEMES.get(job.scheme, '—') if job.scheme else '—' }}</td>
+          <td>{{ [job.district, job.state]|select|join(', ') or '—' }}</td>
+          <td>{{ job.delete_after|dt(False) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">No reports yet.</p>{% endif %}
+</section>
+
+<section class="section" aria-labelledby="consent-title">
+  <h2 id="consent-title" class="h3">Consent history</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Action</th><th scope="col">Notice version</th><th scope="col">Wording</th></tr></thead>
+      <tbody>
+      {% for c in consents %}
+        <tr><td class="nowrap">{{ c.created_at|dt }}</td><td>{{ c.purpose }}</td><td>{{ c.action }}</td><td class="nowrap"><code>{{ c.notice_version }}</code></td><td class="wrap-text small">{{ c.wording }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="grid-2 section">
+  <section class="card" aria-labelledby="export-title">
+    <h2 id="export-title" class="h3">Download my data</h2>
+    <p class="muted small">A JSON file with your details, consent history and reports (including result summaries).</p>
+    <a class="btn-ghost" href="/account/export.json">Download my data (JSON)</a>
+  </section>
+
+  <section class="card" aria-labelledby="erase-title">
+    <h2 id="erase-title" class="h3">Delete everything</h2>
+    {% if delete_error %}<div class="alert alert-error" role="alert">{{ delete_error }}</div>{% endif %}
+    <p class="muted small">Deletes your email address, consent records, site files and reports now. We keep only a one-way fingerprint of your address so we never email you again unless you sign up afresh.</p>
+    <form method="post" action="/account/delete">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="field">
+        <label class="check" for="confirm-delete">
+          <input type="checkbox" id="confirm-delete" name="confirm" value="yes" required>
+          <span>I understand this permanently deletes my data and can't be undone.</span>
+        </label>
+      </div>
+      <button class="btn-danger" type="submit">Delete my account and data</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

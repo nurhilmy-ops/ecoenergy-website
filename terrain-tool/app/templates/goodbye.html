@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Your data has been deleted{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  <p class="kicker">Done</p>
+  <h1 id="title">Your data has been deleted</h1>
+  <p class="lede">We've deleted your email address, consent records, site files and reports, and signed you out.</p>
+  <p class="muted">We keep only a one-way fingerprint (hash) of your email address so we don't contact you again. If you request a new link in future, that counts as a fresh sign-up.</p>
+  <div class="actions"><a class="btn-ghost" href="{{ settings.site_url }}">Back to EcoEnergy</a></div>
+</section>
+{% endblock %}

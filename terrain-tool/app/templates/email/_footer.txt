@@ -1,0 +1,6 @@
+--
+EcoEnergy Consultancy · Terrain Screening
+Desktop screening — not a survey.
+Privacy notice: {{ privacy_url }}
+Your account and data: {{ account_url }}
+Questions? Reply to this email or write to {{ reply_to }}.

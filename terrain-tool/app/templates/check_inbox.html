@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Check your inbox{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  <p class="kicker">Almost there</p>
+  <h1 id="title">Check your inbox</h1>
+  <p class="lede">If <strong>{{ email }}</strong> can receive email, a link to start your terrain screening is on its way.</p>
+  <ul class="list-check">
+    <li>The link is valid for {{ settings.token_ttl_hours }} hours and can be used up to {{ settings.token_max_uses }} times.</li>
+    <li>Nothing yet? Check your spam or promotions folder, then try again in a few minutes.</li>
+    <li>Wrong address? <a href="/">Go back and request a new link</a>.</li>
+  </ul>
+  {% if dev_outbox %}
+  <div class="alert alert-dev">Development mode: emails are not sent. <a href="/dev/outbox">Open the dev outbox</a> to click your link.</div>
+  {% endif %}
+</section>
+{% endblock %}

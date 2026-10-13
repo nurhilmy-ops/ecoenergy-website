@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Upload your site{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <section class="card accent" aria-labelledby="title">
+    <p class="kicker">Step 3 of 4</p>
+    <h1 id="title">Upload your site</h1>
+    <p class="muted">Signed in as <strong>{{ session.email }}</strong>.
+      {% if runs_left > 0 %}You have <strong>{{ runs_left }}</strong> screening run{{ '' if runs_left == 1 else 's' }} left today.
+      {% else %}You have used all of today's screening runs — please come back tomorrow.{% endif %}</p>
+    {% if error %}<div class="alert alert-error" role="alert" id="upload-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/upload" enctype="multipart/form-data">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="field">
+        <label class="label" for="kml_file">Site file (.kml or .kmz)</label>
+        <input type="file" id="kml_file" name="kml_file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" required
+               aria-describedby="file-hint{% if error %} upload-error{% endif %}">
+        <span class="hint" id="file-hint">Up to {{ max_mb }} MB · within Malaysia · up to {{ settings.max_extent_km|num(0) }} km across · max {{ settings.max_features }} features.</span>
+      </div>
+      <div class="field">
+        <label class="label" for="site_label">Site label <span class="muted">(optional)</span></label>
+        <input type="text" id="site_label" name="site_label" maxlength="{{ max_label }}" value="{{ values.get('site_label', '') }}" placeholder="e.g. Kuala Langat parcel B">
+      </div>
+      <div class="field">
+        <label class="label" for="scheme">Scheme <span class="muted">(optional)</span></label>
+        <select id="scheme" name="scheme">
+          <option value="">Choose…</option>
+          {% for key, text in SCHEMES.items() %}<option value="{{ key }}" {% if values.get('scheme') == key %}selected{% endif %}>{{ text }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="stage">Project stage <span class="muted">(optional)</span></label>
+        <select id="stage" name="stage">
+          <option value="">Choose…</option>
+          {% for key, text in STAGES.items() %}<option value="{{ key }}" {% if values.get('stage') == key %}selected{% endif %}>{{ text }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="notes">Notes for our team <span class="muted">(optional)</span></label>
+        <textarea id="notes" name="notes" maxlength="{{ max_notes }}" aria-describedby="notes-hint">{{ values.get('notes', '') }}</textarea>
+        <span class="hint" id="notes-hint">Up to {{ max_notes }} characters — e.g. what you're trying to decide.</span>
+      </div>
+      <button class="btn btn-block" type="submit" {% if runs_left <= 0 %}disabled{% endif %}>Run terrain screening</button>
+      <p class="notice">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never share your site with third parties.</p>
+    </form>
+  </section>
+
+  <aside class="stack" aria-label="Tips">
+    <div class="card">
+      <h2 class="h3">Preparing your file</h2>
+      <ul class="list-check">
+        <li><strong>Google Earth:</strong> right-click your folder → <em>Save Place As…</em> → KMZ.</li>
+        <li><strong>Polygons</strong> are analysed as sites, <strong>lines</strong> as cable or access routes, <strong>points</strong> as spot heights.</li>
+        <li>Keep it to the site: one project area, not a whole district.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2 class="h3">What happens next</h2>
+      <p class="muted small">We sample open elevation data over your site, classify slopes under the KPKT hillside guidelines and draw four maps. It usually takes under a minute — we'll also email you when the report is ready.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
