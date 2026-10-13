@@ -1,0 +1,15 @@
+Your terrain screening report is ready
+
+Hello,
+
+Your desktop terrain screening{% if site_label %} for "{{ site_label }}"{% endif %} is ready: maps, slope classes, flags and PDF/Word downloads.
+
+Open your report:
+
+{{ link }}
+
+The link is valid for {{ ttl_hours }} hours, up to {{ max_uses }} uses. Your site file and results are deleted automatically after the retention period, or straight away if you press Delete on the report.
+
+If you didn't request this, ignore this email.
+
+{% include "_footer.txt" %}

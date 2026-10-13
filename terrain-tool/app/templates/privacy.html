@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{# The whole privacy notice lives in this one template so legal wording can be revised in one place.
+   Source: the drafted notice for legal review, adapted to what the tool actually does.
+   Bump Settings.notice_version whenever the substance changes: it is stored with every consent record.
+   Items in [square brackets] must be confirmed by legal review before publication. #}
+{% block title %}Privacy notice / Notis privasi{% endblock %}
+{% block robots %}index, follow{% endblock %}
+{% block content %}
+{% set otd = settings.dem_provider == 'opentopodata' %}
+{% set geotiff = settings.dem_provider == 'geotiff' %}
+{# Same test as the landing page uses to load the Cloudflare script (security.turnstile_enabled). #}
+{% set turnstile_on = settings.turnstile_site_key %}
+<article class="prose privacy">
+  <div class="draft-banner" role="note">Draft for legal review — not yet approved for publication. Items in [square brackets] must be confirmed. / Draf untuk semakan undang-undang — belum diluluskan untuk diterbitkan. Perkara dalam [kurungan siku] perlu disahkan.</div>
+
+  <div lang="en" id="en">
+  <p class="kicker">Desktop Terrain Screening tool</p>
+  <h1>Privacy notice</h1>
+  <p class="muted small">Notice version <code>{{ settings.notice_version }}</code> · Last updated: [date — set on publication] · Personal Data Protection Act 2010, section 7</p>
+  <p class="lang-jump"><a href="#bm" lang="ms">Baca notis ini dalam Bahasa Malaysia ↓</a></p>
+
+  <h2>1. About this notice</h2>
+  <p>EcoEnergy Consultancy Sdn. Bhd. ("EcoEnergy", "we", "us") gives you this notice under section 7 of the Personal Data Protection Act 2010 (as amended) ("the Act"). It explains how we process your personal data when you use the Desktop Terrain Screening tool. It is available in English and Bahasa Malaysia.</p>
+
+  <h2>2. Who we are and how to reach us</h2>
+  <dl class="dl contact-dl">
+    <dt>Data controller</dt><dd>EcoEnergy Consultancy Sdn. Bhd. [company registration no. — to be confirmed]</dd>
+    <dt>Address</dt><dd>Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur</dd>
+    <dt>Phone</dt><dd><a href="tel:+60387446478">+60 3 8744 6478</a></dd>
+    <dt>Email</dt><dd><a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a></dd>
+    <dt>Contact person</dt><dd>[Designation of contact person, e.g. Data Protection Officer — to be confirmed by legal review]</dd>
+  </dl>
+
+  <h2>3. Personal data we process</h2>
+  <ul>
+    <li><strong>Your email address.</strong></li>
+    <li><strong>Optional answers</strong> on the upload page: site label, scheme, project stage and notes.</li>
+    <li><strong>The site file you upload</strong> (KML/KMZ, including any names and descriptions inside it) and the results we derive from it: area, location (state, district and centre point), elevation and slope statistics, maps and your PDF/Word report. A site file is linked to your email address, and your notes or file may identify you or other people.</li>
+    <li><strong>Your choices:</strong> whether EcoEnergy staff may email you about each site you submit, and whether you want our newsletter.</li>
+    <li><strong>Consent records:</strong> what you agreed to or withdrew, when, the wording shown to you and the notice version, with the IP address and browser used at the time.</li>
+    <li><strong>Technical data:</strong> IP address, browser user agent and timestamps; a session cookie while you are signed in and a short-lived security cookie when you confirm a link; one-way hashes of your email address and IP address used for abuse limits.</li>
+    <li><strong>Source channel:</strong> the UTM tags in the link that brought you to the tool, and the domain of the website you came from (never the full page address).</li>
+  </ul>
+  <p>Please do not include other people's personal data in your notes or files unless you are authorised to share it.</p>
+
+  <h2>4. Where your data comes from</h2>
+  <p>We collect it directly from you, automatically from your browser while you use the tool, and from the UTM tags in the link you followed.{% if turnstile_on %} Cloudflare Turnstile, our bot protection, tells us whether a request appears to come from a person.{% endif %} We do not obtain your personal data from any other source for this tool.</p>
+
+  <h2>5. Why we process it</h2>
+  <ol type="a">
+    <li><strong>To verify your email address and deliver your terrain screening report.</strong> This is required to use the tool.</li>
+    <li><strong>So that EcoEnergy staff can email you about a site you submitted</strong>, for example to clarify results or discuss next steps. We do this only if you tick the separate, optional box on the upload page for that site. The box is unticked by default and the choice is per report: you can change it at any time on the report page or on your <a href="/account">account page</a>.</li>
+    <li><strong>To send you our newsletter and insights by email</strong>, only if you tick the separate newsletter box and confirm your email address. This is voluntary.</li>
+  </ol>
+  <p>We also use your data to keep the tool secure and prevent abuse, to see which posts or channels bring visitors to the tool, to keep records of your consent and to meet our legal obligations.</p>
+
+  <h2>6. Is it obligatory?</h2>
+  <p>Your email address is obligatory: without it we cannot verify you or send your report, so you cannot use the tool. A site file is needed to produce a report. Everything else is voluntary: the optional answers, staff follow-up and the newsletter. Leaving them blank or unticked does not affect your report. Technical data is collected automatically when the tool is used and is needed to run it securely.</p>
+
+  <h2>7. Who we disclose it to</h2>
+  <ul>
+    <li><strong>Hosting and email-delivery providers</strong> that run the tool, store its files and send our emails. They act as our data processors, under our instructions. Planned production setup: [to be confirmed].</li>
+    <li><strong>Elevation data.</strong> We read public elevation tiles from the Copernicus DEM archive hosted by Amazon Web Services; only the tile name and the parts of that tile file covering your site's general area (a block of roughly 30 km) are requested — never your site's coordinates, your file or your details.{% if otd %} At the moment this installation uses the fallback provider instead, so your site's coordinates are sent to OpenTopoData to read elevations. Your email address and other details about you are not sent.{% elif geotiff %} At the moment this installation reads elevations from a file on our own server instead, so nothing about your site is sent to an elevation service.{% endif %}</li>
+    {% if turnstile_on %}<li><strong>Cloudflare</strong>, to check that sign-ups come from people (bot protection).</li>{% endif %}
+    <li><strong>Google Fonts:</strong> your browser loads the typefaces on these pages from Google's servers, which see your IP address. No page address is sent.</li>
+    <li><strong>Our professional advisers</strong>, and government or regulatory authorities where the law requires or permits it.</li>
+  </ul>
+  <p>We do not sell or rent your personal data.</p>
+
+  <h2>8. Transfers outside Malaysia</h2>
+  <p>Some of these providers may store or process data outside Malaysia [to be confirmed]. Any such transfer is made only as permitted under section 129 of the Act.</p>
+
+  <h2>9. Your choices</h2>
+  <ul>
+    <li><strong>Staff follow-up</strong> is opt-in per report. Each report page and your <a href="/account">account page</a> show whether it is Allowed or Not allowed, with a button to change it. Changing it to Not allowed withdraws your consent for that site straight away. Deleting a report also ends follow-up about it.</li>
+    <li><strong>Newsletter</strong> is opt-in only. Unsubscribe at any time with the link in each email, on your account page, or by emailing us.</li>
+    <li>Leave the optional fields blank.</li>
+    <li>Delete a report and its site file before the {{ settings.retention_days }}-day period ends with the <strong>Delete</strong> button, or delete your whole account on your account page.</li>
+    <li>Keep other people's personal data out of your file, for example landowner names in placemark names or descriptions.</li>
+    <li>Ask us in writing to stop using your data for direct marketing.</li>
+  </ul>
+
+  <h2>10. How long we keep it</h2>
+  <ul>
+    <li><strong>Site files, results and reports:</strong> {{ settings.retention_days }} days after upload, or earlier on request. The Delete button deletes them immediately.</li>
+    <li><strong>Email addresses that are never confirmed:</strong> deleted after {{ settings.unverified_purge_days }} days.</li>
+    <li><strong>Your account and consent records:</strong> kept until you delete your account or, if you have no report left and are not subscribed to the newsletter, until {{ settings.inactive_purge_days }} days after you last used the tool, when we delete them as if you had deleted your account. [Consent-record retention after deletion to be confirmed by legal review — reg 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on the data user.]</li>
+    <li><strong>After you delete your account</strong> we keep only a one-way hash of your email address, so we can honour "do not contact". Requesting a new link later counts as a fresh sign-up.</li>
+    <li><strong>Short-lived data:</strong> access links expire after {{ settings.token_ttl_hours }} hours, sign-in sessions after {{ settings.session_ttl_hours }} hours, and hashed abuse counters after about 2 days.</li>
+  </ul>
+
+  <h2>11. Security</h2>
+  <p>We take practical steps to protect your personal data from loss, misuse, modification, unauthorised or accidental access or disclosure, alteration or destruction, and we require our service providers to do the same. For example: encrypted connections, access links and session identifiers stored only as one-way hashes, reports that open only in your own signed-in session, defensive parsing of uploaded files, and deletion on the schedule above. If a personal data breach is likely to cause significant harm, we will notify the Personal Data Protection Commissioner and, where required, you.</p>
+
+  <h2>12. Your rights and how to make a request</h2>
+  <ul>
+    <li id="access"><strong>Access and correction</strong> (sections 31 and 35 of the Act): ask for a copy of your personal data, or ask us to correct it. Your account page also shows what we hold. We respond within 21 days of receiving your request. If we cannot, we will tell you in writing, with our reasons, before the 21 days end, and comply in full within a further 14 days.</li>
+    <li><strong>Withdraw consent</strong> (section 38): at any time, by written notice to us, or with the controls in the tool (staff follow-up per report, the newsletter unsubscribe link, or deleting your account). We then stop the processing that relied on that consent.</li>
+    <li><strong>Direct marketing</strong> (section 43): you may at any time ask us in writing to stop, or not to begin, processing your personal data for direct marketing.</li>
+    <li id="portability"><strong>Data portability</strong> (section 43A): you may ask us, by written notice given electronically, to send your personal data directly to another data controller of your choice, where this is technically feasible and the data formats are compatible. You can also download your data as a JSON file from your account page.</li>
+  </ul>
+  <p>To make a request, email <a href="mailto:contact@ecoconsultancy.services?subject=Personal%20data%20request">contact@ecoconsultancy.services</a> with the subject "Personal data request". We may need to verify your identity.</p>
+  <p><strong>Inquiries and complaints:</strong> [Designation of contact person — to be confirmed], EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
+
+  <h2>13. Age</h2>
+  <p>This tool is meant for business users aged 18 and above. Please do not use it if you are under 18: the Personal Data Protection Regulations 2013 require consent for anyone under 18 to come from a parent, guardian or person with parental responsibility.</p>
+
+  <h2>14. Cookies</h2>
+  <p>We use only strictly necessary cookies: a session cookie while you are signed in, and a short-lived security cookie when you confirm an access link. We do not use advertising or analytics cookies on this tool.</p>
+
+  <h2>15. Changes</h2>
+  <p>We may update this notice. The current version, with its date, will always be shown on this page, and your consent records show which version you saw.</p>
+  <p class="small">If the English and Bahasa Malaysia versions differ, [legal review: state which version prevails].</p>
+  </div>
+
+  <hr class="lang-divider">
+
+  <div lang="ms" id="bm">
+  <p class="kicker">Alat Saringan Rupa Bumi Desktop</p>
+  <h1>Notis privasi</h1>
+  <p class="muted small">Versi notis <code>{{ settings.notice_version }}</code> · Kemas kini terakhir: [tarikh — ditetapkan semasa penerbitan] · Akta Perlindungan Data Peribadi 2010, seksyen 7</p>
+  <p class="lang-jump"><a href="#en" lang="en">Read this notice in English ↑</a></p>
+
+  <h2>1. Mengenai notis ini</h2>
+  <p>EcoEnergy Consultancy Sdn. Bhd. ("EcoEnergy", "kami") memberikan notis ini menurut seksyen 7 Akta Perlindungan Data Peribadi 2010 (sebagaimana dipinda) ("Akta"). Notis ini menerangkan cara kami memproses data peribadi anda apabila anda menggunakan alat Desktop Terrain Screening. Notis ini disediakan dalam Bahasa Inggeris dan Bahasa Malaysia.</p>
+
+  <h2>2. Siapa kami dan cara menghubungi kami</h2>
+  <dl class="dl contact-dl">
+    <dt>Pengawal data</dt><dd>EcoEnergy Consultancy Sdn. Bhd. [no. pendaftaran syarikat — akan disahkan]</dd>
+    <dt>Alamat</dt><dd>Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur</dd>
+    <dt>Telefon</dt><dd><a href="tel:+60387446478">+60 3 8744 6478</a></dd>
+    <dt>E-mel</dt><dd><a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a></dd>
+    <dt>Orang untuk dihubungi</dt><dd>[Jawatan orang yang boleh dihubungi, cth. Pegawai Perlindungan Data — akan disahkan melalui semakan undang-undang]</dd>
+  </dl>
+
+  <h2>3. Data peribadi yang kami proses</h2>
+  <ul>
+    <li><strong>Alamat e-mel anda.</strong></li>
+    <li><strong>Jawapan pilihan</strong> di halaman muat naik: label tapak, skim, peringkat projek dan catatan.</li>
+    <li><strong>Fail tapak yang anda muat naik</strong> (KML/KMZ, termasuk sebarang nama dan keterangan di dalamnya) serta hasil yang kami terbitkan daripadanya: keluasan, lokasi (negeri, daerah dan titik tengah), statistik ketinggian dan kecerunan, peta serta laporan PDF/Word anda. Fail tapak dikaitkan dengan alamat e-mel anda, dan catatan atau fail anda mungkin mengenal pasti anda atau orang lain.</li>
+    <li><strong>Pilihan anda:</strong> sama ada kakitangan EcoEnergy boleh menghubungi anda melalui e-mel berkenaan setiap tapak yang anda serahkan, dan sama ada anda mahu menerima surat berita kami.</li>
+    <li><strong>Rekod persetujuan:</strong> perkara yang anda persetujui atau tarik balik, masanya, teks yang dipaparkan kepada anda dan versi notis, berserta alamat IP dan pelayar yang digunakan pada masa itu.</li>
+    <li><strong>Data teknikal:</strong> alamat IP, ejen pengguna pelayar (browser user agent) dan cap masa; kuki sesi semasa anda log masuk dan kuki keselamatan jangka pendek semasa anda mengesahkan pautan; cincang sehala alamat e-mel dan alamat IP anda untuk had penyalahgunaan.</li>
+    <li><strong>Saluran sumber:</strong> tag UTM dalam pautan yang membawa anda ke alat ini, dan domain laman web asal anda (bukan alamat halaman penuh).</li>
+  </ul>
+  <p>Sila jangan masukkan data peribadi orang lain dalam catatan atau fail anda melainkan anda diberi kuasa untuk berbuat demikian.</p>
+
+  <h2>4. Sumber data anda</h2>
+  <p>Kami mengumpul data secara terus daripada anda, secara automatik daripada pelayar anda semasa anda menggunakan alat ini, dan daripada tag UTM dalam pautan yang anda ikuti.{% if turnstile_on %} Cloudflare Turnstile, perlindungan bot kami, memaklumkan sama ada sesuatu permintaan kelihatan datang daripada manusia.{% endif %} Kami tidak mendapatkan data peribadi anda daripada sumber lain bagi alat ini.</p>
+
+  <h2>5. Tujuan pemprosesan</h2>
+  <ol type="a">
+    <li><strong>Mengesahkan alamat e-mel anda dan menghantar laporan saringan rupa bumi anda.</strong> Ini diwajibkan untuk menggunakan alat ini.</li>
+    <li><strong>Membolehkan kakitangan EcoEnergy menghubungi anda melalui e-mel berkenaan tapak yang anda serahkan</strong>, contohnya untuk menjelaskan hasil saringan atau membincangkan langkah seterusnya. Kami hanya berbuat demikian jika anda menanda kotak pilihan yang berasingan di halaman muat naik bagi tapak tersebut. Kotak ini tidak ditanda secara lalai dan pilihan ini dibuat bagi setiap laporan: anda boleh menukarnya pada bila-bila masa di halaman laporan atau di <a href="/account">halaman akaun</a> anda.</li>
+    <li><strong>Menghantar surat berita dan maklumat terkini kami melalui e-mel</strong>, hanya jika anda menanda kotak surat berita yang berasingan dan mengesahkan alamat e-mel anda. Ini adalah sukarela.</li>
+  </ol>
+  <p>Kami juga menggunakan data anda untuk memastikan keselamatan alat ini dan mencegah penyalahgunaan, untuk mengetahui hantaran atau saluran yang membawa pelawat ke alat ini, untuk menyimpan rekod persetujuan anda dan untuk memenuhi kewajipan undang-undang kami.</p>
+
+  <h2>6. Adakah ia wajib?</h2>
+  <p>Alamat e-mel anda adalah wajib: tanpanya kami tidak dapat mengesahkan anda atau menghantar laporan anda, jadi anda tidak dapat menggunakan alat ini. Fail tapak diperlukan untuk menghasilkan laporan. Selebihnya adalah sukarela: jawapan pilihan, susulan kakitangan dan surat berita. Laporan anda tidak terjejas jika ia dibiarkan kosong atau tidak ditanda. Data teknikal dikumpul secara automatik apabila alat ini digunakan dan diperlukan untuk mengendalikannya dengan selamat.</p>
+
+  <h2>7. Pihak yang menerima data anda</h2>
+  <ul>
+    <li><strong>Penyedia hos dan penghantaran e-mel</strong> yang menjalankan alat ini, menyimpan failnya dan menghantar e-mel kami. Mereka bertindak sebagai pemproses data kami, mengikut arahan kami. Susunan pengeluaran yang dirancang: [akan disahkan].</li>
+    <li><strong>Data ketinggian.</strong> Kami membaca jubin data ketinggian awam daripada arkib Copernicus DEM yang dihoskan oleh Amazon Web Services; hanya nama jubin dan bahagian fail jubin itu yang meliputi kawasan umum tapak anda (blok kira-kira 30 km) yang diminta — bukan koordinat tapak anda, fail anda atau butiran anda.{% if otd %} Buat masa ini, pemasangan ini menggunakan penyedia sandaran, jadi koordinat tapak anda dihantar kepada OpenTopoData untuk membaca ketinggian. Alamat e-mel anda dan butiran lain tentang anda tidak dihantar.{% elif geotiff %} Buat masa ini, pemasangan ini membaca ketinggian daripada fail di pelayan kami sendiri, jadi tiada maklumat tentang tapak anda dihantar kepada perkhidmatan data ketinggian.{% endif %}</li>
+    {% if turnstile_on %}<li><strong>Cloudflare</strong>, untuk memastikan pendaftaran dibuat oleh manusia (perlindungan bot).</li>{% endif %}
+    <li><strong>Google Fonts:</strong> pelayar anda memuatkan fon pada halaman ini daripada pelayan Google, yang dapat melihat alamat IP anda. Tiada alamat halaman dihantar.</li>
+    <li><strong>Penasihat profesional kami</strong>, serta pihak berkuasa kerajaan atau kawal selia apabila dikehendaki atau dibenarkan oleh undang-undang.</li>
+  </ul>
+  <p>Kami tidak menjual atau menyewakan data peribadi anda.</p>
+
+  <h2>8. Pemindahan ke luar Malaysia</h2>
+  <p>Sebahagian penyedia ini mungkin menyimpan atau memproses data di luar Malaysia [akan disahkan]. Sebarang pemindahan sedemikian hanya dibuat sebagaimana yang dibenarkan di bawah seksyen 129 Akta.</p>
+
+  <h2>9. Pilihan anda</h2>
+  <ul>
+    <li><strong>Susulan kakitangan</strong> adalah melalui pilihan masuk (opt-in) bagi setiap laporan. Setiap halaman laporan dan <a href="/account">halaman akaun</a> anda menunjukkan sama ada ia Dibenarkan atau Tidak dibenarkan, berserta butang untuk menukarnya. Menukarnya kepada Tidak dibenarkan menarik balik persetujuan anda bagi tapak itu serta-merta. Memadam laporan juga menamatkan susulan berkenaan tapak itu.</li>
+    <li><strong>Surat berita</strong> adalah melalui pilihan masuk sahaja. Anda boleh berhenti melanggan pada bila-bila masa melalui pautan dalam setiap e-mel, di halaman akaun anda, atau dengan menghantar e-mel kepada kami.</li>
+    <li>Biarkan medan pilihan kosong.</li>
+    <li>Padam laporan dan fail tapaknya sebelum tamat tempoh {{ settings.retention_days }} hari dengan butang <strong>Delete</strong>, atau padam keseluruhan akaun anda di halaman akaun.</li>
+    <li>Jangan masukkan data peribadi orang lain dalam fail anda, contohnya nama pemilik tanah dalam nama atau keterangan titik.</li>
+    <li>Minta kami secara bertulis untuk berhenti menggunakan data anda bagi tujuan pemasaran langsung.</li>
+  </ul>
+
+  <h2>10. Tempoh penyimpanan</h2>
+  <ul>
+    <li><strong>Fail tapak, hasil dan laporan:</strong> {{ settings.retention_days }} hari selepas dimuat naik, atau lebih awal atas permintaan anda. Butang Delete memadamnya serta-merta.</li>
+    <li><strong>Alamat e-mel yang tidak pernah disahkan:</strong> dipadam selepas {{ settings.unverified_purge_days }} hari.</li>
+    <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda atau, jika anda tiada laporan lagi dan tidak melanggan surat berita, sehingga {{ settings.inactive_purge_days }} hari selepas anda kali terakhir menggunakan alat ini, apabila kami memadamnya seolah-olah anda telah memadam akaun anda. [Tempoh penyimpanan rekod persetujuan selepas pemadaman akan disahkan melalui semakan undang-undang — peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas pengguna data.]</li>
+    <li><strong>Selepas anda memadam akaun,</strong> kami hanya menyimpan cincang sehala alamat e-mel anda supaya kami dapat mematuhi permintaan "jangan hubungi". Meminta pautan baharu kemudian dikira sebagai pendaftaran baharu.</li>
+    <li><strong>Data jangka pendek:</strong> pautan akses tamat selepas {{ settings.token_ttl_hours }} jam, sesi log masuk selepas {{ settings.session_ttl_hours }} jam, dan pembilang penyalahgunaan yang dicincang selepas kira-kira 2 hari.</li>
+  </ul>
+
+  <h2>11. Keselamatan</h2>
+  <p>Kami mengambil langkah praktikal untuk melindungi data peribadi anda daripada kehilangan, penyalahgunaan, pengubahsuaian, akses atau pendedahan tanpa kebenaran atau secara tidak sengaja, perubahan atau pemusnahan, dan kami mewajibkan penyedia perkhidmatan kami berbuat demikian. Contohnya: sambungan yang disulitkan, pautan akses dan pengecam sesi yang disimpan hanya sebagai cincang sehala, laporan yang hanya boleh dibuka dalam sesi log masuk anda sendiri, penghuraian fail muat naik secara berhati-hati, dan pemadaman mengikut jadual di atas. Jika pelanggaran data peribadi mungkin menyebabkan kemudaratan yang ketara, kami akan memaklumkan Pesuruhjaya Perlindungan Data Peribadi dan, jika dikehendaki, anda.</p>
+
+  <h2>12. Hak anda dan cara membuat permintaan</h2>
+  <ul>
+    <li id="access-bm"><strong>Akses dan pembetulan</strong> (seksyen 31 dan 35 Akta): minta salinan data peribadi anda, atau minta kami membetulkannya. Halaman akaun anda juga menunjukkan data yang kami simpan. Kami akan menjawab dalam tempoh 21 hari selepas menerima permintaan anda. Jika kami tidak dapat berbuat demikian, kami akan memaklumkan anda secara bertulis, berserta sebabnya, sebelum tamat tempoh 21 hari itu, dan mematuhinya sepenuhnya dalam tempoh 14 hari berikutnya.</li>
+    <li><strong>Menarik balik persetujuan</strong> (seksyen 38): pada bila-bila masa, melalui notis bertulis kepada kami, atau dengan kawalan dalam alat ini (susulan kakitangan bagi setiap laporan, pautan berhenti melanggan surat berita, atau memadam akaun anda). Kami kemudian akan menghentikan pemprosesan yang bergantung pada persetujuan tersebut.</li>
+    <li><strong>Pemasaran langsung</strong> (seksyen 43): anda boleh pada bila-bila masa meminta kami secara bertulis untuk berhenti, atau tidak memulakan, pemprosesan data peribadi anda bagi tujuan pemasaran langsung.</li>
+    <li id="portability-bm"><strong>Kemudahalihan data</strong> (seksyen 43A): anda boleh meminta kami, melalui notis bertulis yang diberikan secara elektronik, menghantar data peribadi anda terus kepada pengawal data lain pilihan anda, sekiranya ini boleh dilaksanakan secara teknikal dan format data adalah serasi. Anda juga boleh memuat turun data anda sebagai fail JSON dari halaman akaun anda.</li>
+  </ul>
+  <p>Untuk membuat permintaan, hantar e-mel ke <a href="mailto:contact@ecoconsultancy.services?subject=Permintaan%20data%20peribadi">contact@ecoconsultancy.services</a> dengan subjek "Permintaan data peribadi". Kami mungkin perlu mengesahkan identiti anda.</p>
+  <p><strong>Pertanyaan dan aduan:</strong> [Jawatan orang yang boleh dihubungi — akan disahkan], EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
+
+  <h2>13. Had umur</h2>
+  <p>Alat ini ditujukan kepada pengguna perniagaan berumur 18 tahun ke atas. Sila jangan menggunakannya jika anda berumur di bawah 18 tahun: Peraturan-Peraturan Perlindungan Data Peribadi 2013 menghendaki persetujuan bagi sesiapa yang berumur di bawah 18 tahun diberikan oleh ibu bapa, penjaga atau orang yang mempunyai tanggungjawab sebagai ibu bapa.</p>
+
+  <h2>14. Kuki</h2>
+  <p>Kami hanya menggunakan kuki yang benar-benar perlu: kuki sesi semasa anda log masuk, dan kuki keselamatan jangka pendek semasa anda mengesahkan pautan akses. Kami tidak menggunakan kuki pengiklanan atau analitik pada alat ini.</p>
+
+  <h2>15. Perubahan</h2>
+  <p>Kami mungkin mengemas kini notis ini. Versi terkini, berserta tarikhnya, akan sentiasa dipaparkan di halaman ini, dan rekod persetujuan anda menunjukkan versi yang anda lihat.</p>
+  <p class="small">Sekiranya versi Bahasa Inggeris dan Bahasa Malaysia berbeza, [semakan undang-undang: nyatakan versi yang terpakai].</p>
+  </div>
+</article>
+{% endblock %}

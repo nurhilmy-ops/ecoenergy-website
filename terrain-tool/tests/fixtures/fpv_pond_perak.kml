@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+	<name>Kinta ex-mining pond FPV.kml</name>
+	<Placemark>
+		<name>Ex-mining pond FPV</name>
+		<description>Approx. 25 ha ex-mining pond in the Kinta Valley, synthetic test boundary traced along the water edge.</description>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						101.055239,4.547739,0 101.055491,4.549044,0 101.055785,4.549639,0 101.056983,4.551150,0 101.057261,4.550872,0
+						101.057359,4.550354,0 101.058437,4.550103,0 101.058654,4.549105,0 101.058954,4.548489,0 101.059798,4.547359,0
+						101.060317,4.546983,0 101.060317,4.546072,0 101.060039,4.545239,0 101.059303,4.544924,0 101.058572,4.544961,0
+						101.057952,4.545222,0 101.057817,4.544406,0 101.057539,4.544128,0 101.056728,4.544401,0 101.056008,4.544619,0
+						101.055517,4.544961,0 101.055794,4.545872,0 101.056068,4.547006,0 101.055239,4.547739,0
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

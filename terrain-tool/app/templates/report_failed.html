@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Screening could not be completed{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  <p class="kicker">Terrain screening</p>
+  <h1 id="title">We couldn't complete this screening</h1>
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  <p class="muted">Most problems come from the file itself — check it opens in Google Earth, that the boundaries are polygons, and that the site is in Malaysia.</p>
+  <div class="actions"><a class="btn" href="/upload">Try again</a><a class="btn-ghost" href="/reports">My reports</a></div>
+  <div class="mt-lg">{% include "_delete_report.html" %}</div>
+</section>
+{% endblock %}

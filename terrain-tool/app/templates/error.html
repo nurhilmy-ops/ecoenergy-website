@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  <p class="kicker">Error {{ code }}</p>
+  <h1 id="title">{{ title }}</h1>
+  <p class="lede">{{ body }}</p>
+  <div class="actions"><a class="btn" href="/">Back to start</a>{% if session %}<a class="btn-ghost" href="/reports">My reports</a>{% endif %}</div>
+</section>
+{% endblock %}

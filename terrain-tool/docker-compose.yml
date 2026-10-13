@@ -1,0 +1,38 @@
+# Local stack: the app plus Mailpit, a fake SMTP server with a web inbox,
+# so magic-link emails can be opened at http://localhost:8025 exactly as a visitor would.
+# Ports are published on this machine's loopback only: the Mailpit inbox holds every
+# magic link, so it must not be reachable from the network.
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Listen address and port inside the container (an .env copied from .env.example
+      # must not narrow them to 127.0.0.1).
+      HOST: 0.0.0.0
+      PORT: "8000"
+      APP_ENV: development
+      BASE_URL: http://localhost:8000
+      MAIL_BACKEND: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    # Longer than the worker's 30 s shutdown wait, so a running screening can finish.
+    stop_grace_period: 40s
+    volumes:
+      # Named volume: created with the image's /app/data ownership, so the non-root app user
+      # can write to it on Linux hosts too. `docker compose down -v` deletes it.
+      - terrain-data:/app/data
+    depends_on:
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - "127.0.0.1:8025:8025"   # web inbox; the app reaches SMTP at mailpit:1025 on the compose network
+
+volumes:
+  terrain-data:

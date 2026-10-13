@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Document>
+	<name>Bentong hill land.kml</name>
+	<Placemark>
+		<name>Bentong hill lot</name>
+		<description>Approx. 60 ha of rolling to hilly land near Bentong, synthetic test boundary.</description>
+		<Polygon>
+			<tessellate>1</tessellate>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						101.8995,3.5045,0 101.9043,3.5042,0 101.9084,3.5052,0 101.9089,3.5081,0 101.9068,3.5100,0 101.9022,3.5102,0 101.8991,3.5087,0 101.8985,3.5065,0 101.8995,3.5045,0
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

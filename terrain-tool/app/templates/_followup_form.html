@@ -1,0 +1,16 @@
+{# One-click change of staff follow-up for one report. Needs: job, csrf; optional back="account",
+   compact=True (short button for tables). The EN + BM sentences shown here are exactly what the
+   consent ledger records for the click (consent_wording('site_followup_on' / '_off')). #}
+{% set fu_key = 'site_followup_off' if job.followup_consent else 'site_followup_on' %}
+<form method="post" action="/reports/{{ job.id }}/followup" class="followup-form{% if compact %} compact{% endif %}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="action" value="{{ 'withdraw' if job.followup_consent else 'grant' }}">
+  {% if back %}<input type="hidden" name="back" value="{{ back }}">{% endif %}
+  {% if compact %}
+  <button class="btn-ghost btn-sm" type="submit" aria-describedby="fu-{{ job.id }}">{{ 'Turn off' if job.followup_consent else 'Turn on' }}</button>
+  <small class="fu-text" id="fu-{{ job.id }}">{{ CONSENT[fu_key][0] }} <span lang="ms">{{ CONSENT[fu_key][1] }}</span></small>
+  {% else %}
+  <button class="btn-ghost" type="submit">{{ CONSENT[fu_key][0] }}</button>
+  <small class="fu-bm" lang="ms">{{ CONSENT[fu_key][1] }}</small>
+  {% endif %}
+</form>

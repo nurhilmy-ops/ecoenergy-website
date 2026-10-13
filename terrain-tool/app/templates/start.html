@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{% if valid %}Continue to your screening{% else %}Link expired{% endif %}{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  {% if valid %}
+  <p class="kicker">Confirm it's you</p>
+  <h1 id="title">Continue to upload your site</h1>
+  {% if notice %}<div class="alert alert-info" role="status">{{ notice }}</div>{% endif %}
+  <p class="lede">Press the button to confirm your email address and open the upload page.</p>
+  {% if confirms_newsletter %}<p class="muted small">This link was requested with the newsletter box ticked, so continuing also confirms your subscription to EcoEnergy's solar policy and scheme insights emails. You can unsubscribe at any time on your account page.</p>{% endif %}
+  <form method="post" action="/start">
+    <input type="hidden" name="t" value="{{ token }}">
+    <input type="hidden" name="pre" value="{{ pre }}">
+    <button class="btn" type="submit">Continue to upload your site</button>
+  </form>
+  <p class="muted small mt">We ask for a click because email security scanners open links automatically — this way they can't use up your link.</p>
+  {% else %}
+  <p class="kicker">Link not valid</p>
+  <h1 id="title">This link has expired or has already been used</h1>
+  <p class="lede">Links are valid for {{ settings.token_ttl_hours }} hours and up to {{ settings.token_max_uses }} uses. Request a new one — it only takes a moment.</p>
+  <div class="actions"><a class="btn" href="/">Request a new link</a></div>
+  {% endif %}
+</section>
+{% endblock %}

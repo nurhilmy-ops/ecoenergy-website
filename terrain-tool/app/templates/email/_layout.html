@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background:#F4EFE6;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4EFE6;">
+  <tr><td align="center" style="padding:24px 12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E9E2D4;">
+      <tr><td style="background:#081527;padding:20px 28px;border-bottom:3px solid #D4A23A;">
+        <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;color:#F4EFE6;">Eco<b style="color:#D4A23A;">Energy</b></span>
+        <span style="font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:2px;color:#AFBFCF;text-transform:uppercase;padding-left:8px;">Terrain Screening</span>
+      </td></tr>
+      <tr><td style="padding:28px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#12233A;">
+        {% block body %}{% endblock %}
+      </td></tr>
+      <tr><td style="padding:18px 28px 24px;border-top:1px solid #E9E2D4;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#48586C;">
+        EcoEnergy Consultancy · Desktop screening — not a survey.<br>
+        <a href="{{ privacy_url }}" style="color:#B8841F;">Privacy notice</a> ·
+        <a href="{{ account_url }}" style="color:#B8841F;">Your account and data</a> ·
+        Questions? Reply or write to <a href="mailto:{{ reply_to }}" style="color:#B8841F;">{{ reply_to }}</a>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

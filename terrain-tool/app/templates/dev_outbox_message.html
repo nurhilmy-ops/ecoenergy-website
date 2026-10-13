@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Dev outbox #{{ msg.id }}{% endblock %}
+{% block content %}
+<p class="kicker">Development only · <a href="/dev/outbox">All messages</a></p>
+<h1>{{ msg.subject }}</h1>
+<dl class="dl small">
+  <dt>To</dt><dd>{{ msg.to_addr }}</dd>
+  <dt>From</dt><dd>{{ settings.mail_from }}</dd>
+  <dt>Created</dt><dd>{{ msg.created_at|dt }}</dd>
+  {% for k, v in msg.headers.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+</dl>
+<div class="actions mt">{% if msg.html_body %}<a class="btn-ghost btn-sm" href="/dev/outbox/{{ msg.id }}/html">View HTML version</a>{% endif %}</div>
+<pre class="mail mt">{{ msg.text_body|linkify }}</pre>
+{% endblock %}

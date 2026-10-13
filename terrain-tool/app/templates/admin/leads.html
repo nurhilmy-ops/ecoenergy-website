@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin · Leads{% endblock %}
+{% block content %}
+<p class="kicker">Admin</p>
+<h1>Leads</h1>
+<p class="muted">One row per screening by a verified visitor, newest first. Site fields are blank once a report is deleted or passes the {{ settings.retention_days }}-day retention, and deleted reports drop off this list.</p>
+<div class="alert alert-info" role="note">
+  <strong>Staff follow-up is opt-in per report.</strong> Email someone about a site only where Follow-up says <strong>Yes</strong>.
+  Rows marked <span class="badge-dnc">Do not contact</span> must not be contacted about that site.
+  The <a href="/admin/export/leads.csv">Leads CSV</a> contains only screenings whose follow-up consent is currently granted
+  ({{ rows|selectattr('followup_consent')|list|length }} of {{ rows|length }} below).
+  The Newsletter CSV contains confirmed newsletter subscribers only.
+</div>
+{% include "admin/_nav.html" %}
+<div class="table-wrap">
+  <table class="table-compact">
+    <thead><tr><th scope="col">Email</th><th scope="col">Follow-up</th><th scope="col">Screening</th><th scope="col">Scheme · stage</th><th scope="col">Location</th><th scope="col" class="num">Area (ha)</th><th scope="col" class="num">KPKT I (%)</th><th scope="col">Notes</th><th scope="col">Source</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.email }}{% if r.jobs_count > 1 %}<br><span class="muted small">{{ r.jobs_count }} reports</span>{% endif %}</td>
+        <td class="nowrap">{% if r.followup_consent %}<span class="yes">Yes</span>{% else %}<span class="no">No</span><br><span class="badge-dnc">Do not contact</span>{% endif %}
+          {% if r.followup_since %}<br><span class="muted small">{{ 'since' if r.followup_consent else 'withdrawn' }} {{ r.followup_since|dt(False) }}</span>{% endif %}</td>
+        <td class="nowrap">{{ r.job_created_at|dt(False) }}<br><span class="status status-{{ r.job_status }}">{{ r.job_status }}</span></td>
+        <td>{{ r.scheme|upper if r.scheme else '—' }}{% if r.stage %}<br><span class="muted small">{{ STAGES.get(r.stage, r.stage) }}</span>{% endif %}</td>
+        <td>{{ [r.district, r.state]|select|join(', ') or '—' }}</td><td class="num">{{ r.total_area_ha|num(1) }}</td><td class="num">{{ r.kpkt_class1_pct|num(1) }}</td>
+        <td class="wrap-text small">{{ r.notes or '' }}</td>
+        <td class="small">{{ r.utm_source or 'direct' }}{% if r.utm_medium %}<br><span class="muted">{{ r.utm_medium }}</span>{% endif %}</td></tr>
+    {% else %}
+      <tr><td colspan="9" class="muted">No leads yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
