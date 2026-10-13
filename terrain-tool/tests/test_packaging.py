@@ -229,7 +229,7 @@ def test_double_click_launchers():
     assert 'powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run_local.ps1"' in bat_text
     assert "set OPEN_BROWSER=1" in bat_text and "pause" in bat_text
     mac = (ROOT / "START-MAC.command").read_text()
-    assert "\r" not in mac and "export OPEN_BROWSER=1" in mac and "./run_local.sh" in mac
+    assert "\r" not in mac and "export OPEN_BROWSER=1" in mac and "bash ./run_local.sh" in mac
     if sys.platform != "win32":
         assert os.access(ROOT / "START-MAC.command", os.X_OK)
     attrs = (ROOT / ".gitattributes").read_text()

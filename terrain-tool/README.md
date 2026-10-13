@@ -37,8 +37,11 @@ Copernicus DEM tiles on Amazon Web Services at run time.
 3. Open the `terrain-tool` folder and double-click:
    - **Windows:** `START-WINDOWS.bat`. If Windows asks whether to run it, choose
      **More info → Run anyway** (or **Run**).
-   - **Mac:** `START-MAC.command`. The first time, macOS may refuse to open it: right-click
-     it → **Open** → **Open**.
+   - **Mac:** `START-MAC.command`. Recent macOS versions refuse to open it the first time
+     ("Apple could not verify…"): click **Done**, then either open **System Settings →
+     Privacy & Security**, scroll down and click **Open Anyway** next to the message about
+     `START-MAC.command`; or open **Terminal**, type `bash ` (with a space), drag
+     `START-MAC.command` into the Terminal window and press **Return**.
 4. A black window appears and installs what the tool needs. **The first time takes
    5–10 minutes**; later starts take a few seconds. Your web browser then opens the tool by
    itself at http://localhost:8000.
