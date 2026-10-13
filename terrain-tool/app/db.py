@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS tokens (
     next_path      TEXT,                   -- optional relative redirect after confirmation
     created_at     TEXT NOT NULL,
     expires_at     TEXT NOT NULL,
-    uses_left      INTEGER NOT NULL
+    uses_left      INTEGER NOT NULL,
+    newsletter_consent_id INTEGER          -- the newsletter 'granted' ledger row this link confirms
+                                           -- (set only for a link requested with the box ticked)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -140,6 +142,9 @@ def connect(db_path: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, timeout=30, isolation_level=None)  # autocommit; use BEGIN explicitly
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # Overwrite deleted content so erased personal data cannot be recovered from app.db.
+    # SQLite's compile-time default is OFF (e.g. the python.org Windows and macOS builds).
+    conn.execute("PRAGMA secure_delete = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA busy_timeout = 30000")
     return conn
@@ -176,6 +181,7 @@ def tx(db_path: Path) -> Iterator[sqlite3.Connection]:
 COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("jobs", "followup_consent", "INTEGER NOT NULL DEFAULT 0"),
     ("consents", "job_id", "TEXT"),
+    ("tokens", "newsletter_consent_id", "INTEGER"),
 )
 
 # Objects that depend on migrated columns, created after the columns exist.

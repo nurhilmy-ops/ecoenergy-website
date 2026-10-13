@@ -23,6 +23,7 @@ from xml.etree.ElementTree import Element, ParseError
 
 import defusedxml
 import defusedxml.ElementTree as DET
+import numpy as np
 import shapely
 from pyproj import Geod
 from shapely.geometry import LineString, MultiPolygon, Polygon
@@ -53,6 +54,18 @@ NAME_MAX_CHARS = 80
 MAX_TOTAL_VERTICES = 250_000
 # Below this geodesic area a "polygon" is a sliver or a digitising slip.
 MIN_POLYGON_AREA_M2 = 1.0
+# Repairing a self-intersecting polygon (shapely.make_valid) costs roughly the cube of its
+# vertex count when it crosses itself many times: a 200-vertex star takes minutes of CPU.
+# Real digitising slips cross a few times, so an invalid polygon is repaired only when its
+# rings hold at most MAX_REPAIR_VERTICES vertices and cross at most MAX_REPAIR_CROSSINGS times.
+MAX_REPAIR_VERTICES = 2_000
+MAX_REPAIR_CROSSINGS = 50
+# Elements in the parsed XML. A 50-feature KML needs a few thousand; the cap stops a small
+# KMZ of millions of empty elements from being built into a huge tree in memory.
+MAX_XML_ELEMENTS = 200_000
+# Total geodesic length of all lines, as a multiple of settings.max_extent_km. Routes are
+# sampled every ~30 m, so their length (not only their bounding box) bounds the work.
+MAX_LINE_LENGTH_EXTENTS = 20
 
 DEFAULT_NAMES = {"polygon": "Site", "line": "Route", "point": "Point"}
 
@@ -178,8 +191,21 @@ def _kml_from_kmz(data: bytes, settings: Settings) -> bytes:
 
 
 def _parse_xml(data: bytes) -> Element:
+    """Parse with defusedxml, counting elements as they are built so a file of millions of
+    tiny elements is refused before its tree fills memory."""
     try:
-        return DET.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+        root = None
+        for count, (_, el) in enumerate(DET.iterparse(io.BytesIO(data), events=("start",), forbid_dtd=True,
+                                                      forbid_entities=True, forbid_external=True), 1):
+            if root is None:
+                root = el
+            if count > MAX_XML_ELEMENTS:
+                raise ScreeningError(
+                    "This file has too many elements to screen. Please upload only the site "
+                    "boundary and key routes.", "too_complex")
+        if root is None:
+            raise ParseError("no element found")
+        return root
     except defusedxml.DefusedXmlException as exc:
         raise ScreeningError(
             "This file contains XML features that are not allowed for security reasons "
@@ -259,6 +285,33 @@ def _distinct(pts) -> int:
     return len(set(pts))
 
 
+def _crossings_exceed(rings, limit: int) -> bool:
+    """True once the rings' edges cross or touch each other more than `limit` times (edges
+    that share a vertex in the same ring do not count). Stops at the first excess, so a
+    heavily self-intersecting ring is refused after a handful of queries."""
+    segs, where = [], []
+    for r, ring in enumerate(rings):
+        n = len(ring)
+        for k in range(n):
+            segs.append((ring[k], ring[(k + 1) % n]))
+            where.append((r, k, n))
+    lines = shapely.linestrings(np.asarray(segs, dtype=float))
+    tree = shapely.STRtree(lines)
+    count = 0
+    for i, seg in enumerate(lines):
+        ri, ki, ni = where[i]
+        for j in tree.query(seg, predicate="intersects"):
+            if j <= i:
+                continue
+            rj, kj, _ = where[j]
+            if ri == rj and (kj == ki + 1 or (ki == 0 and kj == ni - 1)):
+                continue                      # neighbours on the same ring share a vertex
+            count += 1
+            if count > limit:
+                return True
+    return False
+
+
 def _build_polygon(name: str, ext, holes) -> tuple[Polygon, bool]:
     """Return a valid polygon and whether it needed repair."""
     if _distinct(ext) < 3:
@@ -269,6 +322,12 @@ def _build_polygon(name: str, ext, holes) -> tuple[Polygon, bool]:
     poly = Polygon(ext, holes)
     repaired = False
     if not poly.is_valid:
+        rings = [ext, *holes]
+        if (sum(len(r) for r in rings) > MAX_REPAIR_VERTICES
+                or _crossings_exceed(rings, MAX_REPAIR_CROSSINGS)):
+            raise ScreeningError(
+                f'The boundary of "{name}" crosses itself and is too complex to repair '
+                "automatically. Please fix the self-intersections and upload again.", "too_complex")
         fixed = shapely.make_valid(poly)
         parts = [g for g in getattr(fixed, "geoms", [fixed]) if isinstance(g, (Polygon, MultiPolygon))]
         polys = [p for g in parts for p in getattr(g, "geoms", [g]) if not p.is_empty]
@@ -432,6 +491,14 @@ def validate_upload(path: Path, settings: Settings, original_filename: str) -> S
         raise ScreeningError(
             "No site geometry was found in this file. It needs at least one polygon, "
             "line or point (placemark).", "no_geometry")
+
+    line_km = sum(GEOD.geometry_length(LineString(f.coords)) for f in features if f.kind == "line") / 1000.0
+    max_line_km = MAX_LINE_LENGTH_EXTENTS * settings.max_extent_km
+    if line_km > max_line_km:
+        raise ScreeningError(
+            f"The routes in this file add up to about {line_km:,.0f} km, more than the "
+            f"{max_line_km:,.0f} km limit for one screening. Please upload only the key cable and "
+            "access routes.", "too_complex")
 
     lons = [x for f in features for ring in [f.coords, *f.holes] for x, _ in ring]
     lats = [y for f in features for ring in [f.coords, *f.holes] for _, y in ring]

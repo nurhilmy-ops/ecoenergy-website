@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import ipaddress
 import logging
 import re
 import secrets
@@ -98,13 +99,24 @@ def is_disposable(email: str) -> bool:
 
 
 def client_ip(request: Request, settings: Settings) -> str:
-    """Peer address, or the first X-Forwarded-For hop when we sit behind a trusted proxy."""
-    if settings.trust_proxy_headers:
-        fwd = request.headers.get("x-forwarded-for", "")
-        first = fwd.split(",")[0].strip()
-        if first:
-            return first[:64]
-    return request.client.host if request.client else "unknown"
+    """Peer address, or the client address our own reverse proxy recorded in X-Forwarded-For.
+
+    Proxies append the peer they saw to the RIGHT of X-Forwarded-For, and everything to the
+    left of that may be supplied by the client. So the address is taken counting
+    ``trusted_proxy_hops`` hops from the right (1 = one proxy of ours in front of the app),
+    never the left-most hop, and only if it parses as an IP address."""
+    peer = request.client.host if request.client else "unknown"
+    if not settings.trust_proxy_headers:
+        return peer
+    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    n = max(1, settings.trusted_proxy_hops)
+    if len(hops) < n:
+        return peer
+    candidate = hops[-n]
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return peer
 
 
 def origin_of(url: str) -> str:
@@ -193,13 +205,17 @@ def rate_remaining(settings: Settings, kind: str, raw_key: str, limit: int, wind
 
 
 def create_magic_token(settings: Settings, subscriber_id: int, next_path: str | None = None,
-                       conn: sqlite3.Connection | None = None) -> str:
-    """Insert a token row (hash only) and return the raw token for the email link."""
+                       conn: sqlite3.Connection | None = None,
+                       newsletter_consent_id: int | None = None) -> str:
+    """Insert a token row (hash only) and return the raw token for the email link.
+
+    ``newsletter_consent_id`` is the newsletter 'granted' ledger row made by the same request:
+    only a link carrying it can confirm the newsletter (double opt-in bound to that request)."""
     raw = secrets.token_urlsafe(32)
     row = (subscriber_id, sha256_hex(raw), safe_next_path(next_path), now_iso(),
-           iso_in(hours=settings.token_ttl_hours), settings.token_max_uses)
-    sql = ("INSERT INTO tokens (subscriber_id, token_hash, next_path, created_at, expires_at, uses_left) "
-           "VALUES (?, ?, ?, ?, ?, ?)")
+           iso_in(hours=settings.token_ttl_hours), settings.token_max_uses, newsletter_consent_id)
+    sql = ("INSERT INTO tokens (subscriber_id, token_hash, next_path, created_at, expires_at, uses_left, "
+           "newsletter_consent_id) VALUES (?, ?, ?, ?, ?, ?, ?)")
     if conn is not None:
         conn.execute(sql, row)
     else:
@@ -338,29 +354,43 @@ def tokens_equal(a: Any, b: Any) -> bool:
 # ----------------------------------------------------------------------------
 
 
-def _unsubscribe_sig(settings: Settings, subscriber_id: int) -> str:
-    mac = hmac.new(settings.secret_key.encode(), f"unsubscribe:{subscriber_id}".encode(), hashlib.sha256)
+def _unsubscribe_sig(settings: Settings, subscriber_id: int, email: str) -> str:
+    # Bound to the address as well as the id: SQLite can hand an erased subscriber's id to
+    # the next sign-up, and an old link must never act on that other person.
+    msg = f"unsubscribe:{subscriber_id}:{email.strip().lower()}".encode()
+    mac = hmac.new(settings.secret_key.encode(), msg, hashlib.sha256)
     return base64.urlsafe_b64encode(mac.digest()).decode().rstrip("=")
 
 
-def make_unsubscribe_token(settings: Settings, subscriber_id: int) -> str:
-    return f"{subscriber_id}.{_unsubscribe_sig(settings, subscriber_id)}"
+def make_unsubscribe_token(settings: Settings, subscriber_id: int, email: str) -> str:
+    return f"{subscriber_id}.{_unsubscribe_sig(settings, subscriber_id, email)}"
 
 
-def verify_unsubscribe_token(settings: Settings, value: str | None) -> int | None:
-    """Return the subscriber id if the signature is valid, else None."""
+def unsubscribe_token_id(value: str | None) -> int | None:
+    """The subscriber id of a well-formed unsubscribe value (signature NOT checked), else None."""
     if not value or len(value) > 128 or "." not in value:
         return None
     sid, sig = value.split(".", 1)
-    if not sid.isdigit():
-        return None
-    if not hmac.compare_digest(_unsubscribe_sig(settings, int(sid)).encode(), sig.encode()):
+    if not sid.isdigit() or not sig:
         return None
     return int(sid)
 
 
-def unsubscribe_url(settings: Settings, subscriber_id: int) -> str:
-    return f"{settings.base_url.rstrip('/')}/unsubscribe?u={make_unsubscribe_token(settings, subscriber_id)}"
+def verify_unsubscribe_token(settings: Settings, value: str | None, email: str | None) -> int | None:
+    """Return the subscriber id if the value was signed for that id and this email, else None.
+    The caller looks the email up by ``unsubscribe_token_id(value)``."""
+    sid = unsubscribe_token_id(value)
+    if sid is None or not email:
+        return None
+    sig = value.split(".", 1)[1]
+    if not hmac.compare_digest(_unsubscribe_sig(settings, sid, email).encode(), sig.encode()):
+        return None
+    return sid
+
+
+def unsubscribe_url(settings: Settings, subscriber_id: int, email: str) -> str:
+    return (f"{settings.base_url.rstrip('/')}/unsubscribe?u="
+            f"{make_unsubscribe_token(settings, subscriber_id, email)}")
 
 
 # ----------------------------------------------------------------------------

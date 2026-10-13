@@ -2,7 +2,7 @@
 
 **Site:** Bentong hill lot
 
-- Report: 6HQTpO2DAc32xrmWGCUJBw · generated 2026-10-13T02:08:38+00:00
+- Report: 6HQTpO2DAc32xrmWGCUJBw · generated 2026-10-13T06:50:40+00:00
 - Input file: hilly\_site\_pahang.kml (sha256 `a376bb89e6a8980c…`)
 - Scheme: lss · stage: land\_secured
 - Location: Bentong, Pahang (3.50714°N, 101.90369°E) · EPSG:32647
@@ -13,7 +13,7 @@
 - 1 site polygon(s), total 61.86 ha
 - 0 route(s), total 0.00 km
 - 0 point(s)
-- KPKT split (area-weighted): Class I 37.9%, Class II 46.9%, Class III 15.0%, Class IV 0.2%
+- KPKT split (all sites, overlaps counted once): Class I 37.9%, Class II 46.9%, Class III 15.0%, Class IV 0.2%
 - Contour interval: 10.0 m
 
 ## Sites
@@ -62,7 +62,7 @@ Slope bins (% of site area):
 - Accuracy: the Copernicus DEM specification is an absolute vertical accuracy better than 4 m and a relative vertical accuracy better than 2 m on slopes up to 20% (4 m on steeper slopes), both as 90% linear error (LE90). Independent checks are weaker under forest: in a global study against ICESat-2 ground heights where canopy cover exceeded 50%, 90% of errors were within 26.55 m and the mean error was +12.09 m, so the model read high (Hawker et al. 2022, Environ. Res. Lett. 17 024016). Against 38 GNSS benchmarks in Perlis, Malaysia, its RMSE was 2.45 m (Sibaruddin et al. 2026).
 - Elevations show the surface as it was in December 2010 – January 2015 (TanDEM-X acquisitions). Ponds, cuttings, platforms and buildings made since then are not represented.
 - Slopes are computed on a grid of about 31 m (nominal 30 m resolution). Each slope value averages over neighbouring cells, so short steep features such as bund faces, drain banks, stream banks and cuttings are smoothed out, and the shares of ground steeper than 15°, 25° and 35° are likely to be understated.
-- Contours are drawn every 10 m; this tool never draws them finer than 5 m. The ASPRS Positional Accuracy Standards (2014, repeated in 2023) relate a contour interval to digital elevation data as twice the 90% vertical error (LE90); with the specified relative LE90 of under 2 m on slopes up to 20%, that is up to about 4 m, so 5 m is the finest honest interval for this model. Contours are for context, not design.
+- Contours are drawn every 10 m. The ASPRS Positional Accuracy Standards (2014, repeated in 2023) relate a contour interval to digital elevation data as twice the 90% vertical error (LE90) against true ground; with the specified absolute LE90 of under 4 m that corresponds to about 8 m, and far coarser under forest canopy. Contours are drawn for context only and are not to a mapping standard.
 - Slope direction (aspect) is not assessed. At Malaysian latitudes (about 1–7°N) it is secondary to earthworks, drainage and geotechnics: the Global Solar Atlas gives optimum fixed tilts of only 2–8° at four sample points across Malaysia, gaining under 1% over horizontal. IFC (2015, s.6.3.4) says a site should ideally be flat or on a slight south-facing slope in the northern hemisphere.
 - State and district come from DOSM boundaries at the centroid of the uploaded features and are for orientation; the state-specific notes depend on that lookup. Local authority areas, Special Management Areas, forest reserves and land titles are not checked.
 - Regulatory notes summarise published instruments and, where marked, news reports. They are a screening aid, not legal advice; requirements change and are applied by the relevant authorities, so confirm them before relying on them.

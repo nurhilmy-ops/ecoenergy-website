@@ -51,6 +51,14 @@ NO_COVERAGE_PCT = 95.0
 # Route grades are measured over at least this horizontal distance (~3 DEM cells) so
 # single-cell noise does not masquerade as a steep pitch.
 GRADE_WINDOW_M = 90.0
+# Ground slope the route crosses: "length_on_35deg_m" is the route length whose ground (the
+# DEM slope under it, not the route's own grade) is at least this steep. Same threshold as
+# flags.EIA_ROUTE_SLOPE_DEG (EIA Order 2015, Second Schedule 13(b)). Only stretches between two
+# consecutive steep samples count, so a single noisy cell adds nothing.
+ROUTE_STEEP_DEG = 35.0
+# Cap on samples along one route: the step grows for very long routes, so a long zig-zag
+# line cannot make the analysis allocate without bound (vertices are always kept).
+MAX_ROUTE_SAMPLES = 20_000
 
 
 @dataclass
@@ -90,6 +98,8 @@ class RouteStats:
     elev_max: float
     ascent_m: float
     max_grade_pct: float
+    max_slope_deg: float = math.nan        # steepest DEM ground slope under the route
+    length_on_35deg_m: float = 0.0         # route length on ground >= ROUTE_STEEP_DEG
 
 
 @dataclass
@@ -128,6 +138,8 @@ class Analysis:
     contour_interval_m: float
     kpkt_overall: dict[str, float | None]
     bins_overall: dict[str, float | None] = field(default_factory=dict)
+    grade_overall: dict[str, float | None] = field(default_factory=dict)
+    total_area_ha: float = 0.0             # area of the union of the sites (overlaps once)
 
     @property
     def grid_spacing_m(self) -> float:
@@ -289,14 +301,18 @@ def _site_stats(f: Feature, dem: DemGrid, slope: np.ndarray, slope_filled: np.nd
 
 def _sample_line(coords: list[tuple[float, float]], step_m: float) -> tuple[np.ndarray, np.ndarray]:
     """Points every ~step_m along a lon/lat polyline (vertices kept)."""
-    lons, lats = [coords[0][0]], [coords[0][1]]
-    for (x0, y0), (x1, y1) in zip(coords[:-1], coords[1:]):
-        seg = GEOD.inv(x0, y0, x1, y1)[2]
-        n = max(1, math.ceil(seg / step_m))
-        t = np.arange(1, n + 1) / n
-        lons.extend(x0 + (x1 - x0) * t)
-        lats.extend(y0 + (y1 - y0) * t)
-    return np.asarray(lons), np.asarray(lats)
+    xy = np.asarray(coords, dtype=np.float64)
+    if len(xy) < 2:
+        return xy[:, 0].copy(), xy[:, 1].copy()
+    x0, y0, x1, y1 = xy[:-1, 0], xy[:-1, 1], xy[1:, 0], xy[1:, 1]
+    seg = np.asarray(GEOD.inv(x0, y0, x1, y1)[2], dtype=np.float64)
+    n = np.maximum(1, np.ceil(seg / step_m)).astype(np.int64)
+    idx = np.repeat(np.arange(n.size), n)                     # segment of each sample
+    k = np.arange(idx.size) - np.repeat(np.cumsum(n) - n, n) + 1   # 1..n within its segment
+    t = k / n[idx]
+    lons = np.concatenate([[x0[0]], x0[idx] + (x1 - x0)[idx] * t])
+    lats = np.concatenate([[y0[0]], y0[idx] + (y1 - y0)[idx] * t])
+    return lons, lats
 
 
 def _smooth3(z: np.ndarray) -> np.ndarray:
@@ -328,17 +344,28 @@ def total_ascent_m(elev: np.ndarray) -> float:
     return float(np.clip(np.diff(_smooth3(z)), 0, None).sum())
 
 
-def _route_stats(f: Feature, dem: DemGrid, step_m: float) -> RouteStats:
-    lons, lats = _sample_line(f.coords, step_m)
-    seg = GEOD.inv(lons[:-1], lats[:-1], lons[1:], lats[1:])[2] if lons.size > 1 else np.array([])
+def _route_stats(f: Feature, dem: DemGrid, step_m: float, slope_filled: np.ndarray) -> RouteStats:
+    length_m = float(GEOD.geometry_length(LineString(f.coords)))
+    lons, lats = _sample_line(f.coords, max(step_m, length_m / MAX_ROUTE_SAMPLES))
+    seg = (np.asarray(GEOD.inv(lons[:-1], lats[:-1], lons[1:], lats[1:])[2], dtype=np.float64)
+           if lons.size > 1 else np.array([]))
     dist = np.concatenate([[0.0], np.cumsum(seg)])
-    elev = _interp(dem, dem.z)(np.column_stack([lats, lons]))
+    pts = np.column_stack([lats, lons])
+    elev = _interp(dem, dem.z)(pts)
+    # Slope of the ground the route crosses (a road along a contour has no grade but can
+    # still traverse steep ground).
+    ground = _interp(dem, slope_filled)(pts)
+    ground[~np.isfinite(elev)] = np.nan
+    steep = ground >= ROUTE_STEEP_DEG
+    on_steep = float(seg[steep[:-1] & steep[1:]].sum()) if seg.size else 0.0
+    finite = ground[np.isfinite(ground)]
     emin, emax, _ = _nanstats(elev)
     return RouteStats(
         name=f.name, coords=f.coords, lons=lons, lats=lats, dist_m=dist, elev=elev,
-        length_m=float(GEOD.geometry_length(LineString(f.coords))),
-        elev_min=emin, elev_max=emax, ascent_m=total_ascent_m(elev),
-        max_grade_pct=max_grade_pct(dist, elev))
+        length_m=length_m, elev_min=emin, elev_max=emax, ascent_m=total_ascent_m(elev),
+        max_grade_pct=max_grade_pct(dist, elev),
+        max_slope_deg=float(finite.max()) if finite.size else math.nan,
+        length_on_35deg_m=on_steep)
 
 
 def _transects(dem: DemGrid, sites: list[SiteStats], fallback: tuple[float, float],
@@ -398,7 +425,7 @@ def analyse(site: SiteInput, dem: DemGrid, settings: Settings) -> Analysis:
             sites.append(stats)
             site_mask |= mask
     step = min(dx, dy)
-    routes = [_route_stats(f, dem, step) for f in site.features if f.kind == "line"]
+    routes = [_route_stats(f, dem, step, slope_filled) for f in site.features if f.kind == "line"]
     pinterp = _interp(dem, dem.z)
     points = [PointStats(name=f.name, lon=f.coords[0][0], lat=f.coords[0][1],
                          elev=float(pinterp([[f.coords[0][1], f.coords[0][0]]])[0]))
@@ -407,12 +434,18 @@ def analyse(site: SiteInput, dem: DemGrid, settings: Settings) -> Analysis:
     if sites:
         union = shapely.union_all([s.polygon for s in sites])
         cen = union.centroid
+        # Nested or overlapping polygons (a lot boundary plus phase blocks inside it, or one
+        # parcel drawn twice) count once in the total area and the overall shares.
+        total_area_ha = sum(abs(GEOD.geometry_area_perimeter(orient(p, 1.0))[0])
+                            for p in getattr(union, "geoms", [union]) if isinstance(p, Polygon)) / 1e4
     else:
         union = None
         cen = shapely.GeometryCollection([feature_geometry(f) for f in site.features]).centroid
+        total_area_ha = 0.0
     centroid = (float(cen.x), float(cen.y))
 
-    # Area-weighted overall split; sites without valid cells do not contribute.
+    # Area-weighted per-site split; sites without valid cells do not contribute. Used only
+    # when the union of the sites holds too few cells to measure directly.
     def overall(key: str, labels) -> dict[str, float | None]:
         rows = [(s.area_ha, getattr(s, key)) for s in sites
                 if all(math.isfinite(v) for v in getattr(s, key).values())]
@@ -420,6 +453,20 @@ def analyse(site: SiteInput, dem: DemGrid, settings: Settings) -> Analysis:
         if not rows or total <= 0:
             return {k: None for k in labels}
         return {k: sum(a * d[k] for a, d in rows) / total for k in labels}
+
+    bin_labels = [b[0] for b in SLOPE_BINS]
+    grade_labels = [str(g) for g in GRADE_SHARE_PCT]
+    if sites and int(site_mask.sum()) >= SMALL_SITE_MIN_CELLS:
+        # Overall shares over the cells inside ANY site, each cell counted once.
+        union_slopes = slope[site_mask]
+        kpkt_overall = dict(zip(KPKT_CLASSES, _class_pct(union_slopes, KPKT_EDGES_DEG)))
+        bins_overall = dict(zip(bin_labels, _class_pct(union_slopes, [b[1] for b in SLOPE_BINS] + [math.inf])))
+        grade_overall = {str(g): _steeper_pct(union_slopes, math.degrees(math.atan(g / 100.0)))
+                         for g in GRADE_SHARE_PCT}
+    else:
+        kpkt_overall = overall("kpkt_pct", KPKT_CLASSES)
+        bins_overall = overall("bins_pct", bin_labels)
+        grade_overall = overall("grade_pct", grade_labels)
 
     finite = dem.z[np.isfinite(dem.z)]
     relief = float(finite.max() - finite.min()) if finite.size else 0.0
@@ -431,8 +478,8 @@ def analyse(site: SiteInput, dem: DemGrid, settings: Settings) -> Analysis:
         nodata_pct=nodata_pct, centroid=centroid, utm_epsg=utm_epsg(*centroid),
         sites=sites, routes=routes, points=points, transects=transects,
         site_mask=site_mask, contour_interval_m=contour_interval(relief, settings),
-        kpkt_overall=overall("kpkt_pct", KPKT_CLASSES),
-        bins_overall=overall("bins_pct", [b[0] for b in SLOPE_BINS]))
+        kpkt_overall=kpkt_overall, bins_overall=bins_overall, grade_overall=grade_overall,
+        total_area_ha=total_area_ha)
 
 
 # ---------------------------------------------------------------------------
@@ -484,8 +531,11 @@ def result_sections(an: Analysis) -> dict:
             "polygon_count": len(an.sites),
             "line_count": len(an.routes),
             "point_count": len(an.points),
-            "total_area_ha": num(sum(s.area_ha for s in an.sites), 2),
+            # Area of the union of the site polygons: overlapping parts count once.
+            "total_area_ha": num(an.total_area_ha, 2),
             "total_line_km": num(sum(r.length_m for r in an.routes) / 1000.0, 2),
+            # % of that area steeper than a 10% / 15% grade (cells inside any site, once each).
+            "steeper_than_grade_pct": _pct_dict(an.grade_overall),
         },
         "sites": [{
             "name": s.name,
@@ -512,6 +562,8 @@ def result_sections(an: Analysis) -> dict:
             "elev_max_m": num(r.elev_max, 1),
             "total_ascent_m": num(r.ascent_m, 1),
             "max_grade_pct": num(r.max_grade_pct, 1),
+            "max_slope_deg": num(r.max_slope_deg, 1),
+            "length_on_35deg_m": num(r.length_on_35deg_m, 0),
         } for r in an.routes],
         "points": [{
             "name": p.name,

@@ -50,6 +50,13 @@ EIA_SLOPE_MIN_DEG = 25.0
 EIA_SLOPE_MAX_DEG = 35.0
 EIA_SLOPE_SECOND_SCHEDULE_PCT = 50.0
 EIA_ROUTE_SLOPE_DEG = 35.0
+# Item 13(b) is about the ground the road traverses, not the road's own grade: the engine
+# samples the DEM slope under each route ("max_slope_deg", "length_on_35deg_m"). A route
+# counts when at least this much of it lies on ground of 35° or more (two consecutive DEM
+# samples, so one noisy cell does not trigger it). Basis: screening tolerance (ours).
+EIA_ROUTE_MIN_STEEP_M = 30.0
+# Fallback for result.json files written before ground slope was sampled: a 70% along-route
+# grade means the ground itself is at least 35° steep.
 EIA_ROUTE_GRADE_PCT = 100.0 * math.tan(math.radians(EIA_ROUTE_SLOPE_DEG))   # 70.0 %
 # Same Order, area-based items that may apply depending on the land (hectares):
 # First Schedule 5(a) / Second Schedule 5(a): conversion of forest at >= 300 m above
@@ -134,11 +141,22 @@ DEM_NODATA_PCT = 5.0
 # Route gradient window, quoted in the route wording (the analysis uses >= 90 m).
 ROUTE_GRADE_WINDOW_M = 90
 
-# Contour floor quoted in the caveats (Settings.contour_min_interval_m default). Basis:
-# ASPRS Positional Accuracy Standards (2014; repeated 2023) relate NMAS contours to
-# digital data as contour interval = 2 x LE90; Copernicus relative LE90 is < 2 m on
-# slopes <= 20%, so 2 x 2 m = 4 m, rounded up to 5 m.
-CONTOUR_FLOOR_M = 5.0
+# Contour interval that the ASPRS relation supports for the Copernicus DEM, quoted in the
+# caveats. ASPRS Positional Accuracy Standards (2014 Annex B.6; repeated 2023) relate NMAS
+# contours to digital data as contour interval = 2 x LE90, where LE90 is the vertical error
+# against true ground (absolute accuracy). Copernicus specifies an absolute LE90 < 4 m, so
+# about 8 m; far coarser under forest canopy. The drawn interval (Settings.
+# contour_min_interval_m, default 5 m) is finer, so contours are presented as context only.
+CONTOUR_ASPRS_INTERVAL_M = 8.0
+COPERNICUS_ABSOLUTE_LE90_M = 4.0
+
+# Analysis grid coarser than this multiple of the ~30 m spacing the slope rules are read at
+# (or of the DEM's nominal resolution, if that is coarser), e.g. the OpenTopoData fallback's
+# <= 1,000-point grid over a large site: slope shares are unreliable. Basis: screening
+# heuristic (ours) — at 60 m and more, slopes are averaged over long distances and the steep
+# shares shrink sharply. A fine local DTM averaged to ~30 m is not "coarse".
+COARSE_GRID_FACTOR = 2.0
+SLOPE_GRID_REFERENCE_M = 30.0
 
 # ---------------------------------------------------------------------------
 # sources quoted in flags (kept here so citations can be corrected in one place)
@@ -176,6 +194,10 @@ SRC_MSMA = "Urban Stormwater Management Manual for Malaysia (MSMA), 2nd Edition 
 SRC_SURVEY = "Licensed Land Surveyors Act 1958 (Act 458)"
 
 LEVEL_ORDER = {"warning": 0, "caution": 1, "info": 2}
+# States outside Peninsular Malaysia where the 2009 hill and highland guideline (a JPBD
+# Semenanjung Malaysia document) and Act 133 (s.1(2): "This Act shall apply only to West
+# Malaysia") do not govern. W.P. Labuan is not included: Act 133 extends to Labuan.
+NOT_PENINSULAR_STATES = EIA_LIMITED_SCOPE_STATES
 EIA_CODES = ("eia_slope_item13", "eia_route_35", "eia_area_items", "eia_slope_state_regime")
 
 STAMP_TEMPLATE = "Desktop screening — not a survey · DEM: {name} ({epoch}) · EcoEnergy Consultancy"
@@ -288,10 +310,36 @@ def _surface_note(dem: dict) -> str:
 
 
 def _mwp_range(area_ha: float) -> str:
-    """Gross MWp range for an area at HA_PER_MWP_HIGH..HA_PER_MWP_LOW, same precision at both ends."""
+    """Gross MWp range for an area at HA_PER_MWP_HIGH..HA_PER_MWP_LOW, same precision at both
+    ends, never collapsing to one value (e.g. "0.0–0.0")."""
     lo, hi = area_ha / HA_PER_MWP_HIGH, area_ha / HA_PER_MWP_LOW
-    nd = 0 if lo >= 10 else 1
+    if hi < 0.1:
+        return "under 0.1"
+    nd = 0 if lo >= 10 else 1 if hi >= 1 else 2
     return f"{lo:,.{nd}f}–{hi:,.{nd}f}"
+
+
+def _not_peninsular(state: str | None) -> bool:
+    return state in NOT_PENINSULAR_STATES
+
+
+def _peninsular_note(state: str | None) -> str:
+    """Appended to the 2009 guideline's flags outside Peninsular Malaysia."""
+    if not _not_peninsular(state):
+        return ""
+    return (" This guideline was issued for Peninsular Malaysia; in "
+            f"{state} it is a reference only — ask the state planning authority how hill land "
+            "is controlled.")
+
+
+def _coarse_reference_m(dem: dict) -> float:
+    nominal = dem.get("nominal_resolution_m")
+    return max(nominal if _ok(nominal) else 0.0, SLOPE_GRID_REFERENCE_M)
+
+
+def coarse_grid(dem: dict) -> bool:
+    spacing = dem.get("grid_spacing_m")
+    return _ok(spacing) and spacing > COARSE_GRID_FACTOR * _coarse_reference_m(dem)
 
 
 def figure_stamp(dem: dict) -> str:
@@ -338,7 +386,7 @@ _KPKT_RULES = {
 }
 
 
-def kpkt_flags(sites: list[dict]) -> list[dict]:
+def kpkt_flags(sites: list[dict], state: str | None = None) -> list[dict]:
     out = []
     for cls, (level, code, band, title, consequence) in _KPKT_RULES.items():
         hits = []
@@ -353,16 +401,19 @@ def kpkt_flags(sites: list[dict]) -> list[dict]:
             hits.append(hit)
         if hits:
             out.append(_flag(level, code, title,
-                             f"Share of site area at {band} on the DEM — {_join(hits)}. {consequence}",
+                             f"Share of site area at {band} on the DEM — {_join(hits)}. {consequence}"
+                             f"{_peninsular_note(state)}",
                              SRC_GPP_CLASSES))
     return out
 
 
 def _any_class_ii_plus(sites: list[dict]) -> bool:
-    return any((_kpkt(s, c) or 0.0) > KPKT_FLAG_MIN_PCT for s in sites for c in ("II", "III", "IV"))
+    # The combined share at 15° or steeper: classes II, III and IV can each sit under the
+    # tolerance while together they exceed it.
+    return any((_kpkt(s, "II", "III", "IV") or 0.0) > KPKT_FLAG_MIN_PCT for s in sites)
 
 
-def all_class_i_flag(sites: list[dict]) -> dict | None:
+def all_class_i_flag(sites: list[dict], state: str | None = None) -> dict | None:
     measured = [s for s in sites if _kpkt(s, "II", "III", "IV") is not None]
     if not measured or _any_class_ii_plus(measured):
         return None
@@ -377,7 +428,7 @@ def all_class_i_flag(sites: list[dict]) -> dict | None:
         "erosion or instability, lies on colluvium or other sensitive geological material, "
         "is limestone, swamp, peat or ex-mining land, or is under flood threat. A 30 m "
         "elevation model also smooths out short steep features such as bund faces, drain "
-        "banks and cuttings.",
+        f"banks and cuttings.{_peninsular_note(state)}",
         SRC_GPP_CLASSES)
 
 
@@ -438,7 +489,7 @@ def _forest_note(state: str | None) -> str:
             "and public comment (item 5(a)).")
 
 
-def hill_land_band_flag(sites: list[dict], dem: dict) -> dict | None:
+def hill_land_band_flag(sites: list[dict], dem: dict, state: str | None = None) -> dict | None:
     hits = _band_hits(sites, TANAH_BUKIT_MIN_M, TANAH_TINGGI_MIN_M)
     if not hits:
         return None
@@ -448,7 +499,7 @@ def hill_land_band_flag(sites: list[dict], dem: dict) -> dict | None:
         f"land at {TANAH_BUKIT_MIN_M:g}–{TANAH_TINGGI_MIN_M:g} m above sea level as Tanah Bukit "
         "(hill land) and, quoting the National Physical Plan, places it in KSAS Level 3: "
         "controlled development, with the type and intensity of development set by site "
-        f"constraints.{_surface_note(dem)}",
+        f"constraints.{_peninsular_note(state)}{_surface_note(dem)}",
         SRC_GPP_BANDS)
 
 
@@ -462,7 +513,8 @@ def highland_band_flag(sites: list[dict], dem: dict, state: str | None) -> dict 
         f"land above {TANAH_TINGGI_MIN_M:g} m and below {GUNUNG_MIN_M:,.0f} m as Tanah Tinggi "
         "(highland). There it lets only low-impact eco-tourism and recreation be considered "
         "(on Class III ground, only low-impact recreation without structures); a solar farm is "
-        f"not a listed use.{_sma_note(state)}{_forest_note(state)}{_surface_note(dem)}",
+        f"not a listed use.{_peninsular_note(state)}{_sma_note(state)}{_forest_note(state)}"
+        f"{_surface_note(dem)}",
         SRC_GPP_BANDS + ("" if _limited_eia(state) else f"; {SRC_EIA_FOREST}"))
 
 
@@ -474,8 +526,8 @@ def mountain_band_flag(sites: list[dict], dem: dict, state: str | None) -> dict 
         "warning", "mountain_band", "Mountain elevation band (Gunung, above 1,000 m)",
         f"Highest DEM elevation — {_join(hits)}. The 2009 hill and highland guideline treats "
         f"land above {GUNUNG_MIN_M:,.0f} m as Gunung (mountain), where no development is "
-        f"allowed except {NATIONAL_INFRA_NOTE}.{_sma_note(state)}{_forest_note(state)}"
-        f"{_surface_note(dem)}",
+        f"allowed except {NATIONAL_INFRA_NOTE}.{_peninsular_note(state)}{_sma_note(state)}"
+        f"{_forest_note(state)}{_surface_note(dem)}",
         SRC_GPP_BANDS + ("" if _limited_eia(state) else f"; {SRC_EIA_FOREST}"))
 
 
@@ -487,8 +539,27 @@ def _item13_hits(sites: list[dict]) -> list[tuple[dict, float]]:
             if (pct := _kpkt(s, "III")) is not None and pct > KPKT_FLAG_MIN_PCT]
 
 
+def _route_on_35(r: dict) -> bool:
+    """The route crosses ground of 35° or more (EIA Order 2015 Second Schedule 13(b))."""
+    if "max_slope_deg" in r or "length_on_35deg_m" in r:
+        steep_m = r.get("length_on_35deg_m")
+        return _ok(steep_m) and steep_m >= EIA_ROUTE_MIN_STEEP_M
+    # result.json written before ground slope was sampled: only the along-route grade is known.
+    return _ok(r.get("max_grade_pct")) and r["max_grade_pct"] >= EIA_ROUTE_GRADE_PCT
+
+
 def _route35_hits(routes: list[dict]) -> list[dict]:
-    return [r for r in routes if _ok(r.get("max_grade_pct")) and r["max_grade_pct"] >= EIA_ROUTE_GRADE_PCT]
+    return [r for r in routes if _route_on_35(r)]
+
+
+def _route35_hit(r: dict) -> str:
+    if _ok(r.get("length_on_35deg_m")):
+        top = (f", up to {_fmt(r['max_slope_deg'], 0)}°" if _ok(r.get("max_slope_deg")) else "")
+        return (f"{_q(r['name'])}: about {_fmt(r['length_on_35deg_m'], 0)} m of the route on ground of "
+                f"{EIA_ROUTE_SLOPE_DEG:g}° or steeper{top}")
+    return (f"{_q(r['name'])}: a {_fmt(r['max_grade_pct'], 0)}% grade along the route "
+            f"(about {_fmt(math.degrees(math.atan(r['max_grade_pct'] / 100.0)), 0)}°), so the ground "
+            f"there is at least {EIA_ROUTE_SLOPE_DEG:g}° steep")
 
 
 def eia_slope_flag(sites: list[dict], state: str | None) -> dict | None:
@@ -518,21 +589,19 @@ def eia_slope_flag(sites: list[dict], state: str | None) -> dict | None:
 def eia_route_flag(routes: list[dict], state: str | None) -> dict | None:
     if _limited_eia(state):
         return None
-    hits = [f"{_q(r['name'])}: {_fmt(r['max_grade_pct'], 0)}% grade "
-            f"(about {_fmt(math.degrees(math.atan(r['max_grade_pct'] / 100.0)), 0)}°)"
-            for r in _route35_hits(routes)]
+    hits = [_route35_hit(r) for r in _route35_hits(routes)]
     if not hits:
         return None
     return _flag(
         "warning", "eia_route_35", "Route crosses ground of 35° or steeper",
-        f"Steepest stretch along the route on the DEM, measured over at least "
-        f"{ROUTE_GRADE_WINDOW_M} m — {_join(hits)}. A grade of "
-        f"{EIA_ROUTE_GRADE_PCT:.0f}% or more means the ground along that stretch is at least "
-        f"{EIA_ROUTE_SLOPE_DEG:g}° steep. If an access road is built along this route, the EIA "
-        "Order 2015 lists “construction of road, tunnel or bridge traversing an area with slope "
-        "greater than or equal to 35°” in the Second Schedule (item 13(b)), which requires "
-        "public display and public comment. A cable laid without a road may be assessed "
-        "differently; confirm with a DOE-registered EIA consultant.",
+        f"Slope of the ground under the route on the DEM — {_join(hits)}. This is the slope of "
+        "the hillside the route crosses, not the route's own gradient: a road running along a "
+        "contour can be nearly level and still traverse steep ground. If an access road is built "
+        "along this route, the EIA Order 2015 lists “construction of road, tunnel or bridge "
+        "traversing an area with slope greater than or equal to 35°” in the Second Schedule "
+        "(item 13(b)), which requires public display and public comment. A 30 m DEM understates "
+        "steep ground. A cable laid without a road may be assessed differently; confirm with a "
+        "DOE-registered EIA consultant.",
         SRC_EIA_ROUTE)
 
 
@@ -541,8 +610,7 @@ def eia_state_regime_flag(sites: list[dict], routes: list[dict], state: str | No
         return None
     hits = [f"{_q(s['name'])}: {_fmt(pct)}% of its area at 25° to under 35°"
             for s, pct in _item13_hits(sites)]
-    hits += [f"{_q(r['name'])}: a {_fmt(r['max_grade_pct'], 0)}% grade (35° or steeper)"
-             for r in _route35_hits(routes)]
+    hits += [_route35_hit(r) for r in _route35_hits(routes)]
     if not hits:
         return None
     return _flag(
@@ -598,7 +666,10 @@ def eia_area_flag(totals: dict, state: str | None) -> dict | None:
 # ---------------------------------------------------------------------------
 # Act 133 and state-specific rules
 # ---------------------------------------------------------------------------
-def sdba_geotech_flag(sites: list[dict]) -> dict | None:
+def sdba_geotech_flag(sites: list[dict], state: str | None = None) -> dict | None:
+    # Act 133 s.1(2): "This Act shall apply only to West Malaysia".
+    if _not_peninsular(state):
+        return None
     hits = []
     for s in sites:
         steep = _kpkt(s, "III", "IV")
@@ -740,28 +811,39 @@ def indicative_capacity_flag(sites: list[dict], totals: dict) -> dict | None:
     area = totals.get("total_area_ha")
     if not (_ok(area) and area >= CAPACITY_MIN_AREA_HA):
         return None
-    flatter, measured, estimated, any_steep = 0.0, 0, False, False
-    for s in sites:
-        pct, exact = grade_share(s, PV_GRADE_TRACKER_PCT)
-        if pct is not None and _ok(s.get("area_ha")):
-            flatter += s["area_ha"] * (100.0 - pct) / 100.0
-            measured += 1
-            estimated |= not exact
-            any_steep |= pct > 0
+    overall = (totals.get("steeper_than_grade_pct") or {}).get(f"{PV_GRADE_TRACKER_PCT:g}")
+    if _ok(overall):
+        # Share over the union of the sites, so nested or overlapping polygons count once.
+        flatter = area * (100.0 - overall) / 100.0
+        measured, estimated, any_steep = len(sites), False, overall > 0
+    else:
+        # result.json written before the overall share existed: sum the sites.
+        flatter, measured, estimated, any_steep = 0.0, 0, False, False
+        for s in sites:
+            pct, exact = grade_share(s, PV_GRADE_TRACKER_PCT)
+            if pct is not None and _ok(s.get("area_ha")):
+                flatter += s["area_ha"] * (100.0 - pct) / 100.0
+                measured += 1
+                estimated |= not exact
+                any_steep |= pct > 0
     detail = (
         f"Using IFC (2015) Table 7, about {HA_PER_MWP_LOW:g}–{HA_PER_MWP_HIGH:g} ha per MWp for "
         "crystalline-silicon ground-mounted PV in Thailand and Indonesia (the closest climates "
         f"listed): the total polygon area of {_fmt(area, 2)} ha gives about "
         f"{_mwp_range(area)} MWp")
+    band = (" (flatter area estimated from the slope bands, assuming slopes are spread evenly "
+            "within each band)" if estimated else "")
     if measured == len(sites) and not any_steep:
         detail += (f"; on the DEM all of it is flatter than about {PV_SLOPE_TRACKER_DEG:.1f}° "
                    f"({PV_GRADE_TRACKER_PCT:g}% grade)")
+    elif measured and flatter < CAPACITY_MIN_AREA_HA:
+        detail += (f"; only {_fmt(flatter, 1)} ha is flatter than about {PV_SLOPE_TRACKER_DEG:.1f}° "
+                   f"({PV_GRADE_TRACKER_PCT:g}% grade) on the DEM, too little for an indicative "
+                   f"figure{band}")
     elif measured:
         detail += (
             f"; the {_fmt(flatter, 1)} ha flatter than about {PV_SLOPE_TRACKER_DEG:.1f}° "
-            f"({PV_GRADE_TRACKER_PCT:g}% grade) on the DEM gives about {_mwp_range(flatter)} MWp"
-            + (" (flatter area estimated from the slope bands, assuming slopes are spread evenly "
-               "within each band)" if estimated else ""))
+            f"({PV_GRADE_TRACKER_PCT:g}% grade) on the DEM gives about {_mwp_range(flatter)} MWp{band}")
     detail += (
         ". These are gross figures, before setbacks, access roads, drainage reserves, shading, "
         "steep or unsuitable ground and grid limits; the exact area per MWp varies with the "
@@ -833,6 +915,21 @@ def dem_nodata_flag(dem: dict) -> dict | None:
         "Statistics use the remaining cells only; check that the boundary is on land.")
 
 
+def coarse_grid_flag(dem: dict) -> dict | None:
+    if not coarse_grid(dem):
+        return None
+    return _flag(
+        "caution", "coarse_grid", "Elevation grid too coarse for reliable slope classes",
+        f"Slopes were computed on a grid of about {_fmt(dem['grid_spacing_m'], 0)} m, more than "
+        f"{COARSE_GRID_FACTOR:g} times the {_fmt(_coarse_reference_m(dem), 0)} m spacing the slope "
+        "classes in this screening are read at. At that spacing slopes are averaged "
+        "over long distances, so the shares of ground steeper than 15°, 25° and 35°, and the "
+        "slope-class, EIA slope and ground-mount flags in this report, can understate steep "
+        "ground several-fold; no “all Class I” reading is given. Treat them as indicative only "
+        "and re-run the screening on a finer grid (for example on a smaller part of the site) "
+        "before relying on them.")
+
+
 def route_grade_flag(routes: list[dict]) -> dict | None:
     if not routes:
         return None
@@ -857,16 +954,18 @@ def build_flags(result: dict) -> list[dict]:
     scheme = (result.get("meta") or {}).get("scheme")
     state = _state(result)
     candidates: list[dict | None] = [
-        *kpkt_flags(sites),
-        all_class_i_flag(sites) if scheme != "fpv" else None,   # meaningless over water
+        *kpkt_flags(sites, state),
+        # Meaningless over water, and not given when the grid is too coarse to see steep ground.
+        all_class_i_flag(sites, state) if scheme != "fpv" and not coarse_grid(dem) else None,
         mountain_band_flag(sites, dem, state),
         highland_band_flag(sites, dem, state),
-        hill_land_band_flag(sites, dem),
+        hill_land_band_flag(sites, dem, state),
         penang_hill_flag(sites, dem, state),
         pahang_solar_flag(sites, state),
         eia_slope_flag(sites, state),
         eia_route_flag(routes, state),
-        sdba_geotech_flag(sites),
+        sdba_geotech_flag(sites, state),
+        coarse_grid_flag(dem),
         steep_for_ground_pv_flag(sites) if scheme not in PV_FLAG_EXEMPT_SCHEMES else None,
         *(fpv_flags(sites, dem) if scheme == "fpv" else []),
         guideline_reports_flag(sites, state),
@@ -1009,13 +1108,12 @@ def build_caveats(result: dict, repaired: list[str] | None = None) -> list[str]:
     interval = _fmt(result.get("contour_interval_m"), 0)
     if provider == "copernicus":
         out.append(
-            f"Contours are drawn every {interval} m; this tool never draws them finer than "
-            f"{CONTOUR_FLOOR_M:g} m. The ASPRS Positional Accuracy Standards (2014, repeated in "
-            "2023) relate a contour "
-            "interval to digital elevation data as twice the 90% vertical error (LE90); with the "
-            "specified relative LE90 of under 2 m on slopes up to 20%, that is up to about 4 m, so "
-            f"{CONTOUR_FLOOR_M:g} m is the finest honest interval for this model. Contours are for "
-            "context, not design.")
+            f"Contours are drawn every {interval} m. The ASPRS Positional Accuracy Standards (2014, "
+            "repeated in 2023) relate a contour interval to digital elevation data as twice the 90% "
+            "vertical error (LE90) against true ground; with the specified absolute LE90 of under "
+            f"{COPERNICUS_ABSOLUTE_LE90_M:g} m that corresponds to about {CONTOUR_ASPRS_INTERVAL_M:g} m, "
+            "and far coarser under forest canopy. Contours are drawn for context only and are not "
+            "to a mapping standard.")
     else:
         out.append(f"Contours are drawn every {interval} m for context only; they are no more "
                    "accurate than the elevation model.")

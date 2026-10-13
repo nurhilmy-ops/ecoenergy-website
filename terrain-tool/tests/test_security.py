@@ -52,13 +52,16 @@ def test_origin_of():
 
 
 def test_unsubscribe_token_signature(settings):
-    token = make_unsubscribe_token(settings, 42)
-    assert verify_unsubscribe_token(settings, token) == 42
+    token = make_unsubscribe_token(settings, 42, "a@example.com")
+    assert verify_unsubscribe_token(settings, token, "a@example.com") == 42
     sid, sig = token.split(".")
-    assert verify_unsubscribe_token(settings, f"43.{sig}") is None
-    assert verify_unsubscribe_token(settings, f"{sid}.{sig[:-1]}A") is None
-    assert verify_unsubscribe_token(settings, "garbage") is None
-    headers = newsletter_headers(settings, 42)
+    assert verify_unsubscribe_token(settings, f"43.{sig}", "a@example.com") is None
+    assert verify_unsubscribe_token(settings, f"{sid}.{sig[:-1]}A", "a@example.com") is None
+    assert verify_unsubscribe_token(settings, "garbage", "a@example.com") is None
+    # Bound to the address: the same id signed for someone else does not verify.
+    assert verify_unsubscribe_token(settings, token, "b@example.com") is None
+    assert security.unsubscribe_token_id(token) == 42 and security.unsubscribe_token_id("x.y") is None
+    headers = newsletter_headers(settings, 42, "a@example.com")
     assert headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
     assert f"<http://testserver/unsubscribe?u={token}>" in headers["List-Unsubscribe"]
     assert "mailto:" in headers["List-Unsubscribe"]
@@ -77,8 +80,34 @@ def test_client_ip_respects_trust_proxy_headers(app_factory):
              "client": ("10.0.0.2", 1234)}
     untrusted = app_factory("ip1").settings
     trusted = app_factory("ip2", trust_proxy_headers=True).settings
+    two_hops = app_factory("ip3", trust_proxy_headers=True, trusted_proxy_hops=2).settings
     assert client_ip(Request(scope), untrusted) == "10.0.0.2"
-    assert client_ip(Request(scope), trusted) == "203.0.113.9"
+    # One proxy of ours appended the address it saw (right-most); the left part is unverified.
+    assert client_ip(Request(scope), trusted) == "10.0.0.1"
+    # Two proxies of ours (e.g. Cloudflare in front of nginx): the client is two hops from the right.
+    assert client_ip(Request(scope), two_hops) == "203.0.113.9"
+
+
+def test_forged_x_forwarded_for_cannot_dodge_per_ip_limits(app_factory):
+    """appsec-1: behind an appending proxy the left-most X-Forwarded-For hop is whatever the
+    client sent. Rotating it must not reset the admin brute-force throttle (or any per-IP limit)."""
+    from starlette.requests import Request
+
+    flow = app_factory("xff", trust_proxy_headers=True)
+    real = "198.51.100.7"
+    statuses = []
+    for i in range(25):
+        forged = f"10.{i}.{i}.{i}"
+        statuses.append(flow.client.get("/admin/leads", headers={
+            **basic("admin", f"wrong-{i}"), "X-Forwarded-For": f"{forged}, {real}"}).status_code)
+    assert statuses[:20] == [401] * 20 and set(statuses[20:]) == {429}
+    # Garbage in the trusted position falls back to the peer address instead of becoming a key.
+    scope = {"type": "http", "headers": [(b"x-forwarded-for", b"1.2.3.4, not-an-ip")],
+             "client": ("10.0.0.2", 1234)}
+    assert client_ip(Request(scope), flow.settings) == "10.0.0.2"
+    short = {"type": "http", "headers": [(b"x-forwarded-for", b"1.2.3.4")], "client": ("10.0.0.2", 1)}
+    two_hops = app_factory("xff2", trust_proxy_headers=True, trusted_proxy_hops=2).settings
+    assert client_ip(Request(short), two_hops) == "10.0.0.2"
 
 
 # ----------------------------------------------------------------------------
@@ -338,16 +367,18 @@ def test_one_click_unsubscribe(flow, make_flow, query, settings):
     flow.login("news@example.com", newsletter=True)
     sub_id = query("SELECT id FROM subscribers")[0]["id"]
     assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "subscribed"
-    token = make_unsubscribe_token(settings, sub_id)
+    token = make_unsubscribe_token(settings, sub_id, "news@example.com")
 
     mail_provider = make_flow()                  # no cookies, foreign Origin, no CSRF token
     page = mail_provider.client.get(f"/unsubscribe?u={token}")
     assert page.status_code == 200 and "Unsubscribe from EcoEnergy insights?" in page.text
     assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "subscribed"
 
+    # A forged signature gets the same neutral answer as an unknown id, and changes nothing.
     tampered = mail_provider.client.post(f"/unsubscribe?u={sub_id}.AAAA", data={"List-Unsubscribe": "One-Click"})
-    assert tampered.status_code == 400
+    assert tampered.status_code == 200
     assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "subscribed"
+    assert mail_provider.client.post("/unsubscribe?u=garbage", data={}).status_code == 400
 
     resp = mail_provider.client.post(f"/unsubscribe?u={token}", data={"List-Unsubscribe": "One-Click"},
                                      headers={"Origin": "https://mail.google.com"})
@@ -377,6 +408,145 @@ def test_account_delete_erases_everything_and_suppresses(flow, query, settings):
     assert not (settings.jobs_dir / job_id).exists()
     assert query("SELECT email_sha256 FROM suppression")[0]["email_sha256"] == sha256_hex("erase@example.com")
     assert flow.client.get("/account", follow_redirects=False).status_code == 303
+
+
+def test_old_unsubscribe_link_of_erased_subscriber_never_touches_reused_id(make_flow, query, settings, client):
+    """PDPA-3: SQLite reuses the highest id after a delete; an erased person's old link must not
+    unsubscribe the next sign-up or write a withdrawal into their ledger."""
+    first = make_flow()
+    first.login("first@example.com", newsletter=True)
+    sid = query("SELECT id FROM subscribers")[0]["id"]
+    old_link = security.unsubscribe_url(settings, sid, "first@example.com")
+    first.client.post("/account/delete", data={"csrf": first.csrf(), "confirm": "yes"})
+    second = make_flow()
+    second.login("second@example.com", newsletter=True)
+    assert query("SELECT id FROM subscribers")[0]["id"] == sid           # the id was reused
+    path = old_link.split("testserver", 1)[1]
+    assert client.get(path).status_code == 200                            # same neutral page
+    resp = client.post(path, data={"List-Unsubscribe": "One-Click"})
+    assert resp.status_code == 200
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "subscribed"
+    assert query("SELECT * FROM consents WHERE action = 'withdrawn'") == []
+    # The second person's own link (as exported in newsletter.csv) still works.
+    own = security.unsubscribe_url(settings, sid, "second@example.com").split("testserver", 1)[1]
+    client.post(own, data={"List-Unsubscribe": "One-Click"})
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+
+
+def _newsletter_actions(query) -> list[str]:
+    return [r["action"] for r in query("SELECT action FROM consents WHERE purpose = 'newsletter' ORDER BY id")]
+
+
+def test_third_party_newsletter_tick_is_not_confirmed_by_the_victims_own_sign_in(make_flow, query, client):
+    """appsec-5 / PDPA-1: an address typed in by someone else with the newsletter box ticked
+    must not be subscribed by the owner's later, unticked sign-in, nor reach newsletter.csv."""
+    victim, attacker = make_flow(), make_flow()
+    victim.login("victim@example.com", newsletter=True)
+    victim.client.post("/account/newsletter", data={"csrf": victim.csrf(), "action": "unsubscribe"})
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+
+    attacker.client.headers["user-agent"] = "EvilBot/1.0"
+    attacker.request_link("victim@example.com", newsletter=True)
+    # An unauthenticated request does not overwrite the recorded decision.
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+
+    victim.request_link("victim@example.com")                              # box unticked
+    assert victim.confirm(victim.latest_token("victim@example.com")).status_code == 303
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+    assert _newsletter_actions(query) == ["granted", "confirmed", "withdrawn", "granted"]
+    csv_text = client.get("/admin/export/newsletter.csv", headers=basic("admin", "correct horse battery")).text
+    assert "victim@example.com" not in csv_text
+
+
+def test_pending_newsletter_is_confirmed_only_by_the_link_sent_with_it(flow, make_flow, query, settings):
+    """A pending tick is not confirmed by an unticked link or the report-ready link; the
+    ticked link itself still confirms it (double opt-in), and says so."""
+    other = make_flow()
+    other.request_link("owner@example.com", newsletter=True)              # someone ticks for them
+    ticked_token = other.latest_token("owner@example.com")
+    ticked_mail = flow.mails("owner@example.com")[-1]
+    assert "newsletter box ticked" in ticked_mail["text_body"]
+    assert "confirms your subscription" in ticked_mail["html_body"]
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "pending"
+
+    flow.login("owner@example.com")                                        # unticked link
+    assert "newsletter box ticked" not in flow.mails("owner@example.com")[-1]["text_body"]
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "pending"
+    flow.upload_job()
+    jobs.run_once(settings)                                                # report-ready mail + link
+    ready = [m for m in flow.mails("owner@example.com") if "ready" in m["subject"]][-1]
+    flow.client.cookies.clear()
+    assert flow.confirm(flow.token_from(ready)).status_code == 303
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "pending"
+    assert _newsletter_actions(query) == ["granted"]
+
+    # The account page offers to cancel the pending request.
+    page = flow.client.get("/account").text
+    assert "Cancel the pending subscription" in page
+
+    start = flow.client.get(f"/start?t={ticked_token}").text
+    assert "also confirms your subscription" in start
+    assert flow.confirm(ticked_token).status_code == 303
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "subscribed"
+    assert _newsletter_actions(query) == ["granted", "confirmed"]
+
+
+def test_cancelled_pending_newsletter_cannot_be_confirmed_later(flow, make_flow, query):
+    other = make_flow()
+    other.request_link("cancel@example.com", newsletter=True)
+    ticked_token = other.latest_token("cancel@example.com")
+    flow.login("cancel@example.com")
+    flow.client.post("/account/newsletter", data={"csrf": flow.csrf(), "action": "unsubscribe"})
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+    flow.client.cookies.clear()
+    assert flow.confirm(ticked_token).status_code == 303
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+    assert _newsletter_actions(query) == ["granted", "withdrawn"]
+
+
+def test_privacy_notice_names_cloudflare_whenever_the_landing_page_loads_it(app_factory):
+    """PDPA-8: with only the site key set the landing page loads Turnstile from Cloudflare,
+    so the notice must disclose Cloudflare too."""
+    flow = app_factory("ts", turnstile_site_key="site-key-only")
+    landing = flow.client.get("/").text
+    assert "challenges.cloudflare.com/turnstile" in landing
+    assert "Cloudflare" in flow.client.get("/privacy").text
+    plain = app_factory("ts-off")
+    assert "challenges.cloudflare.com" not in plain.client.get("/").text
+    assert "Cloudflare" not in plain.client.get("/privacy").text
+
+
+@pytest.fixture
+def secure_delete_off_by_default(monkeypatch):
+    """Simulate an SQLite built without SQLITE_SECURE_DELETE (the compile-time default, e.g. the
+    python.org Windows and macOS builds): every new connection starts with secure_delete OFF."""
+    import sqlite3
+
+    real = sqlite3.connect
+
+    def connect(*args, **kwargs):
+        conn = real(*args, **kwargs)
+        conn.execute("PRAGMA secure_delete = OFF")
+        return conn
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+
+
+def test_database_overwrites_deleted_content(settings, secure_delete_off_by_default):
+    """PDPA-7: secure_delete is on for every connection, whatever SQLite's build default."""
+    with db(settings.db_path) as conn:
+        assert conn.execute("PRAGMA secure_delete").fetchone()[0] == 1
+
+
+def test_erased_data_is_not_left_in_the_database_file(flow, settings, secure_delete_off_by_default):
+    flow.login("remnant.person@example.com")
+    flow.upload_job(site_label="SECRET-LANDOWNER-LABEL")
+    jobs.run_once(settings)
+    flow.client.post("/account/delete", data={"csrf": flow.csrf(), "confirm": "yes"})
+    with db(settings.db_path) as conn:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    raw = settings.db_path.read_bytes()
+    assert b"remnant.person@example.com" not in raw and b"SECRET-LANDOWNER-LABEL" not in raw
 
 
 # ----------------------------------------------------------------------------

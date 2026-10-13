@@ -3,7 +3,8 @@
 Providers (``settings.dem_provider``):
 
 * ``copernicus`` (default) - Copernicus DEM GLO-30 Cloud-Optimised GeoTIFFs read
-  over HTTPS with windowed reads (only the blocks covering the bbox are fetched).
+  over HTTPS with windowed reads (only the blocks covering the bbox are fetched). The
+  AWS tiles carry no nodata value and store sea as exactly 0 m; those cells become NaN.
 * ``opentopodata`` - the public OpenTopoData API (SRTM 1"), for environments
   without rasterio. Small grid (<= 1000 points) because of the public API limits.
 * ``geotiff`` - a local GeoTIFF/VRT in EPSG:4326 at ``settings.dem_geotiff_path``.
@@ -66,10 +67,20 @@ COPERNICUS_POSTS_PER_DEG = 3600
 COPERNICUS_GDAL_ENV = dict(
     GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",     # don't list the bucket for sidecar files
     CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif",
-    GDAL_HTTP_TIMEOUT=30,
-    GDAL_HTTP_MAX_RETRY=2,
+    # Jobs run one at a time, so a stalled endpoint must fail fast: give up on a connection
+    # after 10 s, on a transfer that moves no data for 15 s, and on any request after 60 s;
+    # one retry. A blackholed bucket then fails a job in about 30 s, not 3 minutes.
+    GDAL_HTTP_CONNECTTIMEOUT=10,
+    GDAL_HTTP_LOW_SPEED_TIME=15,
+    GDAL_HTTP_LOW_SPEED_LIMIT=1,
+    GDAL_HTTP_TIMEOUT=60,
+    GDAL_HTTP_MAX_RETRY=1,
     GDAL_HTTP_RETRY_DELAY=1,
 )
+# Copernicus GLO-30 on AWS: "ocean areas ... assume height values equal to zero" and the
+# COGs declare no nodata value, so sea pixels are exactly 0.0 m (land at or below sea level
+# is stored negative or positive, not 0.0). They are treated as no data.
+COPERNICUS_SEA_VALUE = 0.0
 
 # --- SRTM via OpenTopoData ---
 SRTM_NAME = "SRTM 1 arc-second (via OpenTopoData)"
@@ -134,6 +145,16 @@ DemFetcher = Callable[[Bbox, Settings], DemGrid]
 # ---------------------------------------------------------------------------
 # shared helpers
 # ---------------------------------------------------------------------------
+def decimation_factor(ny: int, nx: int, max_cells: int) -> int:
+    """Smallest integer block size k that brings an ny x nx grid within max_cells (1 = fits)."""
+    if ny * nx <= max_cells:
+        return 1
+    k = max(2, math.ceil(math.sqrt(ny * nx / max_cells)))
+    while (ny // k) * (nx // k) > max_cells:
+        k += 1
+    return k
+
+
 def decimate(lons: np.ndarray, lats: np.ndarray, z: np.ndarray, max_cells: int):
     """Block-average (nanmean) by an integer factor until the grid fits max_cells.
 
@@ -142,11 +163,9 @@ def decimate(lons: np.ndarray, lats: np.ndarray, z: np.ndarray, max_cells: int):
     >= 150 m, far wider than one block.
     """
     ny, nx = z.shape
-    if z.size <= max_cells:
+    k = decimation_factor(ny, nx, max_cells)
+    if k == 1:
         return lons, lats, z
-    k = max(2, math.ceil(math.sqrt(z.size / max_cells)))
-    while (ny // k) * (nx // k) > max_cells:
-        k += 1
     ry, rx = ny % k, nx % k
     ys = slice(ry // 2, ny - (ry - ry // 2))
     xs = slice(rx // 2, nx - (rx - rx // 2))
@@ -162,9 +181,12 @@ def _import_rasterio():
     try:
         import rasterio  # noqa: F401  (imported lazily: optional for the opentopodata provider)
         from rasterio.windows import Window  # noqa: F401
-    except ImportError as exc:  # pragma: no cover - depends on the deployment
-        raise RuntimeError("rasterio is required for the copernicus and geotiff DEM providers; "
-                           "install it or set DEM_PROVIDER=opentopodata") from exc
+    except ImportError as exc:
+        # Name the real cause: an installed rasterio whose bundled GDAL misses a system library
+        # (e.g. "libexpat.so.1: cannot open shared object file") fails here too.
+        raise RuntimeError("rasterio could not be imported, so the copernicus and geotiff DEM providers "
+                           f"cannot run ({exc}); install it (and any missing system library) or set "
+                           "DEM_PROVIDER=opentopodata") from exc
     import rasterio
     return rasterio
 
@@ -184,9 +206,13 @@ def copernicus_tile_name(lat_floor: int, lon_floor: int) -> str:
     return f"Copernicus_DSM_COG_10_{ns}{abs(lat_floor):02d}_00_{ew}{abs(lon_floor):03d}_00_DEM"
 
 
-def _is_missing(exc: BaseException) -> bool:
-    # All-ocean tiles are simply not published: S3 answers 404 (local paths: no such file).
+def _is_missing(exc: BaseException, url: str) -> bool:
+    """All-ocean tiles are simply not published: S3 answers 404 (local paths: no such file).
+    Over HTTP only a 404 counts: GDAL words other failures (e.g. a timeout) as "does not exist
+    in the file system", and those must report the service as unreachable, never as sea."""
     msg = str(exc).lower()
+    if url.startswith(("http://", "https://")):
+        return "404" in msg
     return "404" in msg or "no such file" in msg or "does not exist" in msg
 
 
@@ -213,6 +239,8 @@ def _place_tile(src, z: np.ndarray, i0: int, j0: int, n: int) -> None:
     if src.nodata is not None:
         data[data == src.nodata] = np.nan
     data[~np.isfinite(data)] = np.nan
+    # AWS GLO-30: ocean is stored as exactly 0 m and the COGs carry no nodata value.
+    data[data == COPERNICUS_SEA_VALUE] = np.nan
     y_hi = row0_j - r_lo - j0                 # z row of the window's first (northern) row
     y_lo = row0_j - r_hi - j0
     x_lo = col0_i + c_lo - i0
@@ -232,7 +260,9 @@ def fetch_copernicus(bbox: Bbox, settings: Settings) -> DemGrid:
     lat_tiles = range((j0 - 1) // n, (j1 - 1) // n + 1)
     lon_tiles = range(i0 // n, i1 // n + 1)
     base = settings.copernicus_base_url.rstrip("/")
-    with rasterio.Env(**COPERNICUS_GDAL_ENV):
+    # GDAL caches /vsicurl results (including failures) for the life of the process; one
+    # transient S3 error would otherwise fail, or blank out, every later job on that tile.
+    with rasterio.Env(**COPERNICUS_GDAL_ENV, CPL_VSIL_CURL_NON_CACHED=f"/vsicurl/{base}"):
         for tlat in lat_tiles:
             for tlon in lon_tiles:
                 name = copernicus_tile_name(tlat, tlon)
@@ -241,8 +271,10 @@ def fetch_copernicus(bbox: Bbox, settings: Settings) -> DemGrid:
                     with rasterio.open(url) as src:
                         _place_tile(src, z, i0, j0, n)
                 except RasterioIOError as exc:
-                    if _is_missing(exc):
-                        log.info("Copernicus tile %s not published (ocean); treating as no data", name)
+                    if _is_missing(exc, url):
+                        # WARNING: a wrong COPERNICUS_BASE_URL also lands here.
+                        log.warning("Copernicus tile %s not found at %s; treating it as ocean (no data)",
+                                    name, base)
                         continue
                     raise _unavailable(f"reading {url}", exc) from exc
                 except RasterioError as exc:
@@ -354,10 +386,42 @@ def fetch_opentopodata(bbox: Bbox, settings: Settings, *, session=None,
 # ---------------------------------------------------------------------------
 # local GeoTIFF / VRT
 # ---------------------------------------------------------------------------
+# Cells read at once while block-averaging a large GeoTIFF window (bounds memory to a strip).
+GEOTIFF_STRIP_CELLS = 1_000_000
+
+
+def _read_window_decimated(src, c_lo: int, r_lo: int, ncols: int, nrows: int, max_cells: int):
+    """Read a window as a float64 grid (NaN = no data) in raster order, block-averaged to fit
+    max_cells exactly as decimate() would after flipping to ascending axes, but strip by strip,
+    so a high-resolution file never has the whole window in memory. Returns (z, lons, lats)."""
+    from rasterio.windows import Window
+
+    t = src.transform
+    k = decimation_factor(nrows, ncols, max_cells)
+    ry, rx = nrows % k, ncols % k
+    # decimate() trims (r // 2) at the low end of each ascending axis; mirror that in raster order.
+    r0 = r_lo + (ry - ry // 2 if t.e < 0 else ry // 2)
+    c0 = c_lo + (rx // 2 if t.a > 0 else rx - rx // 2)
+    nby, nbx = nrows // k, ncols // k
+    z = np.empty((nby, nbx), dtype=np.float64)
+    step = max(1, GEOTIFF_STRIP_CELLS // (k * k * nbx))
+    for b in range(0, nby, step):
+        nb = min(step, nby - b)
+        data = src.read(1, window=Window(c0, r0 + b * k, nbx * k, nb * k), out_dtype="float64",
+                        masked=True)
+        strip = np.ma.filled(data, np.nan)
+        strip[~np.isfinite(strip)] = np.nan
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)   # all-NaN blocks stay NaN
+            z[b:b + nb] = np.nanmean(strip.reshape(nb, k, nbx, k), axis=(1, 3))
+    lons = t.c + (c0 + (np.arange(nbx) + 0.5) * k) * t.a
+    lats = t.f + (r0 + (np.arange(nby) + 0.5) * k) * t.e
+    return z, lons, lats
+
+
 def fetch_geotiff(bbox: Bbox, settings: Settings) -> DemGrid:
     rasterio = _import_rasterio()
     from rasterio.errors import RasterioError
-    from rasterio.windows import Window
 
     path = settings.dem_geotiff_path
     if not path:
@@ -377,12 +441,8 @@ def fetch_geotiff(bbox: Bbox, settings: Settings) -> DemGrid:
             r_lo, r_hi = max(0, math.floor(rows[0])), min(src.height - 1, math.ceil(rows[1]))
             if c_hi - c_lo < 2 or r_hi - r_lo < 2:
                 raise ScreeningError(NO_COVERAGE_MESSAGE, "no_dem_coverage")
-            data = src.read(1, window=Window(c_lo, r_lo, c_hi - c_lo + 1, r_hi - r_lo + 1),
-                            out_dtype="float64", masked=True)
-            z = np.ma.filled(data, np.nan)
-            z[~np.isfinite(z)] = np.nan
-            lons = t.c + (np.arange(c_lo, c_hi + 1) + 0.5) * t.a
-            lats = t.f + (np.arange(r_lo, r_hi + 1) + 0.5) * t.e
+            z, lons, lats = _read_window_decimated(src, c_lo, r_lo, c_hi - c_lo + 1, r_hi - r_lo + 1,
+                                                   settings.max_grid_cells)
             res_deg = (abs(t.a) + abs(t.e)) / 2
     except RasterioError as exc:
         raise _unavailable(f"reading {path}", exc) from exc
@@ -390,7 +450,7 @@ def fetch_geotiff(bbox: Bbox, settings: Settings) -> DemGrid:
         lons, z = lons[::-1], z[:, ::-1]
     if lats[0] > lats[-1]:
         lats, z = lats[::-1], z[::-1, :]
-    lons, lats, z = decimate(lons, lats, np.ascontiguousarray(z), settings.max_grid_cells)
+    z = np.ascontiguousarray(z)
     mid_lat = (min_lat + max_lat) / 2
     res_m = GEOD.inv(0.0, mid_lat, 0.0, mid_lat + res_deg)[2]
     info = {

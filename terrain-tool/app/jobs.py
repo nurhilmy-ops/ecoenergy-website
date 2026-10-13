@@ -17,7 +17,7 @@ from pathlib import Path
 from .config import Settings
 from .db import db, iso, iso_in, now_iso, tx, utcnow
 from .mailer import send_report_ready_email
-from .security import create_magic_token, magic_link
+from .security import create_magic_token, email_hash, magic_link
 
 log = logging.getLogger(__name__)
 
@@ -30,8 +30,10 @@ OUTBOX_RETENTION_DAYS = 7
 ORPHAN_DIR_GRACE_SECONDS = 3600       # an upload creates its directory just before the job row
 
 # Fields cleared whenever a job's site data is deleted (user "Delete now" or retention).
-SITE_DATA_FIELDS = ("site_label", "notes", "input_filename", "input_sha256", "total_area_ha",
-                    "state", "district", "centroid_lat", "centroid_lon", "kpkt_class1_pct")
+# The visitor's optional answers (label, scheme, stage, notes) go with the site they describe.
+SITE_DATA_FIELDS = ("site_label", "scheme", "stage", "notes", "input_filename", "input_sha256",
+                    "total_area_ha", "state", "district", "centroid_lat", "centroid_lon",
+                    "kpkt_class1_pct")
 
 
 def job_dir(settings: Settings, job_id: str) -> Path:
@@ -92,15 +94,20 @@ def claim_next(settings: Settings) -> dict | None:
         return dict(conn.execute("SELECT * FROM jobs WHERE id = ?", (row["id"],)).fetchone())
 
 
-def recover_stale(settings: Settings, older_than_minutes: int = STALE_RUNNING_MINUTES) -> int:
-    """Crash recovery: re-queue jobs stuck in 'running' for longer than the threshold."""
-    cutoff = iso(utcnow() - timedelta(minutes=older_than_minutes))
+def recover_stale(settings: Settings, older_than_minutes: int | None = STALE_RUNNING_MINUTES) -> int:
+    """Crash recovery: re-queue jobs stuck in 'running' for longer than the threshold.
+    ``None`` re-queues every running job (worker start-up: with the single-instance design no
+    other worker can own one, so any 'running' row was abandoned by a stopped process)."""
     with db(settings.db_path) as conn:
-        cur = conn.execute(
-            "UPDATE jobs SET status = 'queued', started_at = NULL "
-            "WHERE status = 'running' AND (started_at IS NULL OR started_at < ?)",
-            (cutoff,),
-        )
+        if older_than_minutes is None:
+            cur = conn.execute("UPDATE jobs SET status = 'queued', started_at = NULL WHERE status = 'running'")
+        else:
+            cutoff = iso(utcnow() - timedelta(minutes=older_than_minutes))
+            cur = conn.execute(
+                "UPDATE jobs SET status = 'queued', started_at = NULL "
+                "WHERE status = 'running' AND (started_at IS NULL OR started_at < ?)",
+                (cutoff,),
+            )
     if cur.rowcount:
         log.warning("Re-queued %d stale running job(s)", cur.rowcount)
     return cur.rowcount
@@ -228,6 +235,39 @@ def delete_job_data(settings: Settings, job_id: str) -> None:
                      (job_id,))
 
 
+def erase_subscriber(settings: Settings, subscriber_id: int) -> bool:
+    """Right to erasure: files, rows (cascade) and a suppression entry for sha256(email).
+    False if the subscriber no longer exists."""
+    with tx(settings.db_path) as conn:
+        sub = conn.execute("SELECT email FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
+        if sub is None:
+            return False
+        job_ids = [r["id"] for r in conn.execute("SELECT id FROM jobs WHERE subscriber_id = ?",
+                                                  (subscriber_id,))]
+        conn.execute("INSERT INTO suppression (email_sha256, created_at) VALUES (?, ?) "
+                     "ON CONFLICT(email_sha256) DO NOTHING", (email_hash(sub["email"]), now_iso()))
+        conn.execute("DELETE FROM outbox WHERE to_addr = ?", (sub["email"],))
+        conn.execute("DELETE FROM subscribers WHERE id = ?", (subscriber_id,))
+    for job_id in job_ids:
+        shutil.rmtree(job_dir(settings, job_id), ignore_errors=True)
+    return True
+
+
+# Confirmed accounts that no longer serve a purpose: no report left, not on the newsletter, and
+# no activity since the cutoff. Every link request and sign-in appends a consent row, so the
+# newest consent row (or job, or the sign-up itself) is the last activity.
+INACTIVE_SUBSCRIBERS_SQL = """
+SELECT s.id FROM subscribers s
+WHERE s.verified_at IS NOT NULL AND s.newsletter_status != 'subscribed'
+  AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.subscriber_id = s.id AND j.status != 'deleted')
+  AND MAX(s.created_at, s.verified_at,
+          COALESCE((SELECT MAX(c.created_at) FROM consents c WHERE c.subscriber_id = s.id), ''),
+          COALESCE((SELECT MAX(j.created_at) FROM jobs j WHERE j.subscriber_id = s.id), ''),
+          COALESCE((SELECT MAX(t.created_at) FROM tokens t WHERE t.subscriber_id = s.id), ''),
+          COALESCE((SELECT MAX(x.expires_at) FROM sessions x WHERE x.subscriber_id = s.id), '')) < ?
+"""
+
+
 def sweep(settings: Settings) -> dict[str, int]:
     """Retention sweep (PDPA s.10). Safe to run at any time; returns counts for logging/tests."""
     now = now_iso()
@@ -259,6 +299,11 @@ def sweep(settings: Settings) -> dict[str, int]:
         counts["outbox"] = conn.execute(
             "DELETE FROM outbox WHERE created_at < ?",
             (iso(utcnow() - timedelta(days=OUTBOX_RETENTION_DAYS)),)).rowcount
+        inactive_cutoff = iso(utcnow() - timedelta(days=settings.inactive_purge_days))
+        inactive = [r["id"] for r in conn.execute(INACTIVE_SUBSCRIBERS_SQL, (inactive_cutoff,))]
+    # Erased like a self-service deletion (suppression hash kept), so they are not contacted again.
+    counts["inactive_erased"] = sum(erase_subscriber(settings, sid) for sid in inactive)
+    with db(settings.db_path) as conn:
         live_ids = {r["id"] for r in conn.execute("SELECT id FROM jobs WHERE status != 'deleted'")}
 
     # Directories with no live job row (e.g. a crash between upload and insert).
@@ -298,7 +343,9 @@ class Worker:
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
             return
-        recover_stale(self.settings)
+        # Any 'running' row was abandoned by a previous process (crash, Ctrl+C, container stop):
+        # re-queue it now rather than after the 15-minute stale cutoff.
+        recover_stale(self.settings, older_than_minutes=None)
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, name="terrain-worker", daemon=True)
         self._thread.start()
@@ -309,7 +356,8 @@ class Worker:
         if self._thread:
             self._thread.join(timeout)
             if self._thread.is_alive():
-                log.warning("Job worker still busy after %.0fs; leaving it to finish", timeout)
+                log.warning("Job worker still busy after %.0fs; its job is abandoned if the process "
+                            "exits now and will be re-queued when the app next starts", timeout)
             self._thread = None
         log.info("Job worker stopped")
 

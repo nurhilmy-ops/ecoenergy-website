@@ -199,7 +199,7 @@ def export_newsletter(request: Request):
         ["email", "confirmed_at", "notice_version", "utm_source", "utm_medium", "utm_campaign",
          "unsubscribe_url"],
         [[r["email"], r["confirmed_at"] or r["verified_at"], r["notice_version"], r["utm_source"],
-          r["utm_medium"], r["utm_campaign"], unsubscribe_url(settings, r["id"])] for r in rows],
+          r["utm_medium"], r["utm_campaign"], unsubscribe_url(settings, r["id"], r["email"])] for r in rows],
     )
 
 

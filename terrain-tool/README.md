@@ -39,15 +39,17 @@ cd terrain-tool
 
 ### Windows (PowerShell)
 
-Needs Python 3.11 or newer (the `py` launcher).
+Needs Python 3.11 or newer (the `py` launcher). Windows blocks scripts by default, so start
+it through PowerShell with a one-off bypass:
 
 ```powershell
 cd terrain-tool
-.\run_local.ps1
+powershell -ExecutionPolicy Bypass -File .\run_local.ps1
 ```
 
-Both scripts create `.venv`, install `requirements.txt`, copy `.env.example` to `.env` on
-first run and start the app on http://localhost:8000. Emails are not sent in this mode:
+Both scripts create `.venv`, install `requirements.txt` (preferring ready-built wheels), copy
+`.env.example` to `.env` on first run and start the app on http://localhost:8000 (set `PORT`
+to use another port; email links follow it). Emails are not sent in this mode:
 they land in the development inbox at http://localhost:8000/dev/outbox.
 
 ### Docker
@@ -60,8 +62,9 @@ docker compose up --build
 
 This starts the app on http://localhost:8000 together with
 [Mailpit](https://mailpit.axllent.org/), a local mail catcher: magic-link and report-ready
-emails arrive at **http://localhost:8025**, exactly as a visitor would receive them. Data
-lives in the `terrain-data` Docker volume (`docker compose down -v` deletes it).
+emails arrive at **http://localhost:8025**, exactly as a visitor would receive them. Both are
+published on this machine's loopback only (the inbox holds every magic link). Data lives in
+the `terrain-data` Docker volume (`docker compose down -v` deletes it).
 
 ## A two-minute walkthrough
 
@@ -103,12 +106,13 @@ line: everything after `=` is the value.
 |---|---|---|
 | **core** | | |
 | `APP_ENV` | `development` | `development` or `production`. Production refuses to start without `SECRET_KEY` and with `MAIL_BACKEND=outbox`. |
-| `BASE_URL` | `http://localhost:8000` | Public origin used in email links and the Origin check on form posts. Use `https://` in production (cookies become Secure). |
+| `BASE_URL` | `http://localhost:8000` | Public origin used in email links and the Origin check on form posts. Use `https://` in production (cookies become Secure). Left unset, `python -m app` uses `http://localhost:$PORT`. |
 | `SECRET_KEY` | *(empty)* | Signing key for unsubscribe links. Empty in development: generated into `DATA_DIR/.secret_key`. Required in production. |
 | `DATA_DIR` | `./data` | Folder for the SQLite database (`app.db`) and job files. Relative paths count from where the app is started. |
-| `TRUST_PROXY_HEADERS` | `false` | Take the client IP from `X-Forwarded-For`. Set `true` only behind your own reverse proxy. |
+| `TRUST_PROXY_HEADERS` | `false` | Take the client IP from `X-Forwarded-For`. Set `true` only behind your own reverse proxy, and only if it appends the address it received the request from (nginx `$proxy_add_x_forwarded_for`, AWS ALB, Cloudflare) or overwrites the header — never if it passes a client-supplied header on unchanged. |
+| `TRUSTED_PROXY_HOPS` | `1` | How many of your proxies append to `X-Forwarded-For` (e.g. `2` for Cloudflare in front of nginx). The client IP is taken that many hops from the right; the left-most hops can be forged by the client. |
 | **privacy notice** | | |
-| `NOTICE_VERSION` | `2026-10-draft-2` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
+| `NOTICE_VERSION` | `2026-10-draft-3` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
 | **email** | | |
 | `MAIL_BACKEND` | `outbox` | `outbox` (development: mail is stored and shown at `/dev/outbox`), `smtp`, or `ses` (Amazon SES v2 API; `pip install boto3`). |
 | `MAIL_FROM` | `EcoEnergy Consultancy <no-reply@ecoconsultancy.services>` | From header of every email. |
@@ -126,12 +130,13 @@ line: everything after `=` is the value.
 | **retention (PDPA)** | | |
 | `RETENTION_DAYS` | `30` | Days before a site file, its results and reports are deleted (follow-up about that site ends with it). |
 | `UNVERIFIED_PURGE_DAYS` | `7` | Days before an email address that was never confirmed is deleted. |
+| `INACTIVE_PURGE_DAYS` | `730` | Days without activity after which a confirmed account with no report left and no newsletter subscription is deleted (a one-way hash of the address is kept so it is not contacted). |
 | **abuse controls** | | |
 | `RATE_LINK_PER_EMAIL_HOUR` | `3` | Magic-link requests per email address per hour. |
 | `RATE_LINK_PER_IP_HOUR` | `10` | Magic-link requests per IP address per hour. |
 | `RATE_JOBS_PER_EMAIL_DAY` | `3` | Screenings per email address per day. |
 | `RATE_JOBS_PER_IP_DAY` | `10` | Screenings per IP address per day. |
-| `TURNSTILE_SITE_KEY` | *(empty)* | Cloudflare Turnstile site key. The human check is on only when both Turnstile keys are set. |
+| `TURNSTILE_SITE_KEY` | *(empty)* | Cloudflare Turnstile site key. The human check (and the Cloudflare script on the landing page) is on when this is set; sign-ups are refused until `TURNSTILE_SECRET_KEY` is also set. |
 | `TURNSTILE_SECRET_KEY` | *(empty)* | Cloudflare Turnstile secret key. |
 | **upload limits** | | |
 | `MAX_UPLOAD_MB` | `5.0` | Largest KML/KMZ upload, in MB. |
@@ -139,7 +144,7 @@ line: everything after `=` is the value.
 | `MAX_FEATURES` | `50` | Most placemarks (polygons, lines, points) in one file. |
 | `MAX_EXTENT_KM` | `15.0` | Largest site extent (bounding-box width or height), in km. |
 | **terrain engine** | | |
-| `DEM_PROVIDER` | `copernicus` | `copernicus` (reads 1° tiles from AWS; no coordinates sent), `opentopodata` (fallback; sends site coordinates) or `geotiff` (local file). |
+| `DEM_PROVIDER` | `copernicus` | `copernicus` (reads 1° tiles from AWS by name and byte range; no coordinates sent), `opentopodata` (fallback; sends site coordinates) or `geotiff` (local file). |
 | `DEM_GEOTIFF_PATH` | *(empty)* | GeoTIFF or VRT in EPSG:4326, used when `DEM_PROVIDER=geotiff`. |
 | `COPERNICUS_BASE_URL` | `https://copernicus-dem-30m.s3.amazonaws.com` | Base URL of the public Copernicus DEM GLO-30 bucket. |
 | `OPENTOPODATA_URL` | `https://api.opentopodata.org/v1` | OpenTopoData API base URL (`DEM_PROVIDER=opentopodata`). |
@@ -147,7 +152,7 @@ line: everything after `=` is the value.
 | `MAX_GRID_CELLS` | `400000` | Cap on DEM cells analysed per job; larger areas are decimated. |
 | `CONTOUR_MIN_INTERVAL_M` | `5.0` | Never draw contours finer than this, in metres. |
 | **worker** | | |
-| `WORKER_INLINE` | `true` | Run the job worker as a thread inside the web process (single process). |
+| `WORKER_INLINE` | `true` | Run the job worker as a thread inside the web process (single process). Keep `true`: with `false` nothing processes uploads or runs the retention sweeps (the tests use it). |
 | `WORKER_POLL_SECONDS` | `1.0` | Seconds between queue polls when idle. |
 | **admin** | | |
 | `ADMIN_USER` | `admin` | HTTP Basic user for `/admin`. |
@@ -155,7 +160,7 @@ line: everything after `=` is the value.
 | **links** | | |
 | `CONSULT_URL` | `https://www.ecoconsultancy.services/consult/` | Target of the "Book a free consult" button (utm tags are added). |
 | `SITE_URL` | `https://www.ecoconsultancy.services/` | Marketing site linked from the header and emails. |
-| **process** (not in Settings) | | |
+| **process** (not in Settings; environment or `.env`) | | |
 | `HOST` | `127.0.0.1` | Listen address (`0.0.0.0` in the Docker image). |
 | `PORT` | `8000` | Listen port. |
 | `LOG_LEVEL` | `INFO` | Log level. |
@@ -196,8 +201,9 @@ rules and tests — is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 **Elevation: Copernicus DEM GLO-30 ("Copernicus WorldDEM-30").** Read as Cloud-Optimised
 GeoTIFF tiles (1° × 1°, 2021 release) from the public `copernicus-dem-30m` bucket on the
-Registry of Open Data on AWS. The server requests tiles by their 1° name; no site
-coordinates leave the server. The *Licence for the use of the Copernicus WorldDEM-30* is
+Registry of Open Data on AWS. The server requests a tile by its 1° name and reads only the
+parts of the file covering the site's general area (byte ranges of an internal block of
+roughly 30 km); the site's coordinates, file and the visitor's details never leave the server. The *Licence for the use of the Copernicus WorldDEM-30* is
 free of charge, worldwide and contains no non-commercial restriction. It requires the
 following; the tool prints the first two in every report and on the result page:
 
@@ -213,7 +219,9 @@ following; the tool prints the first two in every report and on the result page:
 (NASA/USGS, February 2000). It sends the site's sample coordinates to api.opentopodata.org;
 the result page and the privacy notice say so when it is in use. The public API allows
 100 locations per request, 1 call per second and 1,000 calls per day, so it is for
-emergencies, not production.
+emergencies, not production: the tool samples at most 1,000 points per site, so over sites
+larger than about 1.5 km the grid is coarser than 60 m, slope shares are understated and
+the report carries a `coarse_grid` caution instead of an "all Class I" reading.
 
 **State and district boundaries: Department of Statistics Malaysia (DOSM)**,
 `administrative_2_district.geojson` from
@@ -242,10 +250,20 @@ version `NOTICE_VERSION`).
   notice is not used to collect consent.
 - **Consent ledger.** Append-only rows with the exact EN/BM wording shown, notice version,
   time, IP and browser, so consent can be proved (reg 3(1), reg 3(5)).
-- **Double opt-in** for the newsletter: it becomes active only when the email address is
-  confirmed. One-click unsubscribe (RFC 8058) is ready for newsletter mail.
-- **Retention.** Site files, results and reports: `RETENTION_DAYS` (30) or at once with
-  Delete. Never-confirmed addresses: `UNVERIFIED_PURGE_DAYS` (7). Abuse counters: 2 days.
+- **Double opt-in** for the newsletter: it becomes active only when the link emailed with
+  that opt-in is used (any other sign-in, or a tick typed in by someone else, confirms
+  nothing). One-click unsubscribe (RFC 8058) is ready for newsletter mail; unsubscribe links
+  are signed for the subscriber id and the address together.
+- **Retention.** Site files, results and reports (and the answers given with them):
+  `RETENTION_DAYS` (30) or at once with Delete. Never-confirmed addresses:
+  `UNVERIFIED_PURGE_DAYS` (7). Confirmed accounts with no report left, no newsletter and no
+  activity: `INACTIVE_PURGE_DAYS` (730). Abuse counters: 2 days. SQLite runs with
+  `secure_delete` on, so erased rows are overwritten in `app.db`.
+- **Written requests.** Someone who withdraws consent or objects to direct marketing by email
+  (s.38, s.43) is recorded with `python -m app.manage withdraw EMAIL --followup --newsletter
+  --note "Email of 12 Oct 2026"`: follow-up ends for every live report, the newsletter is
+  unsubscribed, and the ledger gets a `withdrawn` row with the note. For the newsletter alone,
+  the `unsubscribe_url` column of the newsletter CSV does the same.
 - **Self-service rights.** `/account` shows everything held, exports it as JSON, and
   deletes the account; erasure leaves only sha256(email) in a suppression list so the
   person is not contacted again (a new sign-up lifts it).
@@ -278,7 +296,8 @@ prescribed under s.43A(3) yet.
 
 - [ ] **Domain and HTTPS.** A subdomain (e.g. `tools.ecoconsultancy.services`, your choice)
       behind a TLS-terminating reverse proxy; `BASE_URL=https://…`, `APP_ENV=production`,
-      `TRUST_PROXY_HEADERS=true` only if the proxy sets `X-Forwarded-For`.
+      `TRUST_PROXY_HEADERS=true` only if the proxy appends to (or overwrites)
+      `X-Forwarded-For`, with `TRUSTED_PROXY_HOPS` set to the number of such proxies.
 - [ ] **Email.** To keep processing in Malaysia use Amazon SES in `ap-southeast-5`
       (Asia Pacific, Malaysia; available since 21 Nov 2025). AWS lists **no SES SMTP
       endpoint in that region**, only the HTTPS API, so set `MAIL_BACKEND=ses`,
@@ -333,7 +352,7 @@ prescribed under s.43A(3) yet.
 ## Tests
 
 ```bash
-python -m pip install -r requirements-dev.txt
+python -m pip install --prefer-binary -r requirements-dev.txt
 python -m pytest -q
 ```
 

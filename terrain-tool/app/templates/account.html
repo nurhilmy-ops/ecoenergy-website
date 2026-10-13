@@ -28,13 +28,20 @@
       <button class="btn-ghost" type="submit">{{ CONSENT.newsletter_off_account[0] }}</button>
     </form>
     {% else %}
-    <p class="muted small">Optional and separate from the tool. {% if subscriber.newsletter_status == 'pending' %}Your subscription is waiting for email confirmation.{% endif %}</p>
+    <p class="muted small">Optional and separate from the tool. {% if subscriber.newsletter_status == 'pending' %}A subscription was requested for this address and is waiting for confirmation through the link emailed with that request.{% endif %}</p>
     <form method="post" action="/account/newsletter">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="action" value="subscribe">
       <button class="btn" type="submit">Subscribe</button>
       <p class="notice">{{ CONSENT.newsletter_account[0] }}<br><span lang="ms">{{ CONSENT.newsletter_account[1] }}</span></p>
     </form>
+    {% if subscriber.newsletter_status == 'pending' %}
+    <form method="post" action="/account/newsletter">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="action" value="unsubscribe">
+      <button class="btn-ghost" type="submit">Cancel the pending subscription</button>
+    </form>
+    {% endif %}
     {% endif %}
   </section>
 </div>

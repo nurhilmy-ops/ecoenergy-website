@@ -32,13 +32,15 @@ DEM_KEYS = {"provider", "name", "model_type", "epoch", "vertical_datum", "nomina
             "sends_coordinates_to_third_party"}
 LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg",
                  "boundary_attribution"}
-TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km"}
+TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km",
+               "steeper_than_grade_pct"}
 SITE_KEYS = {"name", "area_ha", "perimeter_m", "centroid", "elev_min_m", "elev_max_m",
              "elev_mean_m", "relief_m", "slope_mean_deg", "slope_p90_deg", "slope_max_deg",
              "kpkt_pct", "slope_bins_pct", "steeper_than_grade_pct", "cells"}
 KPKT_KEYS = {"I", "II", "III", "IV"}
 BIN_KEYS = {"0-2", "2-5", "5-10", "10-15", "15-25", "25-35", ">35"}
-ROUTE_KEYS = {"name", "length_km", "elev_min_m", "elev_max_m", "total_ascent_m", "max_grade_pct"}
+ROUTE_KEYS = {"name", "length_km", "elev_min_m", "elev_max_m", "total_ascent_m", "max_grade_pct",
+              "max_slope_deg", "length_on_35deg_m"}
 POINT_KEYS = {"name", "lon", "lat", "elev_m"}
 FLAG_KEYS = {"level", "code", "title", "detail", "source"}
 FOLLOWUP_KEYS = {"title", "detail"}
@@ -129,7 +131,7 @@ def test_polygon_hole_is_excluded(tmp_path):
     assert s_hole["cells"] < s_solid["cells"]
 
 
-def test_kpkt_overall_is_area_weighted(tmp_path):
+def test_kpkt_overall_counts_cells_inside_any_site(tmp_path):
     big = rect(LON, LAT, 600, 400)                      # flat: 24 ha
     small = rect(*offset(LON, LAT, 1000, 0), 300, 200)  # 20°: 6 ha
     small_lon0 = small[0][0]
@@ -140,10 +142,35 @@ def test_kpkt_overall_is_area_weighted(tmp_path):
 
     result, _ = screen(tmp_path, polygon_pm("Big", big) + polygon_pm("Small", small),
                        function_fetcher(terrain))
-    a_big, a_small = (s["area_ha"] for s in result["sites"])
-    expected_ii = 100.0 * a_small / (a_big + a_small)
-    assert result["kpkt_overall_pct"]["II"] == pytest.approx(expected_ii, abs=0.3)
+    s_big, s_small = result["sites"]
+    # Every cell inside a site counts once; with disjoint sites that is close to area-weighting.
+    assert result["kpkt_overall_pct"]["II"] == pytest.approx(
+        100.0 * s_small["cells"] / (s_big["cells"] + s_small["cells"]), abs=0.05)
+    expected_ii = 100.0 * s_small["area_ha"] / (s_big["area_ha"] + s_small["area_ha"])
+    assert result["kpkt_overall_pct"]["II"] == pytest.approx(expected_ii, abs=1.0)
+    assert result["totals"]["total_area_ha"] == pytest.approx(s_big["area_ha"] + s_small["area_ha"], abs=0.01)
     assert "kpkt_class_ii" in codes(result)
+
+
+def test_nested_polygons_count_once_in_totals_and_capacity(tmp_path):
+    """A lot boundary plus a phase block drawn inside it: the block must not add area, shift
+    the overall KPKT split or inflate the capacity figures (GEO-2)."""
+    t = math.tan(math.radians(20))
+    fetcher = function_fetcher(lambda LONS, LATS, X, Y: np.where(X < 0, 10.0, 10.0 + t * X))
+    lot = polygon_pm("Lot boundary", rect(LON, LAT, 1000, 1000))             # west half flat, east 20°
+    block = polygon_pm("Phase 1 PV block", rect(*offset(LON, LAT, 50, 100), 400, 700))  # 28 ha, flat
+    alone, _ = screen(tmp_path / "alone", lot, fetcher, settings=make_settings(tmp_path))
+    nested, _ = screen(tmp_path / "nested", lot + block, fetcher, settings=make_settings(tmp_path))
+    assert sum(s["area_ha"] for s in nested["sites"]) == pytest.approx(128.0, abs=0.5)
+    assert nested["totals"]["total_area_ha"] == pytest.approx(alone["totals"]["total_area_ha"], abs=0.01)
+    assert nested["kpkt_overall_pct"] == alone["kpkt_overall_pct"]
+    assert nested["totals"]["steeper_than_grade_pct"] == alone["totals"]["steeper_than_grade_pct"]
+    assert 40.0 < alone["kpkt_overall_pct"]["II"] < 60.0
+    cap = {r: flag(x, "indicative_capacity")["detail"] for r, x in (("alone", alone), ("nested", nested))}
+    assert cap["nested"] == cap["alone"]
+    assert "128" not in cap["nested"]
+    caption = {r: x["figures"][2]["caption"] for r, x in (("alone", alone), ("nested", nested))}
+    assert caption["nested"] == caption["alone"]
 
 
 # ---------------------------------------------------------------------------
@@ -234,7 +261,8 @@ def test_outputs_written_and_schema_matches_contract(tmp_path):
     assert meta["input_sha256"] == hashlib.sha256((tmp_path / "site.kml").read_bytes()).hexdigest()
     assert result["totals"] == {"polygon_count": 1, "line_count": 1, "point_count": 1,
                                 "total_area_ha": result["sites"][0]["area_ha"],
-                                "total_line_km": result["routes"][0]["length_km"]}
+                                "total_line_km": result["routes"][0]["length_km"],
+                                "steeper_than_grade_pct": result["sites"][0]["steeper_than_grade_pct"]}
     assert result["location"]["utm_epsg"] == "EPSG:32647"
     assert result["location"]["state"] == "Selangor"
     assert result["dem"]["cells_analysed"] > 0 and result["dem"]["nodata_pct"] == 0.0
@@ -695,6 +723,127 @@ def test_indicative_capacity_math():
     assert cap([site_result()], scheme=None) is not None and cap([site_result()], scheme="cress") is not None
 
 
+def test_capacity_without_enough_gentle_ground_gives_no_figure():
+    """H1: a site with almost no ground flatter than 8.5° got "0.0–0.0 MWp" / "0.1–0.1 MWp"."""
+    def cap(**kw):
+        return next(f for f in flags.build_flags(result_with([site_result(**kw)]))
+                    if f["code"] == "indicative_capacity")["detail"]
+    steep = cap(area_ha=14.6, grades={"10": 100.0, "15": 100.0})
+    assert "0.0–0.0" not in steep and "only 0.0 ha is flatter than about 8.5°" in steep
+    assert "too little for an indicative figure" in steep
+    sliver = cap(area_ha=36.77, grades={"10": 99.9, "15": 99.7})
+    assert "0.1–0.1" not in sliver and "only 0.1 ha is flatter" in sliver
+    assert flags._mwp_range(0.05) == "under 0.1" and flags._mwp_range(0.5) == "0.42–0.62"
+    assert flags._mwp_range(1.0) == "0.8–1.2" and flags._mwp_range(12.0) == "10–15"
+
+
+def test_capacity_uses_the_overall_share_when_present():
+    """GEO-2: with the union-based share in totals, the flatter area is not summed per site."""
+    lot = site_result("Lot", area_ha=100.0, grades={"10": 50.0, "15": 50.0})
+    block = site_result("Block", area_ha=28.0, grades={"10": 0.0, "15": 0.0})
+    r = result_with([lot, block])
+    r["totals"] = {"total_area_ha": 100.0, "steeper_than_grade_pct": {"10": 50.0, "15": 50.0}}
+    f = next(f for f in flags.build_flags(r) if f["code"] == "indicative_capacity")
+    assert "100.00 ha gives about 83–125 MWp" in f["detail"]
+    assert "the 50.0 ha flatter than about 8.5°" in f["detail"] and "42–62 MWp" in f["detail"]
+
+
+def test_all_class_i_uses_the_combined_share_at_15_degrees_or_more():
+    """GEO-3: 0.5% + 0.5% + 0.4% at 15° or more is 1.4%: not "no more than 0.5%"."""
+    site = site_result(bins=bins(b15_25=0.5, b25_35=0.5, gt35=0.4))
+    out = [f["code"] for f in flags.build_flags(result_with([site]))]
+    assert "all_class_i" not in out and "guideline_reports" in out
+    titles = [f["title"] for f in flags.build_followups(built(result_with([site])))]
+    assert "Geotechnical investigation and slope stability analysis" in titles
+
+
+def test_coarse_grid_is_flagged_and_suppresses_all_class_i():
+    """GEO-4: OpenTopoData's <= 1,000-point grid over a large site (~200 m) understates steep
+    ground several-fold; say so and give no "all Class I" reading."""
+    r = result_with([site_result()], provider="opentopodata")
+    r["dem"] = {**r["dem"], "grid_spacing_m": 196.8, "nominal_resolution_m": 30}
+    out = {f["code"]: f for f in flags.build_flags(r)}
+    assert "coarse_grid" in out and "all_class_i" not in out
+    assert out["coarse_grid"]["level"] == "caution" and "197 m" in out["coarse_grid"]["detail"]
+    fine = {f["code"] for f in flags.build_flags(result_with([site_result()]))}
+    assert "coarse_grid" not in fine and "all_class_i" in fine
+    # A 1 m local DTM averaged to ~30 m for a large site is the normal case, not "coarse".
+    lidar = result_with([site_result()], provider="geotiff")
+    lidar["dem"] = {**lidar["dem"], "grid_spacing_m": 31.0, "nominal_resolution_m": 1}
+    assert "coarse_grid" not in {f["code"] for f in flags.build_flags(lidar)}
+
+
+def test_peninsular_instruments_are_not_applied_as_rules_in_sabah_and_sarawak():
+    """H2: the 2009 guideline is a JPBD Semenanjung document and Act 133 applies only to West
+    Malaysia; in Sabah and Sarawak the report says so and raises no Act 133 flag."""
+    hill = [site_result("Kundasang", elev_min=1100, elev_max=1400, relief=300,
+                        bins=bins(b15_25=20, b25_35=20, gt35=20))]
+    for state in ("Sabah", "Sarawak"):
+        out = {f["code"]: f for f in flags.build_flags(result_with(hill, state=state))}
+        assert "sdba_geotech" not in out
+        for code in ("kpkt_class_ii", "kpkt_class_iii", "kpkt_class_iv", "mountain_band"):
+            assert f"issued for Peninsular Malaysia; in {state} it is a reference only" in out[code]["detail"], code
+        geotech = {f["title"]: f["detail"] for f in flags.build_followups(built(result_with(hill, state=state)))}
+        assert "Accredited Checker" not in geotech["Geotechnical investigation and slope stability analysis"]
+    flat = flags.all_class_i_flag([site_result()], "Sabah")
+    assert "reference only" in flat["detail"]
+    band = flags.hill_land_band_flag([site_result(elev_min=160, elev_max=200)], result_with([])["dem"], "Sarawak")
+    assert "reference only" in band["detail"]
+    selangor = {f["code"]: f for f in flags.build_flags(result_with(hill, state="Selangor"))}
+    assert "sdba_geotech" in selangor and "reference only" not in selangor["kpkt_class_iv"]["detail"]
+    labuan = {f["code"] for f in flags.build_flags(result_with(hill, state="W.P. Labuan"))}
+    assert "sdba_geotech" in labuan                         # Act 133 extends to Labuan
+
+
+def test_route_ground_slope_flag_rules():
+    """H3: item 13(b) is about the ground the route traverses; a route counts once at least
+    30 m of it lies on ground of 35° or more."""
+    def route(**kw):
+        return {**route_result(max_grade_pct=3.0), **kw}
+    hit = flags.build_flags(result_with([], routes=[route(max_slope_deg=41.2, length_on_35deg_m=850.0)]))
+    f = next(f for f in hit if f["code"] == "eia_route_35")
+    assert "about 850 m of the route on ground of 35° or steeper, up to 41°" in f["detail"]
+    assert "not the route's own gradient" in f["detail"]
+    short = flags.build_flags(result_with([], routes=[route(max_slope_deg=36.0, length_on_35deg_m=0.0)]))
+    assert "eia_route_35" not in [x["code"] for x in short]
+    old_format = flags.build_flags(result_with([], routes=[route_result(max_grade_pct=80)]))
+    assert "eia_route_35" in [x["code"] for x in old_format]
+    regime = next(x for x in flags.build_flags(result_with(
+        [], state="Sabah", routes=[route(max_slope_deg=41.2, length_on_35deg_m=850.0)]))
+        if x["code"] == "eia_slope_state_regime")
+    assert "about 850 m of the route on ground of 35° or steeper" in regime["detail"]
+    assert analysis.ROUTE_STEEP_DEG == flags.EIA_ROUTE_SLOPE_DEG
+
+
+def test_road_along_a_contour_on_steep_ground_raises_eia_13b(tmp_path):
+    """H3: a nearly level road cut along a 40° hillside traverses ground of 35° or more."""
+    start = (LON, LAT)
+    road = line_pm("Access road (along contour)", [start, offset(LON, LAT, 0, 1500)])
+    result, _ = screen(tmp_path, road, plane_fetcher(40.0, direction="east"))
+    r = result["routes"][0]
+    assert r["max_grade_pct"] < 1.0
+    assert r["max_slope_deg"] == pytest.approx(40.0, abs=0.5)
+    assert r["length_on_35deg_m"] == pytest.approx(1500.0, rel=0.05)
+    assert "eia_route_35" in codes(result)
+    gentle, _ = screen(tmp_path / "gentle", road, plane_fetcher(20.0, direction="east"),
+                       settings=make_settings(tmp_path))
+    assert "eia_route_35" not in codes(gentle) and gentle["routes"][0]["length_on_35deg_m"] == 0.0
+
+
+def test_route_sampling_is_capped_for_very_long_lines(monkeypatch, settings):
+    """appsec-3: samples along a route are capped (vertices kept), whatever its length."""
+    monkeypatch.setattr(analysis, "MAX_ROUTE_SAMPLES", 200)
+    a, b = (101.40, 3.40), (101.53, 3.41)
+    feat = analysis.Feature(name="Zig", kind="line", coords=[a if i % 2 == 0 else b for i in range(12)])
+    grid = plane_fetcher(0.0)((101.39, 3.39, 101.54, 3.42), settings)
+    slope = np.zeros_like(grid.z)
+    r = analysis._route_stats(feat, grid, 30.0, slope)
+    assert r.lons.size <= 200 + len(feat.coords)
+    assert r.length_m == pytest.approx(11 * 14_480, rel=0.02)
+    lons, lats = analysis._sample_line([a, b], 1000.0)          # vectorised sampler keeps both ends
+    assert lons[0] == a[0] and lons[-1] == b[0] and lats[-1] == b[1] and lons.size == 16
+
+
 # --- FPV ---------------------------------------------------------------------------------
 def test_fpv_flags(tmp_path):
     flat, _ = screen(tmp_path / "flat", polygon_pm("Pond", rect(LON, LAT, 400, 400)),
@@ -771,9 +920,17 @@ def test_caveats_by_provider():
                   "Water bodies were flattened", "better than 4 m", "better than 2 m on slopes up to 20%",
                   "26.55 m", "+12.09 m", "Hawker et al. 2022", "Environ. Res. Lett. 17 024016",
                   "38 GNSS benchmarks", "2.45 m", "ASPRS", "twice the 90% vertical error",
-                  "never draws them finer than 5 m", "understated", "1–7°N", "s.6.3.4", "DOSM",
+                  "against true ground", "absolute LE90 of under 4 m", "about 8 m",
+                  "not to a mapping standard", "understated", "1–7°N", "s.6.3.4", "DOSM",
                   "not legal advice"):
         assert words in text, words
+    # The contour basis is the ABSOLUTE LE90 (ASPRS/NMAS test against true elevations), and the
+    # caveat makes no claim about a floor that a configured CONTOUR_MIN_INTERVAL_M can undercut.
+    assert "relative LE90" not in text and "finest honest" not in text and "never draws" not in text
+    fine = result_with([site_result()])
+    fine["contour_interval_m"] = 2.0
+    fine_text = " ".join(flags.build_caveats(fine))
+    assert "Contours are drawn every 2 m." in fine_text and "finer than 5 m" not in fine_text
     assert "OpenTopoData" not in text
     otd = " ".join(flags.build_caveats(result_with([site_result()], provider="opentopodata")))
     assert "Hawker" not in otd and "Farr et al. 2007" in otd and "OpenTopoData public API" in otd
@@ -987,6 +1144,210 @@ def test_copernicus_unreachable_raises_dem_unavailable(tmp_path, monkeypatch):
     with pytest.raises(ScreeningError) as e:
         dem.fetch_copernicus((101.0, 3.0, 101.01, 3.01), make_settings(tmp_path))
     assert e.value.code == "dem_unavailable" and "could not be reached" in e.value.message
+
+
+def test_copernicus_sea_zeros_are_no_data(tmp_path):
+    """GEO-1: the AWS tiles have no nodata value and store sea as exactly 0.0 m. An offshore
+    polygon must not screen as flat Class I land; coastal cells must count as gaps."""
+    fn = lambda lon, lat: np.where(lon < 101.5, 0.0, 5.0 + 100.0 * (lon - 101.5))  # noqa: E731
+    _write_tile(tmp_path, 3, 101, slice(1600, 2000), slice(1500, 2000), fn)
+    s = make_settings(tmp_path, copernicus_base_url=str(tmp_path))
+    g = dem.fetch_copernicus((101.45, 3.45, 101.54, 3.54), s)
+    LONS = np.meshgrid(g.lons, g.lats)[0]
+    assert np.isnan(g.z[LONS < 101.5]).all() and np.isfinite(g.z[LONS > 101.5]).all()
+
+    offshore = polygon_pm("Offshore", rect(101.46, 3.48, 1000, 1000))
+    with pytest.raises(ScreeningError) as e:
+        screen(tmp_path / "sea", offshore, dem.fetch_copernicus, settings=s)
+    assert e.value.code == "no_dem_coverage" and "offshore" in e.value.message
+    coast = polygon_pm("Coast", rect(*offset(101.5, 3.48, -400, 0), 1000, 1000))
+    result, _ = screen(tmp_path / "coast", coast, dem.fetch_copernicus, settings=s)
+    assert "dem_nodata" in codes(result)
+    assert result["sites"][0]["elev_min_m"] > 0
+
+
+def test_copernicus_missing_tile_rules():
+    """Over HTTP only a 404 means "tile not published" (ocean); GDAL's "does not exist in the
+    file system" (e.g. after a timeout) must report the service as unreachable (R2)."""
+    from rasterio.errors import RasterioIOError
+
+    url = "https://copernicus-dem-30m.s3.amazonaws.com/x/x.tif"
+    assert dem._is_missing(RasterioIOError("HTTP response code: 404"), url)
+    assert not dem._is_missing(RasterioIOError(f"'/vsicurl/{url}' does not exist in the file system"), url)
+    assert not dem._is_missing(RasterioIOError("CURL error: Operation timed out"), url)
+    assert dem._is_missing(RasterioIOError("/data/x.tif: No such file or directory"), "/data/x.tif")
+
+
+class _TileServer:
+    """Range-capable HTTP server for local tiles whose answers can be switched to 500."""
+
+    def __init__(self, root: Path):
+        import http.server
+        import re
+        import threading
+
+        server = self
+        self.mode = "ok"
+        self.requests = 0
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def _serve(self, head: bool):
+                server.requests += 1
+                if server.mode != "ok":
+                    self.send_response(500)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                path = root / self.path.lstrip("/").split("?")[0]
+                if not path.is_file():
+                    self.send_response(404)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                data = path.read_bytes()
+                a, b = 0, len(data) - 1
+                m = re.match(r"bytes=(\d+)-(\d*)", self.headers.get("Range") or "")
+                if m:
+                    a, b = int(m.group(1)), min(int(m.group(2) or b), b)
+                    self.send_response(206)
+                    self.send_header("Content-Range", f"bytes {a}-{b}/{len(data)}")
+                else:
+                    self.send_response(200)
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Length", str(b - a + 1))
+                self.end_headers()
+                if not head:
+                    self.wfile.write(data[a:b + 1])
+
+            def do_GET(self):
+                self._serve(False)
+
+            def do_HEAD(self):
+                self._serve(True)
+
+            def log_message(self, *args):
+                pass
+
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()
+
+
+def test_copernicus_recovers_after_a_transient_http_error(tmp_path, monkeypatch):
+    """R2: GDAL caches /vsicurl failures for the life of the process. After one 500 the next
+    job must read the tile again (not fail in 0 s, not be told its site is offshore)."""
+    pytest.importorskip("rasterio")
+    fn = lambda lon, lat: 50.0 + 0 * lon  # noqa: E731
+    _write_tile(tmp_path / "tiles", 3, 101, slice(1700, 1900), slice(1700, 1900), fn)
+    srv = _TileServer(tmp_path / "tiles")
+    monkeypatch.setitem(dem.COPERNICUS_GDAL_ENV, "GDAL_HTTP_MAX_RETRY", 0)   # keep the test fast
+    s = make_settings(tmp_path, copernicus_base_url=srv.url)
+    bbox = (101.49, 3.49, 101.51, 3.51)
+    try:
+        srv.mode = "500"
+        with pytest.raises(ScreeningError) as e:
+            dem.fetch_copernicus(bbox, s)
+        assert e.value.code == "dem_unavailable"
+        srv.mode = "ok"
+        before = srv.requests
+        g = dem.fetch_copernicus(bbox, s)
+        assert srv.requests > before                      # asked the server again
+        assert np.nanmax(np.abs(g.z - 50.0)) < 1e-6 and np.isfinite(g.z).all()
+    finally:
+        srv.close()
+
+
+def test_copernicus_http_limits_bound_a_stalled_endpoint():
+    """R12: one worker runs jobs in turn, so a blackholed endpoint must fail in well under a
+    minute per tile: (retries + 1) attempts x the stall timeout."""
+    env = dem.COPERNICUS_GDAL_ENV
+    assert env["GDAL_HTTP_CONNECTTIMEOUT"] <= 10
+    assert env["GDAL_HTTP_LOW_SPEED_LIMIT"] >= 1
+    assert (env["GDAL_HTTP_MAX_RETRY"] + 1) * env["GDAL_HTTP_LOW_SPEED_TIME"] <= 45
+
+
+def test_rasterio_import_failure_names_the_cause(monkeypatch):
+    """R1: a missing shared library (as in the slim Docker image) must not be reported as
+    "rasterio is required"."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def failing(name, *args, **kwargs):
+        if name == "rasterio" or name.startswith("rasterio."):
+            raise ImportError("libexpat.so.1: cannot open shared object file: No such file or directory")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", failing)
+    with pytest.raises(RuntimeError) as e:
+        dem._import_rasterio()
+    assert "libexpat.so.1" in str(e.value)
+
+
+def _old_geotiff_window(path, bbox, max_cells):
+    """The previous fetch_geotiff: read the whole window, flip, then decimate()."""
+    import rasterio
+    from rasterio.windows import Window
+
+    min_lon, min_lat, max_lon, max_lat = bbox
+    with rasterio.open(path) as src:
+        t = src.transform
+        cols = sorted(((min_lon - t.c) / t.a - 0.5, (max_lon - t.c) / t.a - 0.5))
+        rows = sorted(((max_lat - t.f) / t.e - 0.5, (min_lat - t.f) / t.e - 0.5))
+        c_lo, c_hi = max(0, math.floor(cols[0])), min(src.width - 1, math.ceil(cols[1]))
+        r_lo, r_hi = max(0, math.floor(rows[0])), min(src.height - 1, math.ceil(rows[1]))
+        data = src.read(1, window=Window(c_lo, r_lo, c_hi - c_lo + 1, r_hi - r_lo + 1),
+                        out_dtype="float64", masked=True)
+        z = np.ma.filled(data, np.nan)
+        lons = t.c + (np.arange(c_lo, c_hi + 1) + 0.5) * t.a
+        lats = t.f + (np.arange(r_lo, r_hi + 1) + 0.5) * t.e
+    lats, z = lats[::-1], z[::-1, :]
+    return dem.decimate(lons, lats, np.ascontiguousarray(z), max_cells)
+
+
+def test_geotiff_large_window_is_block_averaged_strip_by_strip(tmp_path, monkeypatch):
+    """GEO-6: a high-resolution DTM over a large site is block-averaged while reading, giving
+    the same grid as before without holding the full-resolution window in memory."""
+    rasterio = pytest.importorskip("rasterio")
+    import tracemalloc
+
+    from rasterio.transform import from_origin
+
+    res = 1 / 36000                                    # ~3 m cells
+    width, height = 1501, 1203
+    west, north = 101.45, 3.55
+    rng = np.random.default_rng(1)
+    data = rng.normal(100.0, 5.0, (height, width)).astype("float32")
+    data[100:140, 200:260] = -9999                     # nodata patch (some whole blocks)
+    data[700, :] = np.nan                              # NaN without nodata
+    path = tmp_path / "dtm.tif"
+    with rasterio.open(path, "w", driver="GTiff", width=width, height=height, count=1, dtype="float32",
+                       crs="EPSG:4326", transform=from_origin(west, north, res, res), nodata=-9999,
+                       tiled=True, blockxsize=256, blockysize=256) as dst:
+        dst.write(data, 1)
+    bbox = (west + 0.0005, north - 0.033, west + 0.041, north - 0.0005)
+    s = make_settings(tmp_path, dem_provider="geotiff", dem_geotiff_path=str(path), max_grid_cells=20_000)
+    monkeypatch.setattr(dem, "GEOTIFF_STRIP_CELLS", 40_000)
+    tracemalloc.start()
+    try:
+        g = dem.fetch_dem(bbox, s)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    g.validate()
+    lons, lats, z = _old_geotiff_window(path, bbox, 20_000)
+    assert g.z.shape == z.shape and g.z.size <= 20_000
+    assert np.allclose(g.lons, lons, rtol=0, atol=1e-12) and np.allclose(g.lats, lats, rtol=0, atol=1e-12)
+    assert np.allclose(g.z, z, equal_nan=True, atol=1e-9)
+    assert np.isnan(g.z).any()
+    window_bytes = 8 * (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) / res / res
+    assert peak < window_bytes / 3, (peak, window_bytes)
 
 
 def test_geotiff_provider(tmp_path):

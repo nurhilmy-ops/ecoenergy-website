@@ -94,7 +94,7 @@
       {% endfor %}
       </tbody>
       {% if result.kpkt_overall_pct %}
-      <caption>KPKT classes (inside each polygon): I &lt; 15°, II 15–25°, III 25–35°, IV ≥ 35°. Overall, area-weighted:
+      <caption>KPKT classes (inside each polygon): I &lt; 15°, II 15–25°, III 25–35°, IV ≥ 35°. Overall (all sites, overlaps counted once):
         {% for c in KPKT_CLASSES %}{{ c }} {{ result.kpkt_overall_pct.get(c)|num(1) }}%{{ ', ' if not loop.last }}{% endfor %}.</caption>
       {% endif %}
     </table>

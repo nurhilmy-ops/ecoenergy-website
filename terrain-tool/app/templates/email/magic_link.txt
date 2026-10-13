@@ -7,6 +7,10 @@ Use this link to confirm your email address and upload your site:
 {{ link }}
 
 The link is valid for {{ ttl_hours }} hours, up to {{ max_uses }} uses. When the page opens, press "Continue to upload your site".
+{% if newsletter|default(false) %}
+
+This link was requested with the newsletter box ticked: continuing also confirms your subscription to EcoEnergy's solar policy and scheme insights emails. You can unsubscribe at any time.
+{% endif %}
 
 If you didn't request this, ignore this email — nothing happens unless the link is used.
 

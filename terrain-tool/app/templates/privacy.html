@@ -8,7 +8,8 @@
 {% block content %}
 {% set otd = settings.dem_provider == 'opentopodata' %}
 {% set geotiff = settings.dem_provider == 'geotiff' %}
-{% set turnstile_on = settings.turnstile_site_key and settings.turnstile_secret_key %}
+{# Same test as the landing page uses to load the Cloudflare script (security.turnstile_enabled). #}
+{% set turnstile_on = settings.turnstile_site_key %}
 <article class="prose privacy">
   <div class="draft-banner" role="note">Draft for legal review — not yet approved for publication. Items in [square brackets] must be confirmed. / Draf untuk semakan undang-undang — belum diluluskan untuk diterbitkan. Perkara dalam [kurungan siku] perlu disahkan.</div>
 
@@ -59,7 +60,7 @@
   <h2>7. Who we disclose it to</h2>
   <ul>
     <li><strong>Hosting and email-delivery providers</strong> that run the tool, store its files and send our emails. They act as our data processors, under our instructions. Planned production setup: [to be confirmed].</li>
-    <li><strong>Elevation data.</strong> We read public elevation tiles from the Copernicus DEM archive hosted by Amazon Web Services; only the 1° map tile names are requested, not your site's coordinates.{% if otd %} At the moment this installation uses the fallback provider instead, so your site's coordinates are sent to OpenTopoData to read elevations. Your email address and other details about you are not sent.{% elif geotiff %} At the moment this installation reads elevations from a file on our own server instead, so nothing about your site is sent to an elevation service.{% endif %}</li>
+    <li><strong>Elevation data.</strong> We read public elevation tiles from the Copernicus DEM archive hosted by Amazon Web Services; only the tile name and the parts of that tile file covering your site's general area (a block of roughly 30 km) are requested — never your site's coordinates, your file or your details.{% if otd %} At the moment this installation uses the fallback provider instead, so your site's coordinates are sent to OpenTopoData to read elevations. Your email address and other details about you are not sent.{% elif geotiff %} At the moment this installation reads elevations from a file on our own server instead, so nothing about your site is sent to an elevation service.{% endif %}</li>
     {% if turnstile_on %}<li><strong>Cloudflare</strong>, to check that sign-ups come from people (bot protection).</li>{% endif %}
     <li><strong>Google Fonts:</strong> your browser loads the typefaces on these pages from Google's servers, which see your IP address. No page address is sent.</li>
     <li><strong>Our professional advisers</strong>, and government or regulatory authorities where the law requires or permits it.</li>
@@ -83,7 +84,7 @@
   <ul>
     <li><strong>Site files, results and reports:</strong> {{ settings.retention_days }} days after upload, or earlier on request. The Delete button deletes them immediately.</li>
     <li><strong>Email addresses that are never confirmed:</strong> deleted after {{ settings.unverified_purge_days }} days.</li>
-    <li><strong>Your account and consent records:</strong> kept until you delete your account. [Consent-record retention after deletion to be confirmed by legal review — reg 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on the data user.]</li>
+    <li><strong>Your account and consent records:</strong> kept until you delete your account or, if you have no report left and are not subscribed to the newsletter, until {{ settings.inactive_purge_days }} days after you last used the tool, when we delete them as if you had deleted your account. [Consent-record retention after deletion to be confirmed by legal review — reg 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on the data user.]</li>
     <li><strong>After you delete your account</strong> we keep only a one-way hash of your email address, so we can honour "do not contact". Requesting a new link later counts as a fresh sign-up.</li>
     <li><strong>Short-lived data:</strong> access links expire after {{ settings.token_ttl_hours }} hours, sign-in sessions after {{ settings.session_ttl_hours }} hours, and hashed abuse counters after about 2 days.</li>
   </ul>
@@ -161,7 +162,7 @@
   <h2>7. Pihak yang menerima data anda</h2>
   <ul>
     <li><strong>Penyedia hos dan penghantaran e-mel</strong> yang menjalankan alat ini, menyimpan failnya dan menghantar e-mel kami. Mereka bertindak sebagai pemproses data kami, mengikut arahan kami. Susunan pengeluaran yang dirancang: [akan disahkan].</li>
-    <li><strong>Data ketinggian.</strong> Kami membaca jubin data ketinggian awam daripada arkib Copernicus DEM yang dihoskan oleh Amazon Web Services; hanya nama jubin peta 1° yang diminta, bukan koordinat tapak anda.{% if otd %} Buat masa ini, pemasangan ini menggunakan penyedia sandaran, jadi koordinat tapak anda dihantar kepada OpenTopoData untuk membaca ketinggian. Alamat e-mel anda dan butiran lain tentang anda tidak dihantar.{% elif geotiff %} Buat masa ini, pemasangan ini membaca ketinggian daripada fail di pelayan kami sendiri, jadi tiada maklumat tentang tapak anda dihantar kepada perkhidmatan data ketinggian.{% endif %}</li>
+    <li><strong>Data ketinggian.</strong> Kami membaca jubin data ketinggian awam daripada arkib Copernicus DEM yang dihoskan oleh Amazon Web Services; hanya nama jubin dan bahagian fail jubin itu yang meliputi kawasan umum tapak anda (blok kira-kira 30 km) yang diminta — bukan koordinat tapak anda, fail anda atau butiran anda.{% if otd %} Buat masa ini, pemasangan ini menggunakan penyedia sandaran, jadi koordinat tapak anda dihantar kepada OpenTopoData untuk membaca ketinggian. Alamat e-mel anda dan butiran lain tentang anda tidak dihantar.{% elif geotiff %} Buat masa ini, pemasangan ini membaca ketinggian daripada fail di pelayan kami sendiri, jadi tiada maklumat tentang tapak anda dihantar kepada perkhidmatan data ketinggian.{% endif %}</li>
     {% if turnstile_on %}<li><strong>Cloudflare</strong>, untuk memastikan pendaftaran dibuat oleh manusia (perlindungan bot).</li>{% endif %}
     <li><strong>Google Fonts:</strong> pelayar anda memuatkan fon pada halaman ini daripada pelayan Google, yang dapat melihat alamat IP anda. Tiada alamat halaman dihantar.</li>
     <li><strong>Penasihat profesional kami</strong>, serta pihak berkuasa kerajaan atau kawal selia apabila dikehendaki atau dibenarkan oleh undang-undang.</li>
@@ -185,7 +186,7 @@
   <ul>
     <li><strong>Fail tapak, hasil dan laporan:</strong> {{ settings.retention_days }} hari selepas dimuat naik, atau lebih awal atas permintaan anda. Butang Delete memadamnya serta-merta.</li>
     <li><strong>Alamat e-mel yang tidak pernah disahkan:</strong> dipadam selepas {{ settings.unverified_purge_days }} hari.</li>
-    <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda. [Tempoh penyimpanan rekod persetujuan selepas pemadaman akan disahkan melalui semakan undang-undang — peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas pengguna data.]</li>
+    <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda atau, jika anda tiada laporan lagi dan tidak melanggan surat berita, sehingga {{ settings.inactive_purge_days }} hari selepas anda kali terakhir menggunakan alat ini, apabila kami memadamnya seolah-olah anda telah memadam akaun anda. [Tempoh penyimpanan rekod persetujuan selepas pemadaman akan disahkan melalui semakan undang-undang — peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas pengguna data.]</li>
     <li><strong>Selepas anda memadam akaun,</strong> kami hanya menyimpan cincang sehala alamat e-mel anda supaya kami dapat mematuhi permintaan "jangan hubungi". Meminta pautan baharu kemudian dikira sebagai pendaftaran baharu.</li>
     <li><strong>Data jangka pendek:</strong> pautan akses tamat selepas {{ settings.token_ttl_hours }} jam, sesi log masuk selepas {{ settings.session_ttl_hours }} jam, dan pembilang penyalahgunaan yang dicincang selepas kira-kira 2 hari.</li>
   </ul>

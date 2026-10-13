@@ -1,6 +1,7 @@
 """End-to-end visitor flow: landing → link → confirm → upload → job → report → delete."""
 from __future__ import annotations
 
+import base64
 import json
 import re
 
@@ -160,9 +161,11 @@ def test_happy_path_end_to_end(flow, settings, query, fake_engine):
     assert not (settings.jobs_dir / job_id).exists()
     job = query("SELECT * FROM jobs WHERE id = ?", (job_id,))[0]
     assert job["status"] == "deleted"
-    for field in ("site_label", "notes", "input_filename", "input_sha256", "total_area_ha", "state",
-                  "district", "centroid_lat", "centroid_lon", "kpkt_class1_pct"):
+    # The optional answers (label, scheme, stage, notes) go with the site they describe (PDPA-6).
+    for field in ("site_label", "scheme", "stage", "notes", "input_filename", "input_sha256",
+                  "total_area_ha", "state", "district", "centroid_lat", "centroid_lon", "kpkt_class1_pct"):
         assert job[field] is None, field
+    assert "Large Scale Solar" not in flow.client.get("/account").text
     assert flow.client.get(f"/reports/{job_id}").status_code == 404
     assert flow.client.get(f"/reports/{job_id}/download.pdf").status_code == 404
     assert "have been deleted" in flow.client.get("/reports?m=deleted").text
@@ -345,7 +348,13 @@ def test_privacy_page(client, settings):
     assert resp.status_code == 200
     html = resp.text
     assert "Draft for legal review" in html
-    assert settings.notice_version == "2026-10-draft-2" and settings.notice_version in html
+    assert settings.notice_version == "2026-10-draft-3" and settings.notice_version in html
+    # Copernicus requests are described as they are: tile name plus byte ranges of a ~30 km block.
+    assert "only the 1° map tile names are requested" not in html
+    assert "a block of roughly 30 km" in html and "blok kira-kira 30 km" in html
+    # Inactive confirmed accounts are deleted after INACTIVE_PURGE_DAYS (PDPA-5).
+    assert f"until {settings.inactive_purge_days} days after you last used the tool" in html
+    assert f"sehingga {settings.inactive_purge_days} hari selepas anda kali terakhir" in html
     # Data controller identity and contact (PDP Regulations 2013 reg 4: designation + phone).
     for phrase in ("EcoEnergy Consultancy Sdn. Bhd.", "Level 22, Menara Merdeka 118", "50118 Kuala Lumpur",
                    "+60 3 8744 6478", "contact@ecoconsultancy.services", "[Designation of contact person"):
@@ -358,8 +367,8 @@ def test_privacy_page(client, settings):
         "Hosting", "email-delivery", "data processors",
         # Staff follow-up is a separate opt-in per report, withdrawable per report.
         "separate, optional box on the upload page", "kotak pilihan yang berasingan di halaman muat naik",
-        # Elevation data: tile names only, never the coordinates (default Copernicus provider).
-        "only the 1° map tile names are requested, not your site's coordinates",
+        # Elevation data: tile name and byte ranges only, never the coordinates (default Copernicus).
+        "never your site's coordinates, your file or your details",
         # Retention.
         f"{settings.retention_days} days", f"after {settings.unverified_purge_days} days", "one-way hash",
         "reg 3(5)",
@@ -660,3 +669,49 @@ def test_env_example_and_readme_document_every_setting():
         # Comments live on their own lines: the .env reader would keep an inline "# ..." in the value.
         assert "#" not in value, key
     assert re.search(r"^ADMIN_PASSWORD=$", env_example, re.MULTILINE), "ADMIN_PASSWORD must ship empty"
+
+
+# ----------------------------------------------------------------------------
+# Written withdrawals recorded by staff (python -m app.manage)
+# ----------------------------------------------------------------------------
+
+
+def test_manage_withdraw_records_written_withdrawal(flow, query, settings, client, capsys):
+    """PDPA-4: a withdrawal or s.43 objection received by email can be applied and recorded."""
+    from app import manage
+
+    flow.login("writes@example.com", newsletter=True)
+    job_a = flow.upload_job(followup="yes")
+    job_b = flow.upload_job(followup="yes")
+    auth = {"Authorization": "Basic " + base64.b64encode(b"admin:correct horse battery").decode()}
+    assert "writes@example.com" in client.get("/admin/export/leads.csv", headers=auth).text
+
+    code = manage.main(["withdraw", "Writes@Example.com", "--followup", "--newsletter",
+                        "--note", "Email from the subscriber, 12 Oct 2026"], settings=settings)
+    assert code == 0 and "2 report(s)" in capsys.readouterr().out
+    jobs_now = {r["id"]: r["followup_consent"] for r in query("SELECT id, followup_consent FROM jobs")}
+    assert jobs_now == {job_a: 0, job_b: 0}
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+    rows = query("SELECT purpose, action, job_id, wording, user_agent FROM consents "
+                 "WHERE action = 'withdrawn' ORDER BY id")
+    assert sorted((r["purpose"], r["job_id"]) for r in rows) == sorted(
+        [("site_followup", job_a), ("site_followup", job_b), ("newsletter", None)])
+    assert all("Email from the subscriber, 12 Oct 2026" in r["wording"] for r in rows)
+    assert all(r["user_agent"] == manage.STAFF_USER_AGENT for r in rows)
+    assert "writes@example.com" not in client.get("/admin/export/leads.csv", headers=auth).text
+    assert "writes@example.com" not in client.get("/admin/export/newsletter.csv", headers=auth).text
+
+    # Running it again changes nothing and adds no rows; unknown addresses are reported.
+    assert manage.main(["withdraw", "writes@example.com", "--followup", "--newsletter",
+                        "--note", "again"], settings=settings) == 0
+    assert len(query("SELECT * FROM consents WHERE action = 'withdrawn'")) == 3
+    assert manage.main(["withdraw", "nobody@example.com", "--followup", "--note", "x"], settings=settings) == 1
+
+
+def test_worker_inline_false_is_logged_as_a_warning(app_factory, caplog):
+    """R9: with WORKER_INLINE=false nothing runs jobs or retention sweeps; say so at start-up."""
+    import logging
+
+    with caplog.at_level(logging.WARNING, logger="app.main"):
+        app_factory("noworker", worker_inline=False)
+    assert "WORKER_INLINE=false" in caplog.text and "retention sweeps are off" in caplog.text

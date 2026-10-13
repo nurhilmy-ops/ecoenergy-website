@@ -43,7 +43,7 @@ from .security import (
     is_disposable, load_session, magic_link, normalise_email, origin_of, peek_token,
     preauth_cookie_name, rate_limit, rate_limit_all, rate_remaining, safe_next_path,
     set_preauth_cookie, set_session_cookie, tokens_equal, turnstile_enabled,
-    verify_csrf, verify_turnstile, verify_unsubscribe_token,
+    unsubscribe_token_id, verify_csrf, verify_turnstile, verify_unsubscribe_token,
 )
 
 log = logging.getLogger(__name__)
@@ -227,14 +227,15 @@ def require_csrf(session: Session | None, form: dict[str, Any]) -> None:
 
 def add_consent(conn, subscriber_id: int, purpose: str, action: str, wording: str,
                 notice_version: str, ip: str | None, user_agent: str | None,
-                job_id: str | None = None) -> None:
-    """Append one ledger row. ``job_id`` is set for per-report consents (site_followup)."""
-    conn.execute(
+                job_id: str | None = None) -> int:
+    """Append one ledger row and return its id. ``job_id`` is set for per-report consents
+    (site_followup)."""
+    return conn.execute(
         "INSERT INTO consents (subscriber_id, purpose, action, notice_version, wording, ip, "
         "user_agent, created_at, job_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (subscriber_id, purpose, action, notice_version, wording, ip, (user_agent or "")[:300] or None,
          now_iso(), job_id),
-    )
+    ).lastrowid
 
 
 def owned_job(settings: Settings, session: Session, job_id: str) -> dict | None:
@@ -348,7 +349,7 @@ def _request_link(request: Request, form: dict[str, str]) -> HTMLResponse:
         try:
             raw = register_link_request(settings, email, newsletter, utm, ref_origin, ip,
                                         request.headers.get("user-agent"))
-            send_magic_link_email(settings, email, magic_link(settings, raw))
+            send_magic_link_email(settings, email, magic_link(settings, raw), newsletter=newsletter)
         except Exception:
             log.exception("Link request could not be completed")
     else:
@@ -374,13 +375,18 @@ def register_link_request(settings: Settings, email: str, newsletter: bool, utm:
         # Only the service itself here. Staff follow-up is a separate opt-in per report on the
         # upload page, and the newsletter only when its own box is ticked.
         add_consent(conn, sub["id"], "service", "granted", consent_wording("service"), version, ip, user_agent)
+        newsletter_grant = None
         if newsletter:
-            add_consent(conn, sub["id"], "newsletter", "granted", consent_wording("newsletter"), version,
-                        ip, user_agent)
-            if sub["newsletter_status"] != "subscribed":
+            # Anyone can type any address here, so this grant does nothing until the link sent
+            # with it (and only that link) is used: the token carries the grant's ledger id.
+            newsletter_grant = add_consent(conn, sub["id"], "newsletter", "granted",
+                                           consent_wording("newsletter"), version, ip, user_agent)
+            # "pending" is informational only; an unauthenticated request never overwrites a
+            # recorded decision (subscribed or unsubscribed).
+            if sub["newsletter_status"] == "none":
                 conn.execute("UPDATE subscribers SET newsletter_status = 'pending' WHERE id = ?",
                              (sub["id"],))
-        return create_magic_token(settings, sub["id"], conn=conn)
+        return create_magic_token(settings, sub["id"], conn=conn, newsletter_consent_id=newsletter_grant)
 
 
 # --- magic link confirmation ---------------------------------------------------
@@ -388,12 +394,14 @@ def register_link_request(settings: Settings, email: str, newsletter: bool, utm:
 
 def start_response(request: Request, token: str, notice: str | None = None) -> HTMLResponse:
     settings = settings_of(request)
-    valid = peek_token(settings, token) is not None
+    row = peek_token(settings, token)
+    valid = row is not None
     pre = request.cookies.get(preauth_cookie_name(settings), "")
     if not re.fullmatch(r"[A-Za-z0-9_\-]{16,64}", pre):
         pre = secrets.token_urlsafe(24)
     response = render(request, "start.html", status_code=200 if valid else 400,
-                      valid=valid, token=token if valid else "", pre=pre, notice=notice)
+                      valid=valid, token=token if valid else "", pre=pre, notice=notice,
+                      confirms_newsletter=valid and row["newsletter_consent_id"] is not None)
     if valid:
         set_preauth_cookie(response, settings, pre)
     return response
@@ -426,7 +434,8 @@ def _start_confirm(request: Request, form: dict[str, str]) -> Response:
         if row is not None:
             subscriber_id = row["subscriber_id"]
             next_path = row["next_path"]
-            confirm_subscriber(conn, subscriber_id, ip, user_agent)
+            confirm_subscriber(conn, subscriber_id, ip, user_agent,
+                               newsletter_consent_id=row["newsletter_consent_id"])
             raw_session = create_session(settings, subscriber_id, conn=conn)
     if row is None:
         return render(request, "start.html", status_code=400, valid=False, token="", pre="",
@@ -440,32 +449,36 @@ def _start_confirm(request: Request, form: dict[str, str]) -> Response:
     return response
 
 
-# Account-level purposes confirmed by the magic link (double opt-in). Per-report consents
-# (site_followup) are given by an already verified, signed-in visitor and need no confirmation.
-EMAIL_CONFIRMED_PURPOSES = ("service", "newsletter")
+def confirm_subscriber(conn, subscriber_id: int, ip: str, user_agent: str | None,
+                       newsletter_consent_id: int | None = None) -> None:
+    """Mark the address verified and confirm what the link that was just used vouches for.
 
-
-def confirm_subscriber(conn, subscriber_id: int, ip: str, user_agent: str | None) -> None:
-    """Mark the address verified and confirm every account-level consent whose latest action
-    is 'granted' (double opt-in: a pending newsletter becomes 'subscribed' only here)."""
-    sub = conn.execute("SELECT verified_at, newsletter_status FROM subscribers WHERE id = ?",
-                       (subscriber_id,)).fetchone()
+    ``service`` is confirmed whenever its latest row is 'granted'. The newsletter is confirmed
+    only through the link sent with that opt-in (``newsletter_consent_id``, the ledger row it
+    made), and only while no later confirmation or withdrawal supersedes that grant: a newsletter
+    tick typed in by someone else, or a sign-in with the box unticked, never subscribes anyone."""
+    sub = conn.execute("SELECT verified_at FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
     if sub["verified_at"] is None:
         conn.execute("UPDATE subscribers SET verified_at = ? WHERE id = ?", (now_iso(), subscriber_id))
-    marks = ", ".join("?" for _ in EMAIL_CONFIRMED_PURPOSES)
-    latest = conn.execute(
-        "SELECT * FROM consents WHERE id IN "
-        "(SELECT MAX(id) FROM consents WHERE subscriber_id = ? AND job_id IS NULL "
-        f"AND purpose IN ({marks}) GROUP BY purpose)",
-        (subscriber_id, *EMAIL_CONFIRMED_PURPOSES),
-    ).fetchall()
-    for c in latest:
-        if c["action"] == "granted":
-            add_consent(conn, subscriber_id, c["purpose"], "confirmed", c["wording"], c["notice_version"],
-                        ip, user_agent)
-    if sub["newsletter_status"] == "pending":
-        conn.execute("UPDATE subscribers SET newsletter_status = 'subscribed' WHERE id = ?",
-                     (subscriber_id,))
+    service = conn.execute(
+        "SELECT * FROM consents WHERE subscriber_id = ? AND job_id IS NULL AND purpose = 'service' "
+        "ORDER BY id DESC LIMIT 1", (subscriber_id,)).fetchone()
+    if service is not None and service["action"] == "granted":
+        add_consent(conn, subscriber_id, "service", "confirmed", service["wording"], service["notice_version"],
+                    ip, user_agent)
+    if newsletter_consent_id is None:
+        return
+    grant = conn.execute(
+        "SELECT * FROM consents WHERE id = ? AND subscriber_id = ? AND job_id IS NULL "
+        "AND purpose = 'newsletter' AND action = 'granted'", (newsletter_consent_id, subscriber_id)).fetchone()
+    superseded = conn.execute(
+        "SELECT 1 FROM consents WHERE subscriber_id = ? AND job_id IS NULL AND purpose = 'newsletter' "
+        "AND action IN ('confirmed', 'withdrawn') AND id > ?", (subscriber_id, newsletter_consent_id)).fetchone()
+    if grant is None or superseded is not None:
+        return
+    add_consent(conn, subscriber_id, "newsletter", "confirmed", grant["wording"], grant["notice_version"],
+                ip, user_agent)
+    conn.execute("UPDATE subscribers SET newsletter_status = 'subscribed' WHERE id = ?", (subscriber_id,))
 
 
 # --- upload --------------------------------------------------------------------
@@ -835,19 +848,8 @@ def _account_newsletter(request: Request, form: dict[str, str]) -> Response:
 
 def erase_subscriber(settings: Settings, subscriber_id: int) -> None:
     """Right to erasure: files, rows (cascade) and a suppression entry for sha256(email)."""
-    with tx(settings.db_path) as conn:
-        sub = conn.execute("SELECT email FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
-        if sub is None:
-            return
-        job_ids = [r["id"] for r in conn.execute("SELECT id FROM jobs WHERE subscriber_id = ?",
-                                                  (subscriber_id,))]
-        conn.execute("INSERT INTO suppression (email_sha256, created_at) VALUES (?, ?) "
-                     "ON CONFLICT(email_sha256) DO NOTHING", (email_hash(sub["email"]), now_iso()))
-        conn.execute("DELETE FROM outbox WHERE to_addr = ?", (sub["email"],))
-        conn.execute("DELETE FROM subscribers WHERE id = ?", (subscriber_id,))
-    for job_id in job_ids:
-        shutil.rmtree(jobs.job_dir(settings, job_id), ignore_errors=True)
-    log.info("Subscriber %s erased on request (%d job(s))", subscriber_id, len(job_ids))
+    if jobs.erase_subscriber(settings, subscriber_id):
+        log.info("Subscriber %s erased on request", subscriber_id)
 
 
 @router.post("/account/delete")
@@ -895,7 +897,9 @@ def _logout(request: Request, form: dict[str, str]) -> Response:
 
 @router.get("/unsubscribe", response_class=HTMLResponse)
 def unsubscribe_page(request: Request, u: str = ""):
-    valid = verify_unsubscribe_token(settings_of(request), u) is not None
+    # Any well-formed value gets the same page, so the page never reveals whether an id
+    # exists or still belongs to the address the link was made for; the POST checks that.
+    valid = unsubscribe_token_id(u) is not None
     return render(request, "unsubscribe.html", status_code=200 if valid else 400,
                   valid=valid, u=u if valid else "", done=False)
 
@@ -909,13 +913,17 @@ async def unsubscribe_submit(request: Request):
 def _unsubscribe_submit(request: Request, form: dict[str, str]) -> Response:
     settings = settings_of(request)
     value = request.query_params.get("u") or form.get("u") or ""
-    subscriber_id = verify_unsubscribe_token(settings, value)
+    subscriber_id = unsubscribe_token_id(value)
     if subscriber_id is None:
         return render(request, "unsubscribe.html", status_code=400, valid=False, u="", done=False)
     with tx(settings.db_path) as conn:
-        sub = conn.execute("SELECT newsletter_status FROM subscribers WHERE id = ?",
+        sub = conn.execute("SELECT email, newsletter_status FROM subscribers WHERE id = ?",
                            (subscriber_id,)).fetchone()
-        # Unknown (e.g. erased) subscribers get the same answer: nothing to reveal.
+        # The signature covers the id AND the address, so a link made for an erased subscriber
+        # whose id was later reused never acts on the new person. Unknown ids and mismatches
+        # get the same answer and change nothing: nothing to reveal.
+        if sub is not None and verify_unsubscribe_token(settings, value, sub["email"]) is None:
+            sub = None
         if sub is not None and sub["newsletter_status"] != "unsubscribed":
             if sub["newsletter_status"] in {"pending", "subscribed"}:
                 add_consent(conn, subscriber_id, "newsletter", "withdrawn", consent_wording("newsletter_off_link"),
@@ -1018,6 +1026,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     added = init_db(settings.db_path)
     if added:
         log.info("Database upgraded: added %s", ", ".join(added))
+    if not settings.worker_inline:
+        # Nothing else in this app runs app.jobs.Worker: uploads would wait forever and the
+        # PDPA retention sweeps would never run.
+        log.warning("WORKER_INLINE=false: no screenings will run and retention sweeps are off "
+                    "in this process. Use it only for tests.")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

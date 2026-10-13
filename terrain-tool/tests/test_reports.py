@@ -407,6 +407,19 @@ def test_sources_without_disclaimer_or_with_legacy_boundary_label(tmp_path):
     assert boundary.text == "Example source."
 
 
+def test_method_statement_matches_how_numbers_are_computed(tmp_path):
+    """H8: areas and lengths are geodesic and slopes use the DEM's geographic grid; only the
+    maps are drawn in UTM. The report must not say they are computed on a UTM grid."""
+    write_placeholder_figures(tmp_path)
+    content = c.build_content(load_sample(), tmp_path, report_settings(tmp_path))
+    items = [i for b in content.blocks if isinstance(b, c.BulletList) for i in b.items]
+    method = next(i for i in items if i.title == "Method:")
+    assert "geodesic on the WGS 84 ellipsoid" in method.text
+    assert "geographic grid" in method.text and "maps are drawn on a local UTM grid (EPSG:32647)" in method.text
+    assert not any(i.title == "Projection:" for i in items)
+    assert not any("computed on a local UTM grid" in i.text for i in items)
+
+
 def test_sample_fixture_uses_the_engine_wording():
     """sample_result.json carries exactly what app.terrain.flags writes for its numbers, so
     the report tests render real wording (regenerate the fixture when wording changes)."""

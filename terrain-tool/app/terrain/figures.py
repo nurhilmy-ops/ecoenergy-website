@@ -267,7 +267,7 @@ def draw_site_layout(an: Analysis, path: Path, stamp: str) -> None:
                   edgecolor=GRID)
     _north_arrow(ax)
     _scale_bar(ax, frame)
-    total_ha = sum(s.area_ha for s in an.sites)
+    total_ha = an.total_area_ha            # union: overlapping polygons count once
     bits = []
     if an.sites:
         bits.append(f"{len(an.sites)} site{'s' if len(an.sites) != 1 else ''}, {total_ha:,.1f} ha")

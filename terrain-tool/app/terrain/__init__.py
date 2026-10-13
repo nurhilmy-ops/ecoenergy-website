@@ -140,7 +140,7 @@ def render_summary_md(result: dict) -> str:
         f"- {tot['polygon_count']} site polygon(s), total {_v(tot['total_area_ha'], ' ha', 2)}",
         f"- {tot['line_count']} route(s), total {_v(tot['total_line_km'], ' km', 2)}",
         f"- {tot['point_count']} point(s)",
-        "- KPKT split (area-weighted): " + ", ".join(
+        "- KPKT split (all sites, overlaps counted once): " + ", ".join(
             f"Class {k} {_v(v, '%')}" for k, v in result["kpkt_overall_pct"].items()),
         f"- Contour interval: {_v(result['contour_interval_m'], ' m')}",
         "",

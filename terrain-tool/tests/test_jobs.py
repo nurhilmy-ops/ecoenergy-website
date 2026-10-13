@@ -138,6 +138,61 @@ def test_recover_stale_requeues_old_running_jobs(settings, query):
     assert status == {"job-stale-00001": "queued", "job-fresh-00001": "running"}
 
 
+def test_worker_start_requeues_jobs_abandoned_by_a_stopped_process(settings, fake_engine, query):
+    """R3: a job left 'running' by a crash, Ctrl+C or container stop is re-run as soon as the
+    app starts again, not after the 15-minute stale cutoff."""
+    sid = add_subscriber(settings)
+    add_job(settings, sid, "job-abandoned-01", status="running", started_at=now_iso())
+    worker = jobs.Worker(settings)
+    worker.start()
+    try:
+        deadline = time.time() + 10
+        while time.time() < deadline and query("SELECT status FROM jobs")[0]["status"] != "done":
+            time.sleep(0.05)
+    finally:
+        worker.stop(timeout=5)
+    assert query("SELECT status FROM jobs")[0]["status"] == "done"
+    assert jobs.recover_stale(settings, older_than_minutes=None) == 0
+
+
+def _consent(settings, sid, created_at, purpose="service", action="granted"):
+    with db(settings.db_path) as conn:
+        conn.execute("INSERT INTO consents (subscriber_id, purpose, action, notice_version, wording, created_at) "
+                     "VALUES (?, ?, ?, 'v', 'w', ?)", (sid, purpose, action, created_at))
+
+
+def test_sweep_erases_confirmed_accounts_inactive_past_the_cutoff(settings, query):
+    """PDPA-5: a verified account whose purpose has ended (no live report, no newsletter) and
+    that has been inactive for INACTIVE_PURGE_DAYS is erased, leaving only the suppression hash."""
+    from app.security import email_hash
+
+    old = ago(days=settings.inactive_purge_days + 5)
+    gone = add_subscriber(settings, "gone@example.com", created_at=old)
+    _consent(settings, gone, old)
+    add_job(settings, gone, "job-gone-000001", status="deleted", created_at=old)
+    recent = add_subscriber(settings, "recent@example.com", created_at=old)
+    _consent(settings, recent, ago(days=10))                       # signed in again recently
+    newsletter = add_subscriber(settings, "reader@example.com", created_at=old)
+    _consent(settings, newsletter, old)
+    live = add_subscriber(settings, "live@example.com", created_at=old)
+    _consent(settings, live, old)
+    add_job(settings, live, "job-live-000001", status="done", created_at=old,
+            delete_after=iso(utcnow() + timedelta(days=1)))
+    with db(settings.db_path) as conn:
+        conn.execute("UPDATE subscribers SET verified_at = ? WHERE id IN (?, ?, ?, ?)",
+                     (old, gone, recent, newsletter, live))
+        conn.execute("UPDATE subscribers SET newsletter_status = 'subscribed' WHERE id = ?", (newsletter,))
+
+    counts = jobs.sweep(settings)
+    emails = {r["email"] for r in query("SELECT email FROM subscribers")}
+    assert emails == {"recent@example.com", "reader@example.com", "live@example.com"}
+    assert counts["inactive_erased"] == 1
+    assert query("SELECT * FROM consents WHERE subscriber_id = ?", (gone,)) == []
+    assert query("SELECT * FROM jobs WHERE id = 'job-gone-000001'") == []
+    assert {r["email_sha256"] for r in query("SELECT email_sha256 FROM suppression")} == {
+        email_hash("gone@example.com")}
+
+
 def test_sweep_applies_retention(settings, query):
     verified = add_subscriber(settings, "kept@example.com")
     stale_unverified = add_subscriber(settings, "stale@example.com", verified=False, created_at=ago(days=8))

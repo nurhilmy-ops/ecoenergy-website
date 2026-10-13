@@ -109,12 +109,14 @@ def _send_ses(settings: Settings, msg: EmailMessage) -> None:
              resp.get("MessageId"))
 
 
-def newsletter_headers(settings: Settings, subscriber_id: int) -> dict[str, str]:
-    """RFC 2369 / RFC 8058 headers every newsletter-type email must carry."""
+def newsletter_headers(settings: Settings, subscriber_id: int, email: str) -> dict[str, str]:
+    """RFC 2369 / RFC 8058 headers every newsletter-type email must carry (``email`` is the
+    recipient: unsubscribe values are signed for the id and the address together)."""
     reply = parseaddr(settings.mail_reply_to)[1] or parseaddr(settings.mail_from)[1]
-    targets = [f"<{unsubscribe_url(settings, subscriber_id)}>"]
+    token = make_unsubscribe_token(settings, subscriber_id, email)
+    targets = [f"<{unsubscribe_url(settings, subscriber_id, email)}>"]
     if reply:
-        targets.append(f"<mailto:{reply}?subject=unsubscribe%20{make_unsubscribe_token(settings, subscriber_id)}>")
+        targets.append(f"<mailto:{reply}?subject=unsubscribe%20{token}>")
     return {
         "List-Unsubscribe": ", ".join(targets),
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -154,8 +156,9 @@ def render_email(settings: Settings, name: str, **context) -> tuple[str, str]:
     return env.get_template(f"{name}.txt").render(ctx), env.get_template(f"{name}.html").render(ctx)
 
 
-def send_magic_link_email(settings: Settings, to: str, link: str) -> None:
-    text, html = render_email(settings, "magic_link", link=link)
+def send_magic_link_email(settings: Settings, to: str, link: str, newsletter: bool = False) -> None:
+    """``newsletter``: the link was requested with the newsletter box ticked and confirms it."""
+    text, html = render_email(settings, "magic_link", link=link, newsletter=newsletter)
     send_mail(settings, to, "Your terrain screening link", text, html)
 
 

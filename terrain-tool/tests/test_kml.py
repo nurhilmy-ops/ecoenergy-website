@@ -200,6 +200,79 @@ def test_self_intersection_is_repaired(tmp_path, settings):
     assert poly.is_valid and poly.area == pytest.approx(max(g.area for g in parts), rel=1e-3)
 
 
+def _star(n: int, radius_deg: float = 0.015):
+    """A {n/(n//2)} star polygon: every edge crosses most of the others."""
+    import math
+    k = n // 2
+    return [(LON + radius_deg * math.cos(2 * math.pi * i * k / n),
+             LAT + radius_deg * math.sin(2 * math.pi * i * k / n)) for i in range(n)]
+
+
+def test_heavily_self_intersecting_polygon_is_refused_quickly(tmp_path, settings):
+    """appsec-2: make_valid on a star polygon costs minutes of CPU (about n^3); a few KB of
+    KML must not tie up a worker thread. Such boundaries are refused before any repair."""
+    import time
+
+    t0 = time.monotonic()
+    with pytest.raises(ScreeningError) as e:
+        parse(tmp_path, kml_doc(polygon_pm("Star", _star(401))), settings)
+    assert code_of(e) == "too_complex" and "crosses itself" in e.value.message
+    assert time.monotonic() - t0 < 2.0
+    # An invalid polygon with more vertices than a repair can safely handle is refused too.
+    import math
+    ring = [(LON + 0.01 * math.cos(2 * math.pi * i / 2500), LAT + 0.01 * math.sin(2 * math.pi * i / 2500))
+            for i in range(2500)]
+    ring[10], ring[1260] = ring[1260], ring[10]                # one slip across the boundary
+    with pytest.raises(ScreeningError) as e:
+        parse(tmp_path, kml_doc(polygon_pm("Big slip", ring)), settings)
+    assert code_of(e) == "too_complex"
+
+
+def test_a_few_self_intersections_are_still_repaired(tmp_path, settings):
+    import math
+    ring = [(LON + 0.01 * math.cos(2 * math.pi * i / 400), LAT + 0.01 * math.sin(2 * math.pi * i / 400))
+            for i in range(400)]
+    for i in (10, 110, 210):                                    # three digitising slips
+        ring[i], ring[i + 3] = ring[i + 3], ring[i]
+    site = parse(tmp_path, kml_doc(polygon_pm("Slips", ring)), settings)
+    assert site.repaired == ["Slips"]
+
+
+def test_total_route_length_is_capped(tmp_path, settings):
+    """appsec-3: a zig-zag line inside the extent limit can be hundreds of thousands of km long
+    and is densified every ~30 m; total line length is bounded at validation."""
+    a, b = (101.40, 3.40), (101.53, 3.41)                       # ~14.5 km apart
+    zigzag = [a if i % 2 == 0 else b for i in range(40)]        # ~565 km
+    with pytest.raises(ScreeningError) as e:
+        parse(tmp_path, kml_doc(line_pm("Cable", zigzag)), settings)
+    assert code_of(e) == "too_complex" and "routes in this file add up to" in e.value.message
+    ok = parse(tmp_path, kml_doc(line_pm("Cable", zigzag[:10])), settings)   # ~130 km: fine
+    assert ok.features[0].kind == "line"
+
+
+def test_xml_with_too_many_elements_is_refused_while_parsing(tmp_path, settings, monkeypatch):
+    """appsec-4: a ~20 KB KMZ can hold millions of empty elements; the parse stops at a cap
+    instead of building the whole tree in memory."""
+    from app.terrain import kml
+
+    calls = []
+    original = kml.DET.iterparse
+
+    def counting_iterparse(*args, **kwargs):
+        for item in original(*args, **kwargs):
+            calls.append(1)
+            yield item
+
+    monkeypatch.setattr(kml.DET, "iterparse", counting_iterparse)
+    body = "<a/>" * 2_000_000                                  # 8 MB uncompressed
+    kmz = make_kmz({"doc.kml": kml_doc(body)})
+    assert len(kmz) < 100_000
+    with pytest.raises(ScreeningError) as e:
+        validate_upload(write(tmp_path, "bomb.kmz", kmz), settings, "bomb.kmz")
+    assert code_of(e) == "too_complex"
+    assert len(calls) == kml.MAX_XML_ELEMENTS + 1               # stopped at the cap
+
+
 def test_line_needs_two_distinct_points(tmp_path, settings):
     with pytest.raises(ScreeningError) as e:
         parse(tmp_path, kml_doc(line_pm("Dot", [SQUARE[0], SQUARE[0]])), settings)

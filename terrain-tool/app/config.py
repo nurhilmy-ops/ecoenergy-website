@@ -44,9 +44,10 @@ class Settings:
     secret_key: str = ""                        # HMAC key for unsubscribe links; generated in dev
     data_dir: Path = PROJECT_ROOT / "data"      # sqlite db + job files live here
     trust_proxy_headers: bool = False           # honour X-Forwarded-For for client IP
+    trusted_proxy_hops: int = 1                 # proxies of ours that append to X-Forwarded-For
 
     # --- notice / consent ---
-    notice_version: str = "2026-10-draft-2"     # bump whenever the privacy notice text changes
+    notice_version: str = "2026-10-draft-3"     # bump whenever the privacy notice text changes
 
     # --- email ---
     mail_backend: str = "outbox"                # outbox (dev: stored in db, shown at /dev/outbox) | smtp | ses
@@ -67,6 +68,8 @@ class Settings:
     # --- retention (PDPA s.10) ---
     retention_days: int = 30                    # site files, outputs and derived site data
     unverified_purge_days: int = 7              # never-verified email addresses
+    inactive_purge_days: int = 730              # confirmed accounts with no live report, no
+                                                # newsletter and no activity for this long
 
     # --- abuse controls ---
     rate_link_per_email_hour: int = 3

@@ -459,7 +459,8 @@ def _sites_table(result: dict) -> list[Block]:
         note=(f"Elevations are DEM surface heights in metres{datum_text}. P90 is the "
               "90th-percentile slope: nine-tenths of the site area is at or below it. KPKT classes: "
               "I below 15°, II 15–25°, III 25–35°, IV 35° and steeper."
-              + (" The all-sites KPKT split is area-weighted." if total else "")),
+              + (" The All sites row covers the combined site area, with any overlapping polygons "
+                 "counted once." if total else "")),
     ))
     return out
 
@@ -592,8 +593,9 @@ def _sources(result: dict) -> list[Block]:
         prefix = next((p for p in BOUNDARY_LABELS if boundaries.startswith(p)), BOUNDARY_LABELS[-1])
         items.append(ListItem(boundaries.removeprefix(prefix).strip(), title=prefix))
     if loc.get("utm_epsg"):
-        items.append(ListItem(f"areas, lengths and slopes are computed on a local UTM grid "
-                              f"({clean(loc['utm_epsg'], 40)}, WGS 84).", title="Projection:"))
+        items.append(ListItem("areas and lengths are geodesic on the WGS 84 ellipsoid; slopes are "
+                              "computed on the elevation model's geographic grid; maps are drawn on a "
+                              f"local UTM grid ({clean(loc['utm_epsg'], 40)}).", title="Method:"))
     sha = clean(meta.get("input_sha256"), 64)
     geometry = f"{clean(meta.get('input_filename'), 200) or 'uploaded file'}, used as supplied"
     if sha:
