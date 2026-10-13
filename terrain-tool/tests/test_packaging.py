@@ -55,6 +55,7 @@ def test_compose_publishes_on_loopback_only_and_waits_for_the_worker():
 FAKE_PYTHON = r"""#!/bin/sh
 # Stand-in for "python3 -m venv .venv": FAIL_VENV=1 behaves like Debian without python3-venv
 # (a half-made .venv with only bin/python, then exit 1).
+if [ "$1" = "-c" ]; then exit 0; fi   # version probe: report a new enough Python
 echo "base $*" >> "$RUN_LOG"
 mkdir -p .venv/bin
 if [ "$FAIL_VENV" = 1 ]; then
@@ -128,7 +129,7 @@ def test_windows_script_and_instructions():
     assert "--prefer-binary -r requirements.txt" in ps1
     assert r"Test-Path .venv\Scripts\python.exe" in ps1
     native = [i for i, line in enumerate(ps1.splitlines())
-              if re.search(r"(^|\s)(py -3 -m venv|& \.\\\.venv\\Scripts\\python\.exe -m pip)", line)]
+              if re.search(r"(^|\s)(& \$PyExe @PyArgs -m venv|& \.\\\.venv\\Scripts\\python\.exe -m pip)", line)]
     lines = ps1.splitlines()
     assert len(native) == 3
     for i in native:
@@ -201,3 +202,71 @@ def test_ctrl_c_stops_without_a_traceback(tmp_path, monkeypatch):
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell test")
 def test_shell_script_is_executable():
     assert os.access(ROOT / "run_local.sh", os.X_OK)
+
+
+def test_run_local_refuses_a_python_older_than_3_11(run_local, tmp_path):
+    """A non-technical owner with an old system Python gets a plain-English message, not a
+    pip build failure halfway through."""
+    old = tmp_path / "old-python3"
+    old.write_text('#!/bin/sh\nif [ "$1" = "-c" ]; then case "$2" in *version_info*) exit 1;; '
+                   '*) echo 3.9.6; exit 0;; esac; fi\nexit 0\n')
+    old.chmod(old.stat().st_mode | stat.S_IEXEC)
+    env = {**os.environ, "PYTHON": str(old), "RUN_LOG": str(run_local.log)}
+    result = subprocess.run(["bash", str(run_local.work / "run_local.sh")], cwd=run_local.work, env=env,
+                            capture_output=True, text=True, timeout=60, check=False)
+    assert result.returncode != 0
+    assert "Python 3.11 or newer" in result.stdout and "3.9.6" in result.stdout
+    assert not (run_local.work / ".venv").exists()
+
+
+def test_double_click_launchers():
+    """START-WINDOWS.bat / START-MAC.command are what the README tells a non-technical owner
+    to double-click: they must bypass the PowerShell policy, ask for the browser to open, keep
+    the window open on errors, and keep the line endings each platform needs."""
+    bat = (ROOT / "START-WINDOWS.bat").read_bytes()
+    assert b"\r\n" in bat and b"\n" not in bat.replace(b"\r\n", b"")        # CRLF only
+    bat_text = bat.decode("ascii")
+    assert 'powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run_local.ps1"' in bat_text
+    assert "set OPEN_BROWSER=1" in bat_text and "pause" in bat_text
+    mac = (ROOT / "START-MAC.command").read_text()
+    assert "\r" not in mac and "export OPEN_BROWSER=1" in mac and "./run_local.sh" in mac
+    if sys.platform != "win32":
+        assert os.access(ROOT / "START-MAC.command", os.X_OK)
+    attrs = (ROOT / ".gitattributes").read_text()
+    assert "*.bat -text" in attrs and "*.command text eol=lf" in attrs
+    readme = text("README.md")
+    assert "START-WINDOWS.bat" in readme and "START-MAC.command" in readme
+
+
+def test_open_browser_waits_until_the_server_has_started(monkeypatch):
+    from app import __main__ as entry
+
+    opened = []
+    monkeypatch.setattr(entry.webbrowser, "open", opened.append)
+
+    class FakeServer:
+        started = False
+        should_exit = False
+
+    server = FakeServer()
+    thread = entry.open_browser_when_ready(server, "http://localhost:8000", timeout=5)
+    thread.join(0.5)
+    assert opened == []                     # nothing opens before the server accepts connections
+    server.started = True
+    thread.join(2)
+    assert opened == ["http://localhost:8000"]
+
+
+def test_open_browser_gives_up_if_the_server_never_starts(monkeypatch):
+    from app import __main__ as entry
+
+    opened = []
+    monkeypatch.setattr(entry.webbrowser, "open", opened.append)
+
+    class NeverStarts:
+        started = False
+        should_exit = True                   # e.g. the port was already in use
+
+    entry.open_browser_when_ready(NeverStarts(), "http://localhost:8000", timeout=1).join(3)
+    assert opened == []
+

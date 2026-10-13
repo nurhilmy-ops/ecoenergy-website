@@ -3,11 +3,16 @@
 Listens on 127.0.0.1:$PORT (default 8000). Set HOST=0.0.0.0 only inside a
 container or behind a reverse proxy. HOST, PORT and LOG_LEVEL are read from the
 environment or, like every setting, from .env (real environment variables win).
+OPEN_BROWSER=1 (set by the START-WINDOWS.bat / START-MAC.command launchers) opens the
+landing page in the default browser once the server is accepting connections.
 """
 from __future__ import annotations
 
 import logging
 import os
+import threading
+import time
+import webbrowser
 from dataclasses import replace
 from urllib.parse import urlsplit
 
@@ -63,6 +68,21 @@ def align_base_url(settings: Settings, port: int, base_url_set: bool) -> Setting
     return settings
 
 
+def open_browser_when_ready(server: uvicorn.Server, url: str, timeout: float = 60.0) -> threading.Thread:
+    """Open ``url`` in the default browser as soon as uvicorn reports it has started."""
+
+    def wait_and_open() -> None:
+        deadline = time.monotonic() + timeout
+        while not server.started and not server.should_exit and time.monotonic() < deadline:
+            time.sleep(0.2)
+        if server.started and not server.should_exit:
+            webbrowser.open(url)
+
+    thread = threading.Thread(target=wait_and_open, name="open-browser", daemon=True)
+    thread.start()
+    return thread
+
+
 def main() -> None:
     proc = process_settings()
     logging.basicConfig(level=proc["log_level"],
@@ -81,8 +101,11 @@ def main() -> None:
     logging.getLogger(__name__).info("Terrain screening tool on %s (env=%s, mail=%s, worker_inline=%s)",
                                      settings.base_url, settings.app_env, settings.mail_backend,
                                      settings.worker_inline)
+    server = uvicorn.Server(config)
+    if os.environ.get("OPEN_BROWSER", "").strip().lower() in {"1", "true", "yes", "on"}:
+        open_browser_when_ready(server, settings.base_url)
     try:
-        uvicorn.Server(config).run()
+        server.run()
     except KeyboardInterrupt:     # uvicorn re-raises Ctrl+C after a clean shutdown (as uvicorn.run does)
         pass
 

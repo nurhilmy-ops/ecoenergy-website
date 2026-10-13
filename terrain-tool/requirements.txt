@@ -1,6 +1,6 @@
 # Web app
 fastapi>=0.110
-uvicorn[standard]>=0.27
+uvicorn>=0.27            # plain uvicorn: pure Python, nothing to compile on new Python versions
 jinja2>=3.1
 python-multipart>=0.0.9
 email-validator>=2.1

@@ -28,6 +28,28 @@ build. It is also not a CRM or newsletter sender: it records consent and exports
 The machine running the tool needs internet access: elevations are read from the public
 Copernicus DEM tiles on Amazon Web Services at run time.
 
+### Easiest way — double-click (no typing)
+
+1. Install Python 3.11 or newer from <https://www.python.org/downloads/>. On Windows, tick
+   **"Add python.exe to PATH"** on the first installer screen.
+2. Get this folder onto your computer (for example the ZIP you were sent, or on GitHub:
+   **Code → Download ZIP** on the branch) and unzip it (Windows: right-click → **Extract All**).
+3. Open the `terrain-tool` folder and double-click:
+   - **Windows:** `START-WINDOWS.bat`. If Windows asks whether to run it, choose
+     **More info → Run anyway** (or **Run**).
+   - **Mac:** `START-MAC.command`. The first time, macOS may refuse to open it: right-click
+     it → **Open** → **Open**.
+4. A black window appears and installs what the tool needs. **The first time takes
+   5–10 minutes**; later starts take a few seconds. Your web browser then opens the tool by
+   itself at http://localhost:8000.
+5. Keep the black window open while you use the tool. Close it to stop the tool.
+
+The email with the sign-in link is not really sent: open http://localhost:8000/dev/outbox
+in the browser to see it and click the link. Sample sites to upload are in
+`tests/fixtures/` (try `hilly_site_pahang.kml`).
+
+The sections below do the same thing from a terminal.
+
 ### macOS / Linux
 
 Needs Python 3.11 or newer.
@@ -39,8 +61,9 @@ cd terrain-tool
 
 ### Windows (PowerShell)
 
-Needs Python 3.11 or newer (the `py` launcher). Windows blocks scripts by default, so start
-it through PowerShell with a one-off bypass:
+Needs Python 3.11 or newer (the `py` launcher or `python` on PATH). Windows blocks scripts by
+default, so start it through PowerShell with a one-off bypass (this is what
+`START-WINDOWS.bat` does):
 
 ```powershell
 cd terrain-tool
@@ -164,9 +187,10 @@ line: everything after `=` is the value.
 | `HOST` | `127.0.0.1` | Listen address (`0.0.0.0` in the Docker image). |
 | `PORT` | `8000` | Listen port. |
 | `LOG_LEVEL` | `INFO` | Log level. |
+| `OPEN_BROWSER` | *(off)* | Environment only: `1` opens the landing page in the default browser once the server is up. The double-click launchers set it. |
 
 Production needs at least `APP_ENV=production`, a long random `SECRET_KEY`,
-`MAIL_BACKEND=smtp` with SMTP settings, an `https://` `BASE_URL` and an `ADMIN_PASSWORD`.
+`MAIL_BACKEND=smtp` (with SMTP settings) or `MAIL_BACKEND=ses`, an `https://` `BASE_URL` and an `ADMIN_PASSWORD`.
 
 ## How it works
 
