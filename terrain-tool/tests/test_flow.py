@@ -79,7 +79,13 @@ def test_happy_path_end_to_end(flow, settings, query, fake_engine):
 
     page = flow.client.get("/upload")
     assert page.status_code == 200
-    assert 'accept=".kml,.kmz' in page.text
+    # No accept filter or "required": Safari could grey out .kml files in the picker and show its
+    # "required" bubble off-screen, so the Run button seemed dead. The server and upload.js check.
+    file_input = page.text[page.text.index('id="kml_file"'):].split(">", 1)[0]
+    assert "accept=" not in file_input and "required" not in file_input
+    assert 'novalidate id="upload-form"' in page.text and "/static/js/upload.js" in page.text
+    no_file = flow.client.post("/upload", data={"csrf": flow.csrf()})
+    assert "Please choose a .kml or .kmz file to upload." in no_file.text
     # Staff follow-up: its own optional box on the upload page, unticked by default.
     followup_input = page.text[page.text.index('id="followup"'):].split(">", 1)[0]
     assert 'name="followup"' in followup_input and "checked" not in followup_input

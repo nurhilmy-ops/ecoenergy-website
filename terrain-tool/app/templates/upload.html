@@ -9,13 +9,18 @@
       {% if runs_left > 0 %}You have <strong>{{ runs_left }}</strong> screening run{{ '' if runs_left == 1 else 's' }} left today.
       {% else %}You have used all of today's screening runs — please come back tomorrow.{% endif %}</p>
     {% if error %}<div class="alert alert-error" role="alert" id="upload-error">{{ error }}</div>{% endif %}
-    <form method="post" action="/upload" enctype="multipart/form-data">
+    {# novalidate + no accept filter: Safari can grey out .kml files in the file picker when the
+       accept list holds MIME types it doesn't know, and its "required" bubble appears next to the
+       file field, scrolled out of sight — so the button seemed dead. The server checks the file
+       and static/js/upload.js gives the same message on the page. #}
+    <form method="post" action="/upload" enctype="multipart/form-data" novalidate id="upload-form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <div class="field">
         <label class="label" for="kml_file">Site file (.kml or .kmz)</label>
-        <input type="file" id="kml_file" name="kml_file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" required
-               aria-describedby="file-hint{% if error %} upload-error{% endif %}">
-        <span class="hint" id="file-hint">Up to {{ max_mb }} MB · within Malaysia · up to {{ settings.max_extent_km|num(0) }} km across · max {{ settings.max_features }} features.</span>
+        <input type="file" id="kml_file" name="kml_file"
+               aria-describedby="file-hint file-status{% if error %} upload-error{% endif %}">
+        <span class="hint" id="file-hint">Press <strong>Choose File</strong> and pick your .kml or .kmz. Up to {{ max_mb }} MB · within Malaysia · up to {{ settings.max_extent_km|num(0) }} km across · max {{ settings.max_features }} features.</span>
+        <span class="file-status" id="file-status" role="status" aria-live="polite"></span>
       </div>
       <div class="field">
         <label class="label" for="site_label">Site label <span class="muted">(optional)</span></label>
@@ -51,7 +56,7 @@
         </label>
         <span class="hint" id="followup-hint">Leave it unticked and we won't contact you about this site. You can change your choice later on the report or on your account page.</span>
       </fieldset>
-      <button class="btn btn-block" type="submit" {% if runs_left <= 0 %}disabled{% endif %}>Run terrain screening</button>
+      <button class="btn btn-block" type="submit" id="run-button" {% if runs_left <= 0 %}disabled{% endif %}>Run terrain screening</button>
       <p class="notice">Your site file and results are deleted automatically after {{ settings.retention_days }} days, or immediately when you press Delete. We never sell your data.{% if settings.dem_provider == 'opentopodata' %} To read elevations, your site's coordinates are sent to the OpenTopoData service.{% endif %} <a href="/privacy">Privacy notice</a>.</p>
     </form>
   </section>
@@ -72,3 +77,4 @@
   </aside>
 </div>
 {% endblock %}
+{% block scripts %}<script src="/static/js/upload.js" defer></script>{% endblock %}

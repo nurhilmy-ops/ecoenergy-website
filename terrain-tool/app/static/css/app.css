@@ -294,3 +294,6 @@ h2.h3{font-size:21px;line-height:1.25;margin-bottom:14px}
 .table-compact .wrap-text{min-width:130px}
 .wrap-wide{max-width:1440px}
 .consent-box .legend-bm{display:block;color:var(--cloud-dim);margin-top:2px}
+.file-status{display:block;margin-top:8px;font-size:15px;min-height:1px}
+.file-status.is-ok{color:var(--gold)}
+.file-status.is-error{color:var(--warn);font-weight:500}
