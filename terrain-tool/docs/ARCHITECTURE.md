@@ -75,13 +75,15 @@ terrain-tool/
 class ScreeningError(Exception):
     """Message is safe to show to the visitor. `code` is a short machine key."""
     def __init__(self, message: str, code: str = "screening_error"): ...
+    message: str                  # same text as str(exc)
+    code: str
 
 @dataclass
 class Feature:
     name: str
     kind: str                     # "polygon" | "line" | "point"
-    coords: list[tuple[float, float]]          # (lon, lat); polygon = exterior ring
-    holes: list[list[tuple[float, float]]]     # polygon interior rings (may be empty)
+    coords: list[tuple[float, float]]          # (lon, lat); polygon = exterior ring, stored open
+    holes: list[list[tuple[float, float]]] = []  # polygon interior rings, stored open (default empty)
 
 @dataclass
 class SiteInput:
@@ -89,6 +91,8 @@ class SiteInput:
     bbox: tuple[float, float, float, float]    # (min_lon, min_lat, max_lon, max_lat) of all features
     extent_km: float                           # max of bbox width/height in km
     source_filename: str
+    repaired: list[str] = []                   # names of self-intersecting polygons fixed with
+                                               # make_valid (largest part kept); reported as caveats
 
 def validate_upload(path: Path, settings: Settings, original_filename: str) -> SiteInput:
     """Parse and validate an uploaded .kml/.kmz. Raises ScreeningError for: unsupported type,
@@ -96,15 +100,24 @@ def validate_upload(path: Path, settings: Settings, original_filename: str) -> S
     no usable geometry, more than settings.max_features features, any coordinate outside the
     Malaysia envelope (lon 99.0–120.0, lat 0.5–8.0), or extent > settings.max_extent_km."""
 
-def run_screening(path: Path, out_dir: Path, settings: Settings, meta: dict) -> dict:
+def run_screening(path: Path, out_dir: Path, settings: Settings, meta: dict, *,
+                  dem_fetcher: Callable[[Bbox, Settings], DemGrid] | None = None) -> dict:
     """Validate + analyse + draw. Writes into out_dir:
          1_site_layout.png, 2_elevation.png, 3_slope_classes.png, 4_profiles.png,
          result.json, summary.md
        Returns the result dict (same content as result.json). `meta` keys:
          report_id, generated_at (ISO UTC), site_label, scheme, stage, input_filename.
        Raises ScreeningError on user-fixable problems and on DEM unavailability
-       (message must say the DEM service could not be reached, never fabricate elevations)."""
+       (message must say the DEM service could not be reached, never fabricate elevations).
+       dem_fetcher (tests only) replaces the provider chosen by settings.dem_provider."""
 ```
+
+`ScreeningError.code` values: `unsupported_type`, `file_too_large`, `unsafe_xml`,
+`invalid_kml`, `invalid_kmz`, `kmz_no_kml`, `kmz_too_large`, `unreadable_file`,
+`invalid_coordinates`, `invalid_polygon`, `invalid_line`, `too_complex` (> 250,000 vertices),
+`no_geometry`, `too_many_features`, `outside_malaysia`, `extent_too_large`,
+`dem_unavailable`, `no_dem_coverage`; `jobs.py` adds `input_missing`. Codes are for logs
+only; the visitor sees the message.
 
 ### `app.reports`
 
@@ -137,7 +150,7 @@ All numbers are plain floats (rounded sensibly), never NaN — use `null` when u
   "dem": {
     "provider": "copernicus|opentopodata|geotiff",
     "name": "Copernicus DEM GLO-30",
-    "model_type": "DSM (surface: includes tree canopy and buildings)",
+    "model_type": "DSM (surface model: includes tree canopy and buildings)",
     "epoch": "2011–2015 (TanDEM-X acquisitions)",
     "vertical_datum": "EGM2008",
     "nominal_resolution_m": 30,
@@ -182,13 +195,25 @@ KPKT classes are computed per site **inside the polygon** (cell centres within t
 exterior ring and outside holes), area-weighted for `kpkt_overall_pct`. Class
 boundaries: I < 15°, II 15–25°, III 25–35°, IV ≥ 35°.
 
+Flags, follow-ups and caveats are produced by `app/terrain/flags.py` from `result` alone.
+With `scheme = "fpv"` the ground-mount flags (`steep_for_ground_pv`, `all_class_i`) are
+not raised; the FPV flags (`fpv_dem_epoch`, `fpv_land_inside`) and FPV follow-ups are.
+
 ## Security and privacy rules (apply everywhere)
 
 - Raw magic tokens and session ids are never stored — only sha256 hashes.
 - `GET /start` never consumes a token. Only `POST /start` does.
 - `Referrer-Policy: no-referrer` on every response (token URLs must not leak to font CDNs).
 - Every state-changing POST that has a session also carries the session CSRF token;
-  all POSTs reject a mismatched `Origin` header.
+  all POSTs reject a mismatched `Origin` header. `Origin: null` is treated as absent:
+  browsers send it on the site's own form posts because of `Referrer-Policy: no-referrer`.
+  `POST /unsubscribe` (RFC 8058 one-click) is exempt from the Origin check.
+- `POST /start` has no session yet, so it uses a pre-auth double-submit token instead:
+  `GET /start` sets an HttpOnly, SameSite=Strict cookie (`tt_pre`, `__Host-tt_pre` on
+  https) and the same value in a hidden `pre` field; a mismatch re-shows the Continue
+  page without consuming the magic link (login-CSRF protection).
+- A job counts against the daily job limits only after `validate_upload` accepts the
+  file; upload attempts are capped separately per IP.
 - The newsletter tick box is unticked by default and separate from tool access;
   newsletter becomes `subscribed` only after the email is verified (double opt-in).
 - The same response is returned whether or not an email already exists (no enumeration).
@@ -197,3 +222,14 @@ boundaries: I < 15°, II 15–25°, III 25–35°, IV ≥ 35°.
   or immediately on "Delete now"; erasing an account adds sha256(email) to `suppression`.
 - Uploaded XML is parsed with defusedxml; KMZ members are size-capped before reading.
 - No KML text (names, descriptions) is ever passed to an LLM; all wording is rule-based.
+
+## Tests
+
+- `tests/test_kml.py`, `tests/test_analysis.py`: engine with synthetic DEMs; one opt-in
+  network test (`RUN_NETWORK_TESTS=1`, marker `network`) runs real Copernicus tiles.
+- `tests/test_reports.py`: PDF/DOCX renderers from `tests/fixtures/sample_result.json`.
+- `tests/test_flow.py`, `tests/test_security.py`, `tests/test_jobs.py`: web app with fake
+  `app.terrain` / `app.reports` modules (`fake_engine` fixture in `conftest.py`).
+- `tests/test_integration.py`: the real app, engine and renderers together over HTTP,
+  with a synthetic GeoTIFF through the `geotiff` DEM provider (offline). It also checks
+  `result.json` against the key sets above.

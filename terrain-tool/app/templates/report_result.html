@@ -25,7 +25,9 @@
   <h2 id="glance-title">At a glance</h2>
   <div class="tiles">
     <div class="tile"><span class="label">Total area</span><div class="value">{{ glance.total_area_ha|num(1) }} <small>ha</small></div></div>
-    <div class="tile"><span class="label">Elevation range</span><div class="value">{% if glance.elev_min is not none %}{{ glance.elev_min|num(0) }}–{{ glance.elev_max|num(0) }} <small>m</small>{% else %}—{% endif %}</div></div>
+    {# Whole metres read cleanly for hilly sites; flat sites need the decimal to show any relief. #}
+    {% set elev_nd = 1 if glance.elev_min is not none and (glance.elev_max - glance.elev_min) < 10 else 0 %}
+    <div class="tile"><span class="label">Elevation range</span><div class="value">{% if glance.elev_min is not none %}{{ glance.elev_min|num(elev_nd) }}–{{ glance.elev_max|num(elev_nd) }} <small>m</small>{% else %}—{% endif %}</div></div>
     <div class="tile"><span class="label">KPKT Class I</span><div class="value">{{ glance.class1_pct|num(1) }}{% if glance.class1_pct is not none %} <small>%</small>{% endif %}</div></div>
     <div class="tile"><span class="label">Max slope</span><div class="value">{{ glance.slope_max|num(1) }}{% if glance.slope_max is not none %} <small>°</small>{% endif %}</div></div>
   </div>
@@ -84,7 +86,7 @@
         <tr>
           <th scope="row" class="wrap-text">{{ s.name or 'Site ' ~ loop.index }}</th>
           <td class="num">{{ s.area_ha|num(1) }}</td>
-          <td class="num">{{ s.elev_min_m|num(0) }}–{{ s.elev_max_m|num(0) }}</td><td class="num">{{ s.relief_m|num(0) }}</td>
+          <td class="num">{{ s.elev_min_m|num(1) }}–{{ s.elev_max_m|num(1) }}</td><td class="num">{{ s.relief_m|num(1) }}</td>
           <td class="num">{{ s.slope_mean_deg|num(1) }}</td><td class="num">{{ s.slope_p90_deg|num(1) }}</td>
           <td class="num">{{ s.slope_max_deg|num(1) }}</td>
           {% for c in KPKT_CLASSES %}<td class="num">{{ (s.kpkt_pct or {}).get(c)|num(1) }}</td>{% endfor %}
@@ -126,8 +128,8 @@
       <tbody>
       {% for r in result.routes %}
         <tr><th scope="row" class="wrap-text">{{ r.name or 'Route ' ~ loop.index }}</th>
-          <td class="num">{{ r.length_km|num(2) }}</td><td class="num">{{ r.elev_min_m|num(0) }}</td><td class="num">{{ r.elev_max_m|num(0) }}</td>
-          <td class="num">{{ r.total_ascent_m|num(0) }}</td><td class="num">{{ r.max_grade_pct|num(1) }}</td></tr>
+          <td class="num">{{ r.length_km|num(2) }}</td><td class="num">{{ r.elev_min_m|num(1) }}</td><td class="num">{{ r.elev_max_m|num(1) }}</td>
+          <td class="num">{{ r.total_ascent_m|num(1) }}</td><td class="num">{{ r.max_grade_pct|num(1) }}</td></tr>
       {% endfor %}
       </tbody>
     </table>
@@ -144,7 +146,7 @@
       <tbody>
       {% for p in result.points %}
         <tr><th scope="row" class="wrap-text">{{ p.name or 'Point ' ~ loop.index }}</th>
-          <td class="num">{{ p.lat|num(5) }}</td><td class="num">{{ p.lon|num(5) }}</td><td class="num">{{ p.elev_m|num(0) }}</td></tr>
+          <td class="num">{{ p.lat|num(5) }}</td><td class="num">{{ p.lon|num(5) }}</td><td class="num">{{ p.elev_m|num(1) }}</td></tr>
       {% endfor %}
       </tbody>
     </table>
