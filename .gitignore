@@ -1,3 +1,5 @@
 design-variants.html
 variant-*.html
 .DS_Store
+__pycache__/
+*.pyc
