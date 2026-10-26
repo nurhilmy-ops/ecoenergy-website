@@ -187,6 +187,6 @@ live; never hard-code valuations.
 |---|---|---|
 | `/consult/` page | "The LSS6 quota is 2,500 MW" | 2,650 MW solar in total (2,500 MW hybrid + 150 MW solar-only) [P] |
 | CRESS bankability article (Aug 2026) | SAC 20/40 cut "in July 2025", locked to end of RP4 | The July 2025 effective date is **correct** (announced 29 Aug 2025) [P]. "Locked to RP4" has been overtaken by the Acceleration Package (14 sen developer + 4 sen consumer = 18 sen combined, for COD by end-2028) [S] |
-| `malaysia-re-schemes` skill | CRESS SAC 25/45 sen; revised guidelines 29 Dec 2025 cut it | 25/45 were launch rates; the 29 Dec 2025 3rd edition didn't cut the SAC; current rates are 20/40, with a 14-sen package pending [P/S] |
+| `malaysia-re-schemes` skill | CRESS SAC 25/45 sen; revised guidelines 29 Dec 2025 cut it | 25/45 were launch rates; the 29 Dec 2025 3rd edition didn't cut the SAC; current rates are 20/40, with the Acceleration Package (14 + 4 = 18 sen combined) pending [P/S] |
 | SELCO article (2026) | Thresholds "72 kWp", "1 MWac" BESS rule "revised 31 Dec 2025"; CAS replaced the Power System Study | Thresholds are in kWac/MWac; current guideline revision dated Jun–Jul 2026; "replaced the PSS" not confirmed [P/U] |
 | LSS1–LSS6 article | LSS4 tariffs "~15–26 sen" | ST: Pakej 1 18.50–24.81, Pakej 2 17.68–19.70 sen [P] |
