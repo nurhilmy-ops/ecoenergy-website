@@ -37,8 +37,9 @@ Malaysian examples of a step done differently (use as prompts, not templates):
   premium. Run it as a sensitivity, not a footnote.
 - **Offtake:** CRESS firm supply carries a lower System Access Charge than non-firm. Firming with
   BESS turns an engineering cost into an offtake-price advantage. Rates are in
-  `malaysia-context.md` §3; the Sep 2026 Acceleration Package would widen the firm/non-firm gap from
-  20 to 26 sen/kWh, if enacted as announced.
+  `malaysia-context.md` §3. Under the Acceleration Package as clarified on 13 Oct 2026 (14 sen
+  developer + 4 sen consumer = 18 sen combined vs non-firm 40), the gap widens from 20 to about
+  22 sen/kWh, if enacted in the guideline.
 
 ### B. EcoEnergy's own business system (firm level)
 | Step | EcoEnergy's choice | Typical rival choice |

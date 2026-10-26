@@ -66,13 +66,16 @@ Sources: petra.gov.my/uploads/content-downloads/file_20260716105952.pdf; ST RFP 
 | Launch | 26 Jul 2024. Guidelines GP/ST/No.40/2024: 2nd edition 1 Mar 2025, 3rd edition 29 Dec 2025 | [S]/[P] |
 | Eligibility | Plant ≥30 MW with direct connection. Green Consumers are high- and medium-voltage consumers in Peninsular Malaysia. Developer ≥51% local ownership | [P] |
 | System Access Charge (SAC) at launch | 25 sen/kWh firm, 45 sen/kWh non-firm | [P] |
-| SAC cut, 29 Aug 2025 | **Firm 20, non-firm 40** sen/kWh (CREAM charge 15 → 9) | [P] |
+| SAC cut for RP4 | **Firm 20, non-firm 40** sen/kWh (CREAM charge 15 → 9). Announced in PETRA's 29 Aug 2025 release; tied to the RP4 tariff schedule effective **1 Jul 2025** | [P] |
 | Guideline rules | SAC fixed per 3-year regulatory period, changes capped at ±15%. Missed firm output: BESS ≥50% of capacity for 4 h, or the higher SAC applies | [P] |
-| **CRESS Acceleration Package, 18 Sep 2026** | Firm SAC **14 sen/kWh fixed for 10 years** for projects reaching COD by 31 Dec 2028 with a contract of ≥10 years, plus 4 sen/kWh charged to green consumers. Non-firm stays at 40. Guideline amendments expected Nov 2026 | [S] |
+| **CRESS Acceleration Package, 18 Sep 2026** | Announced by PETRA: firm SAC **14 sen/kWh fixed for 10 years** for projects reaching COD by 31 Dec 2028 (no extensions) with a contract of ≥10 years. Non-firm stays at 40. Guideline amendments expected Nov 2026 | [S] |
+| **EC clarification, 13 Oct 2026** | The developer pays 14 sen/kWh. Green consumers pay a **separate 4 sen/kWh**, so the **combined charge is 18 sen/kWh**. The Edge called it an "about-turn" from the 14 sen first understood | [S] (The Star, The Edge, 14–15 Oct 2026) |
 
 Sources: st.gov.my/sites/default/files/2026-04/Guidelines-for-CRESS_2.pdf; ST release on the SAC/CREAM reduction.
-**Until the amended guideline is published, treat the 14-sen package as a Level 2 uncertainty**
-(alternative futures, see `portfolio-of-initiatives.md`), not as a fact to price a PPA on.
+**Until the amended guideline is published, treat the package as a Level 2 uncertainty**
+(alternative futures, see `portfolio-of-initiatives.md`), not as a fact to price a PPA on. Compare
+like with like: firm supply at 14 + 4 = 18 sen/kWh combined against non-firm at 40, a gap of about
+22 sen, not 26. Who bears the 4 sen is a CPPA pricing point.
 
 ## 4. SELCO and Solar ATAP
 **SELCO:** Guideline GP/ST/No.51/2024 (Pin.1/2026), revision registered 15 Jun 2026, dated 21 Jul 2026 [P].
@@ -183,7 +186,7 @@ live; never hard-code valuations.
 | Where | What it says | What the sources say |
 |---|---|---|
 | `/consult/` page | "The LSS6 quota is 2,500 MW" | 2,650 MW solar in total (2,500 MW hybrid + 150 MW solar-only) [P] |
-| CRESS bankability article (Aug 2026) | SAC 20/40 cut "in July 2025", locked to end of RP4 | Cut announced 29 Aug 2025 [P]. The Sep 2026 Acceleration Package (14 sen firm, fixed 10 years) has since overtaken "locked to RP4" [S] |
+| CRESS bankability article (Aug 2026) | SAC 20/40 cut "in July 2025", locked to end of RP4 | The July 2025 effective date is **correct** (announced 29 Aug 2025) [P]. "Locked to RP4" has been overtaken by the Acceleration Package (14 sen developer + 4 sen consumer = 18 sen combined, for COD by end-2028) [S] |
 | `malaysia-re-schemes` skill | CRESS SAC 25/45 sen; revised guidelines 29 Dec 2025 cut it | 25/45 were launch rates; the 29 Dec 2025 3rd edition didn't cut the SAC; current rates are 20/40, with a 14-sen package pending [P/S] |
 | SELCO article (2026) | Thresholds "72 kWp", "1 MWac" BESS rule "revised 31 Dec 2025"; CAS replaced the Power System Study | Thresholds are in kWac/MWac; current guideline revision dated Jun–Jul 2026; "replaced the PSS" not confirmed [P/U] |
 | LSS1–LSS6 article | LSS4 tariffs "~15–26 sen" | ST: Pakej 1 18.50–24.81, Pakej 2 17.68–19.70 sen [P] |
