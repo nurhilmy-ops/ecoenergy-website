@@ -1,7 +1,0 @@
----
-type: llm
-focus: trace
-weight: 1
----
-
-The result matches this description: A decision memo that treats the prior work for a developer pursuing the same ponds as a conflict-of-interest gate to resolve before any score matters (disclose / seek consent / information barrier / decline), runs the registration and eligibility gates, scores the opportunity with a bid/no-bid matrix, computes the price-to-win effect of a ~20% fee premium under a 70:30 weighting (about 5 points of total score, needing ~7 points technical lead), proposes provable win themes, and includes integrity guardrails (single RFP channel, MACC s.17A, Competition Act). It ends with a clear call and conditions. 
