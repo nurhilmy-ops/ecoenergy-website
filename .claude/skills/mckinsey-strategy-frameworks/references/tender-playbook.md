@@ -12,7 +12,7 @@ don't promise a win-rate uplift from the gate. See `source-notes.md`.
 | Type | EcoEnergy's role | Decided mainly on | Frameworks that matter most |
 |---|---|---|---|
 | ST/PETRA quota auction (LSS) | Advisor to a bidding client | Compliance, then evaluated tariff (with RFP-defined preferences) | SCP → business system → **bid supply curve** → 7S on the consortium |
-| Government / state-agency consultancy tender | Bidder | Technical score + price per the RFP formula; registration and eligibility gates | **Bid/no-bid matrix** → decision journey → business system (win themes) → price-to-win |
+| Government / state-agency consultancy tender | Bidder | Federal: two-envelope, technical 80 / cost 20 (Treasury PK 3.3); others per the RFP formula; registration and eligibility gates | **Bid/no-bid matrix** → decision journey → business system (win themes) → price-to-win |
 | GLC procurement | Bidder | Vendor registration, technical/commercial evaluation per the GLC's policy | Same as above |
 | Financier mandate (lender's TA, E&S advisor) | Bidder | Independence, credentials, named team, fee | Bid/no-bid with a hard **conflict gate** → 7S on the team |
 | Private developer RFP (feasibility, owner's engineer) | Bidder | Relationship, credibility with their lender, fee | Decision journey → business system → GE matrix to prioritise accounts |
@@ -77,10 +77,27 @@ gate (e.g. secure a teaming partner, confirm a key person); red means decline po
 relationship. Expected value is a useful cross-check: **P(win) × margin − bid cost**. When you can't
 estimate P(win) from history, say so rather than inventing one.
 
+## Malaysian public-procurement rules that shape the bid
+(Details and sources in `malaysia-context.md` §6–8; re-check before each bid.)
+- **Federal consultancy (Treasury circular PK 3.3, 2022):** two stages, technical 80% / cost 20%,
+  two envelopes (PK 3.6). For *studies*, the technical score weights firm 25 / staff 35 /
+  methodology 35 / QA 5. **Named staff and a site-specific methodology carry 70% of the technical
+  score**, so put effort there before polishing the firm profile.
+- **Thresholds:** studies up to RM500k can go by direct appointment from a shortlist of at least
+  three firms; above that, open tender. Being registered in the right MOF codes is what gets you on
+  shortlists.
+- **Integrity Pact (PK 1.6, in force 1 Jun 2025):** mandatory bidder's declaration with the bid,
+  including beneficial-owner and forced-labour declarations.
+- **Government Procurement Act 2026 [Act 882]** is gazetted but **not yet in force** (expected
+  2027). Until commencement, the circulars apply. Watch for the commencement order and its
+  regulations.
+- State agencies, GLCs and statutory bodies may run their own procurement policies. Read each RFP's
+  evaluation section rather than assuming the federal formula.
+
 ## Price-to-win arithmetic for quality-and-cost tenders
 Many consultancy tenders combine a technical score T and a financial score F with RFP-stated
-weights, and often score price as F = 100 × (lowest price ÷ your price). Always use the formula the
-RFP actually states. If you price x% above the lowest compliant bid, you lose
+weights (federal default 80:20), and often score price as F = 100 × (lowest price ÷ your price).
+Always use the formula the RFP actually states. If you price x% above the lowest compliant bid, you lose
 
   ΔTotal = W_f × 100 × x / (1 + x)
 
@@ -106,7 +123,8 @@ Use only those you can evidence in this proposal:
 - No gifts, hospitality or favours to the buyer's staff or evaluators. Record anything offered or
   requested. Corporate liability under MACC Act 2009 s.17A applies unless "adequate procedures" are
   in place.
-- Sign and honour any Integrity Pact the buyer requires.
+- Sign and honour the Integrity Pact (mandatory in federal procurement under PK 1.6). Bid-rigging
+  and corruption clauses go into every contract.
 - No contact with competitors about prices, bid/no-bid intentions or market sharing (Competition
   Act 2010). Teaming agreements must be genuine and documented, and legal should review them.
 - Client confidentiality: never reuse one client's bid data in another client's analysis.

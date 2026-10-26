@@ -21,14 +21,16 @@ from $50 to $36) is arithmetically correct and illustrative.
   defines it). For your own bid this is the **floor** from `fin-model-engineer`. It is never a
   number you pick.
 - **Demand line:** the package quota (e.g. LSS6 Pakej 1: 2,200 MW solar + 1,100 MW BESS).
-  Oversubscription has run about 2× in recent rounds (LSS5+: 1,975 MW approved from over 4,000 MW
-  bid), so plan for half of well-prepared bidders to lose.
+  Oversubscription has fallen from about 13× (LSS3: 6.73 GW offered for 500 MW) to about 2×
+  (LSS5+: 1,975 MW awarded from 4,073 MW bid) as lots grew and qualification tightened. Plan for
+  roughly half of well-prepared bidders to lose.
 - **Lumpiness:** projects are awarded whole. A cheap bid can still miss the quota if its lot doesn't
   fit. Lot size is a strategic lever; test a smaller lot (`--lumpy stop|skip`, and rerun with a
   resized row). LSS4 awarded 823 MW against a 1,000 MW quota, so the quota isn't always filled.
-- **Calibration problem:** since LSS5, the Energy Commission has not published winner lists or
-  tariffs. Old clearing prices (LSS3 low of 17.78 sen/kWh; LSS4 ~15–26 sen/kWh) are solar-only and
-  pre-BESS, so they are not comparable with a mandatory solar+BESS hybrid. Build competitor costs
+- **Calibration problem:** since LSS5, the Energy Commission has not disclosed winning tariffs.
+  Old results (LSS3 lowest 17.777 sen/kWh; LSS4 winners 18.50–24.81 sen in Pakej 1 and 17.68–19.70
+  sen in Pakej 2) are solar-only and pre-BESS, so they are not comparable with a solar+BESS hybrid
+  bid (LSS6 Pakej 1–2 BESS is 1,250 MW / 6,000 MWh, about 4.8 hours). Build competitor costs
   **bottom-up by archetype** instead:
 
 | Archetype | Typical cost-curve position (hypothesis to test) | Main drivers |

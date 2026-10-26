@@ -11,8 +11,8 @@ levels of residual uncertainty and the three kinds of move: **no-regrets moves, 
 ## Step 1 — Name the level of uncertainty (Malaysian RE examples)
 | Level | Meaning | Examples (re-verify dates in `malaysia-context.md`) |
 |---|---|---|
-| 1. Clear-enough future | One forecast is good enough | CRESS System Access Charge is fixed until the end of the current regulatory period |
-| 2. Alternative futures | A few discrete outcomes | Whether and when LSS7 is announced; whether the SAC rises or falls at the next reset; whether you win the LSS6 package |
+| 1. Clear-enough future | One forecast is good enough | Published rules in force, e.g. the CRESS non-firm SAC of 40 sen/kWh under the current guideline |
+| 2. Alternative futures | A few discrete outcomes | Whether the Sep 2026 CRESS Acceleration Package (14 sen firm SAC, fixed 10 years for COD by end-2028) is enacted as announced; whether and when LSS7 is announced; whether a client wins its LSS6 package |
 | 3. Range of futures | A continuous range | Data-centre load growth in Johor; module and BESS price paths; SMP levels |
 | 4. True ambiguity | Can't bound outcomes | Long-run market design (e.g. a future wholesale market or regional power trading at scale) |
 
@@ -44,7 +44,9 @@ on the calendar.
 ## Where it misleads
 - Classifying something as an "option" doesn't make it cheap. Count the leadership hours, which
   are a boutique's scarcest capital.
-- Uncertainty levels drift. A rumoured round (Level 2) becomes a published RFP (Level 1) overnight;
-  re-classify then.
+- Uncertainty levels drift. A rumoured round (Level 2) becomes a published RFP (Level 1) overnight,
+  and a "fixed" charge can be re-cut. The CRESS SAC was cut in Aug 2025, and a further cut was
+  announced in Sep 2026.
+  Re-classify on every policy event.
 - The framework assumes you can stage commitments. Some tender conditions (bid security, land
   control at submission) force a big bet early. Price that explicitly.

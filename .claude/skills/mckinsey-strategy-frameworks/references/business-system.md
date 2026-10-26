@@ -36,8 +36,9 @@ Malaysian examples of a step done differently (use as prompts, not templates):
 - **Procurement:** domestic modules can carry an LSS6 evaluation preference that offsets a capex
   premium. Run it as a sensitivity, not a footnote.
 - **Offtake:** CRESS firm supply carries a lower System Access Charge than non-firm. Firming with
-  BESS turns an engineering cost into an offtake-price advantage (see the CRESS article for current
-  rates).
+  BESS turns an engineering cost into an offtake-price advantage. Rates are in
+  `malaysia-context.md` §3; the Sep 2026 Acceleration Package would widen the firm/non-firm gap from
+  20 to 26 sen/kWh, if enacted as announced.
 
 ### B. EcoEnergy's own business system (firm level)
 | Step | EcoEnergy's choice | Typical rival choice |

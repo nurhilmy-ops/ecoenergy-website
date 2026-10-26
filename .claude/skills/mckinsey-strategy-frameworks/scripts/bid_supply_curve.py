@@ -235,7 +235,7 @@ def main():
                    "Never bid below the floor: a tariff that wins but fails the lender's downside case is "
                    "not a win."]
     md += ["", "_Illustrative model. Competitor costs are estimates; since LSS5 the Energy Commission has "
-           "not published winner lists or tariffs, so calibrate ranges to bottom-up LCOE builds, not to "
+           "not disclosed winning tariffs, so calibrate ranges to bottom-up LCOE builds, not to "
            "old clearing prices. Never obtain or exchange bid prices with competitors — bid rigging is "
            "prohibited under the Competition Act 2010._", ""]
     with open(os.path.join(a.out, "curve_summary.md"), "w") as fh:
