@@ -79,7 +79,7 @@ Read only the reference files you need.
 | Question | Framework | Reference | Script |
 |---|---|---|---|
 | Should we bid this RFP / mandate? | GE-style weighted matrix in **bid mode** + pass/fail gates | `references/tender-playbook.md`, `references/ge-mckinsey-matrix.md` | `scripts/weighted_matrix.py --mode bid` |
-| What tariff wins an LSS round? How much headroom do we have? | Industry cost curve → **bid supply curve** (pay-as-bid) | `references/industry-cost-curve.md` | `scripts/bid_supply_curve.py` |
+| What tariff wins an LSS round? How much headroom do we have? | Industry cost curve → **bid supply curve** (pay-as-bid) | `references/industry-cost-curve.md` | `scripts/archetype_tariff.py` → `scripts/bid_supply_curve.py` |
 | Where is surplus energy worth what? (SMP, merit order) | Industry cost curve, **marginal** pricing | `references/industry-cost-curve.md` | `scripts/bid_supply_curve.py --pricing marginal` |
 | Is this scheme/market worth entering? What will rivals do? | SCP (Structure–Conduct–Performance) | `references/scp.md` | — |
 | Where can the client (or we) differentiate along the delivery chain? | Business system | `references/business-system.md` | — |
@@ -126,12 +126,13 @@ are reproducible:
 
 ```bash
 python scripts/weighted_matrix.py input.json --out <dir> [--mode ge|bid]
+python scripts/archetype_tariff.py archetypes.json --out <dir>      # competitor tariffs -> bids.csv
 python scripts/bid_supply_curve.py bids.csv --quota 2200 [--quota 1650] --out <dir> \
        [--pricing pay-as-bid|marginal] [--lumpy stop|skip] [--bid-grid 20 25 0.1]
 ```
 
 Input templates are in `assets/` (`ge_matrix_template.json`, `bid_no_bid_template.json`,
-`bids_template.csv`); every value in them is illustrative. Both scripts need `matplotlib`
+`archetypes_template.json`, `bids_template.csv`); every value in them is illustrative. Both scripts need `matplotlib`
 (`pip install matplotlib`) for charts and fall back to markdown without it. View the PNGs before
 presenting them.
 

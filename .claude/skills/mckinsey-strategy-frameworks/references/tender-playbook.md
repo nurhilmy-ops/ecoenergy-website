@@ -47,6 +47,16 @@ each RFP):
 - **No conflict of interest.** Not advising a competing bidder, the evaluator or the counter-party
   on the same project or package; not acting as lender's TA on a project whose bid the firm
   prepared. Check the conflicts register; independence is the firm's value proposition.
+  - A **former-client** conflict (e.g. we screened the same site for a developer last year) can
+    sometimes be cured, but only if all of these hold: the earlier engagement is closed; its
+    confidential information is not material to the new work or can't be used; the former client
+    consents in writing; the buyer accepts the disclosure in writing through the RFP channel; and
+    the people who did the earlier work are excluded.
+  - **A current-client conflict is a no-bid.** Don't drop a client to take a tender.
+  - **Be honest about ethical walls in a small firm.** With a team of about ten, an information
+    barrier is weak, and evaluators and lenders know it. If the only qualified person for a key role
+    worked on the conflicting engagement, the wall isn't credible: no-bid. When in doubt, decline.
+    The firm's independence is worth more than one fee.
 - Contract terms are acceptable or priceable (liability cap, indemnities, IP ownership, payment
   terms, professional indemnity insurance level). Hand to `legal-commercial-contracts`.
 - The named key personnel are available for the contract period.

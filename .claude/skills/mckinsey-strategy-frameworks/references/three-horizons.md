@@ -11,11 +11,13 @@ speed matters more than the calendar. See `source-notes.md`.
 ## EcoEnergy horizon map (firm level, starting hypothesis to re-test yearly)
 | Horizon | Candidate businesses | Measure by | Fund like | Kill rule |
 |---|---|---|---|---|
-| **H1** core | Solar scheme advisory: LSS/CRESS/SELCO/ATAP screening & feasibility, tariff-solving models | Fee margin, utilisation, cash collection days, win rate | Annual budget, efficiency targets | Declining margin on reinvestment |
+| **H1** core | Solar scheme advisory: LSS/CRESS/SELCO/ATAP screening & feasibility, tariff-solving models; small-hydro **operations** support (an existing cash business) | Fee margin, utilisation, cash collection days, win rate | Annual budget, efficiency targets | Declining margin on reinvestment |
 | **H2** emerging | BESS-inclusive modelling and engineering (LSS6 hybrid is mandatory solar+BESS); lender's TA / transaction advisory; CRESS structuring; sukuk structuring support | Revenue growth, repeat clients, references won, unit economics per mandate | Staged capital tied to milestones (e.g. hire #2 BESS modeller after 3 mandates) | Unit economics don't improve with scale |
-| **H3** options | Waste-to-energy and small-hydro advisory; cross-border RE trade; carbon/REC advisory; data-centre green-supply structuring; grid services from storage | Assumptions validated, milestones hit | Many small, cheap bets: one study, one partnership, one article | Key assumption proven wrong |
+| **H3** options | Waste-to-energy and small-hydro **development** advisory; cross-border RE trade (ENEGEM); carbon/REC advisory; data-centre green-supply structuring; grid services from storage | Assumptions validated, milestones hit | Many small, cheap bets: one study, one partnership, one article | Key assumption proven wrong |
 
-Calibrate with facts from `malaysia-context.md` (e.g. LSS6 hybrid requirement, CRESS SAC period,
+Tag by maturity of the *revenue*, not the technology: the same technology can sit in H1 (operations
+support you already bill) and H3 (development advice you have yet to sell). Calibrate with facts from
+`malaysia-context.md` (e.g. LSS6 hybrid requirement, CRESS SAC period,
 data-centre demand). Don't promote a horizon on enthusiasm alone.
 
 **Small-firm adaptation.** "Venture-style many small bets" is unaffordable for a boutique. H3 bets

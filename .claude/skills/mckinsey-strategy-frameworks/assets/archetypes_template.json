@@ -1,0 +1,40 @@
+{
+  "_note": "ILLUSTRATIVE TEMPLATE - every number is an assumption to replace. LSS6-style hybrid: 0.5 MW BESS per MWac solar, 4.8 h (1,250 MW / 6,000 MWh). Tax/GITA settings must be confirmed with solar-accountant; GITA is off by default.",
+  "common": {
+    "solar_rm_per_mwac": 2200000, "bess_ratio": 0.5, "bess_hours": 4.8, "bess_rm_per_kwh": 540,
+    "yield_kwh_per_kwac": 1800, "deg": 0.0045, "bess_loss": 0.05,
+    "om_fixed_rm_per_mwac": 28000, "om_bess_pct": 0.012, "insurance_pct": 0.0035, "land_rm_per_mwac": 15000,
+    "escalation": 0.025, "aug_years": [9, 17], "aug_pct_of_bess": 0.15,
+    "years": 25, "debt_tenor": 21, "debt_rate": 0.056, "max_gearing": 0.75, "dscr": 1.30, "hurdle_irr": 0.09,
+    "tax_rate": 0.24, "ca_schedule": [0.34, 0.14, 0.14, 0.14, 0.14, 0.10], "qualifying_share": 0.90,
+    "gita_pct": 0.0, "gita_cap_of_si": 0.70
+  },
+  "archetypes": {
+    "Client SPV": {},
+    "Utility subsidiary": {"solar_rm_per_mwac": 2130000, "bess_rm_per_kwh": 510, "land_rm_per_mwac": 10000, "debt_rate": 0.049, "max_gearing": 0.80, "dscr": 1.25, "hurdle_irr": 0.075},
+    "GLC/state-backed developer": {"solar_rm_per_mwac": 2160000, "bess_rm_per_kwh": 520, "land_rm_per_mwac": 8000, "debt_rate": 0.051, "max_gearing": 0.80, "dscr": 1.25, "hurdle_irr": 0.08},
+    "Listed EPC-developer": {"solar_rm_per_mwac": 2040000, "bess_rm_per_kwh": 515, "debt_rate": 0.054, "hurdle_irr": 0.095},
+    "Foreign IPP + local partner": {"solar_rm_per_mwac": 2070000, "bess_rm_per_kwh": 485, "debt_rate": 0.053, "hurdle_irr": 0.095},
+    "Mid-cap developer": {"solar_rm_per_mwac": 2220000, "bess_rm_per_kwh": 550, "debt_rate": 0.057, "hurdle_irr": 0.095},
+    "Landowner-developer": {"solar_rm_per_mwac": 2330000, "bess_rm_per_kwh": 575, "land_rm_per_mwac": 5000, "debt_rate": 0.060, "max_gearing": 0.70, "hurdle_irr": 0.105}
+  },
+  "anchor": {"archetype": "Client SPV", "tariff": 23.8},
+  "ranges": {
+    "low": {"solar_rm_per_mwac_mult": 0.95, "bess_rm_per_kwh_mult": 0.93, "hurdle_irr_add": -0.005},
+    "high": {"solar_rm_per_mwac_mult": 1.07, "bess_rm_per_kwh_mult": 1.10, "hurdle_irr_add": 0.010}
+  },
+  "field": [
+    {"name": "Client SPV (us)", "archetype": "Client SPV", "mw": 200, "us": true},
+    {"name": "Utility subsidiary U1", "archetype": "Utility subsidiary", "mw": 500, "p_compliant": 0.97},
+    {"name": "GLC-backed G1", "archetype": "GLC/state-backed developer", "mw": 300, "p_compliant": 0.95},
+    {"name": "GLC-backed G2", "archetype": "GLC/state-backed developer", "mw": 250, "yield_factor": 0.98, "p_compliant": 0.95},
+    {"name": "Listed EPC-developer E1", "archetype": "Listed EPC-developer", "mw": 450, "yield_factor": 1.01, "p_compliant": 0.95},
+    {"name": "Listed EPC-developer E2", "archetype": "Listed EPC-developer", "mw": 300, "p_compliant": 0.95},
+    {"name": "Foreign IPP + local F1", "archetype": "Foreign IPP + local partner", "mw": 500, "p_compliant": 0.90},
+    {"name": "Foreign IPP + local F2", "archetype": "Foreign IPP + local partner", "mw": 350, "yield_factor": 0.99, "p_compliant": 0.90},
+    {"name": "Mid-cap developer M1", "archetype": "Mid-cap developer", "mw": 250, "p_compliant": 0.85},
+    {"name": "Mid-cap developer M2", "archetype": "Mid-cap developer", "mw": 150, "yield_factor": 1.01, "p_compliant": 0.85},
+    {"name": "Landowner-developer L1", "archetype": "Landowner-developer", "mw": 120, "yield_factor": 0.99, "p_compliant": 0.75},
+    {"name": "Landowner-developer L2", "archetype": "Landowner-developer", "mw": 100, "yield_factor": 0.97, "p_compliant": 0.75}
+  ]
+}

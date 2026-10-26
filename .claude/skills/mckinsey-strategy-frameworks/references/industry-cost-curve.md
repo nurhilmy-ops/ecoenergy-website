@@ -41,14 +41,24 @@ from $50 to $36) is arithmetically correct and illustrative.
 | Mid-cap / regional developers | Centre-right | Higher debt margins, smaller lots |
 | Landowner-developers, new entrants | Right | Land is cheap but cost of capital and execution risk high; lower compliance probability |
 
-For each archetype estimate: capex (solar RM/MWac + BESS RM/MWh at the RFP's ratio), specific yield
+For each archetype estimate: capex (solar RM/MWac + BESS RM/kWh at the RFP's ratio), specific yield
 for its likely region (the LSS6 steer is to the southern Peninsula), O&M, degradation and
-augmentation, land and grid-connection cost, gearing and cost of debt, and hurdle equity IRR. Get the
-LCOE build from `fin-model-engineer` and engineering inputs from `pv-lead-engineer`/`pv-scada-bess`.
-Give each a low/central/high range and a probability of passing evaluation (`p_compliant`).
+augmentation, land and grid-connection cost, gearing and cost of debt, and hurdle equity IRR. Get
+engineering inputs from `pv-lead-engineer`/`pv-scada-bess` and the client's real floor from
+`fin-model-engineer`. Give each archetype a low/central/high range and each bid a probability of
+passing evaluation (`p_compliant`).
+
+**Price everyone on one engine, anchored to a known number.** `scripts/archetype_tariff.py` solves
+each archetype's tariff at its hurdle IRR on the same simplified project-finance model, with sculpted
+debt capped at max gearing, capital allowances and optional GITA. It then scales the whole set so
+the client's archetype reproduces the client's real floor. Absolute LCOE models disagree by several
+sen, but relative positions on one engine are far more robust. If the calibration factor is far from
+1, the common inputs don't describe the client's model; fix them rather than trusting the scaling.
+Tax and GITA settings are placeholders until `solar-accountant` confirms them.
 
 ```bash
-python scripts/bid_supply_curve.py bids.csv --quota 2200 --quota 1650 \
+python scripts/archetype_tariff.py archetypes.json --out out/lss6     # writes out/lss6/bids.csv
+python scripts/bid_supply_curve.py out/lss6/bids.csv --quota 2200 --quota 1650 \
        --title "LSS6 Pakej 1 — central vs stress" --out out/lss6
 ```
 
