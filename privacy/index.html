@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Notice | EcoEnergy Consultancy</title>
+<meta name="description" content="How EcoEnergy Consultancy Sdn. Bhd. collects, uses and protects personal data under the Personal Data Protection Act 2010.">
+<link rel="icon" type="image/svg+xml" href="../assets/ecoenergy_leaf_appicon.svg">
+<link rel="canonical" href="https://www.ecoconsultancy.services/privacy/">
+<meta name="robots" content="index, follow">
+<meta name="author" content="EcoEnergy Consultancy Sdn. Bhd.">
+<meta name="theme-color" content="#081527">
+<meta property="article:published_time" content="2026-08-22">
+<meta property="article:author" content="EcoEnergy Consultancy Sdn. Bhd.">
+<meta property="article:section" content="Insights">
+<style>
+:root{
+  --navy-deep:#081527;
+  --navy:#0F2742;
+  --navy-raised:#15334F;
+  --navy-line:#23425F;
+  --gold:#D4A23A;
+  --gold-deep:#B8841F;
+  --paper:#F4EFE6;
+  --paper-dim:#E9E2D4;
+  --ink:#12233A;
+  --ink-soft:#48586C;
+  --cloud:#AFBFCF;
+  --cloud-dim:#7E93A8;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Hanken Grotesk',-apple-system,sans-serif;
+  --mono:'Spline Sans Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  background:var(--navy-deep);
+  color:var(--paper);
+  font-size:17px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--gold);color:var(--navy-deep)}
+a{color:var(--gold)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(24px,5vw,64px)}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;
+}
+.kicker::before{content:"";width:34px;height:1px;background:var(--gold)}
+
+/* ---------- nav ---------- */
+header{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  background:rgba(8,21,39,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.nav{display:flex;align-items:center;justify-content:space-between;height:76px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo img{width:30px;height:30px}
+.logo-text{display:flex;flex-direction:column;line-height:1.15}
+.logo-mark{font-family:var(--serif);font-size:23px;color:var(--paper);letter-spacing:-.01em}
+.logo-mark b{font-weight:600;color:var(--gold)}
+.logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
+nav.links{display:flex;gap:34px}
+nav.links a{
+  color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
+  letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
+}
+nav.links a::after{
+  content:"";position:absolute;left:0;bottom:-6px;width:0;height:1px;
+  background:var(--gold);transition:width .3s var(--ease);
+}
+nav.links a:hover{color:var(--paper)}
+nav.links a:hover::after{width:100%}
+nav.links a.active{color:var(--paper)}
+nav.links a.active::after{width:100%}
+.nav-cta{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-decoration:none;
+  color:var(--navy-deep);background:var(--gold);padding:11px 22px;
+  transition:background .25s var(--ease),transform .25s var(--ease);
+}
+.nav-cta:hover{background:var(--paper);transform:translateY(-1px)}
+@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:520px){.nav-cta{display:none}}
+
+/* ---------- article hero ---------- */
+.art-hero{
+  padding:150px 0 56px;
+  background:
+    radial-gradient(1100px 600px at 82% -10%,rgba(212,162,58,.10),transparent 60%),
+    radial-gradient(900px 700px at -10% 120%,rgba(21,51,79,.9),transparent 65%),
+    var(--navy-deep);
+  border-bottom:1px solid rgba(212,162,58,.16);
+}
+.crumbs{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cloud-dim);margin-bottom:26px}
+.crumbs a{color:var(--cloud-dim);text-decoration:none}
+.crumbs a:hover{color:var(--gold)}
+.crumbs span{color:var(--gold)}
+.art-hero h1{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(32px,4.6vw,56px);line-height:1.08;letter-spacing:-.02em;
+  max-width:22ch;margin:22px 0 26px;
+}
+.art-hero h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+.art-meta{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--cloud-dim);padding-top:22px;border-top:1px solid rgba(212,162,58,.16);max-width:760px}
+.art-meta .who{color:var(--cloud)}
+.art-meta .tag{color:var(--gold);text-transform:uppercase;letter-spacing:.16em}
+
+/* ---------- article body ---------- */
+.article{padding:clamp(48px,7vh,80px) 0 20px}
+.prose{max-width:760px;margin:0 auto}
+.prose>p:first-child{
+  font-size:clamp(18px,1.5vw,20.5px);color:var(--paper);font-weight:300;line-height:1.7;
+}
+.prose p{margin:0 0 24px;color:var(--cloud);font-weight:300;font-size:17px;line-height:1.8}
+.prose strong{color:var(--paper);font-weight:600}
+.prose em{font-style:italic}
+.prose a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(212,162,58,.4);transition:border-color .25s var(--ease)}
+.prose a:hover{border-bottom-color:var(--gold)}
+.prose h2{
+  font-family:var(--serif);font-weight:500;font-size:clamp(25px,3vw,34px);
+  line-height:1.22;letter-spacing:-.01em;color:var(--paper);
+  margin:56px 0 20px;padding-top:14px;
+}
+.prose h2 em{font-style:italic;color:var(--gold)}
+.prose h3{
+  font-family:var(--serif);font-weight:500;font-size:21px;color:var(--paper);
+  margin:38px 0 14px;letter-spacing:-.005em;
+}
+.prose ul{margin:0 0 24px;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+.prose ul li{position:relative;padding-left:26px;color:var(--cloud);font-weight:300;line-height:1.7}
+.prose ul li::before{
+  content:"";position:absolute;left:2px;top:.72em;width:7px;height:7px;
+  background:var(--gold);transform:rotate(45deg);
+}
+.prose ol{margin:0 0 24px;padding-left:22px;color:var(--cloud);font-weight:300;display:flex;flex-direction:column;gap:12px}
+.prose ol li{padding-left:8px;line-height:1.7}
+.prose ol li::marker{color:var(--gold);font-family:var(--mono);font-size:14px}
+
+/* rule / divider */
+.prose hr{
+  border:0;height:1px;background:rgba(212,162,58,.2);
+  margin:44px auto;max-width:200px;
+}
+
+/* section-lead paragraph after an option heading (the "What it is" lines rendered as <p>) */
+.callout{
+  background:linear-gradient(160deg,var(--navy-raised),var(--navy) 80%);
+  border:1px solid var(--navy-line);border-left:3px solid var(--gold);
+  padding:22px 26px;margin:0 0 24px;
+}
+.callout p{margin:0;color:var(--cloud)}
+.callout p+p{margin-top:12px}
+
+/* the "catch" note */
+.note-catch{border-left-color:var(--gold-deep)}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:0 0 28px;border:1px solid var(--navy-line)}
+table{border-collapse:collapse;width:100%;min-width:460px;font-size:15px}
+thead th{
+  background:var(--navy-raised);color:var(--gold);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  text-align:left;padding:15px 20px;font-weight:500;border-bottom:1px solid var(--navy-line);
+}
+tbody td{padding:15px 20px;border-bottom:1px solid rgba(35,66,95,.6);color:var(--cloud);font-weight:300;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even) td{background:rgba(21,51,79,.35)}
+tbody td strong{color:var(--paper);font-weight:600}
+
+/* ---------- end CTA ---------- */
+.art-cta{
+  margin-top:64px;
+  background:linear-gradient(120deg,var(--gold-deep),var(--gold) 55%);
+  color:var(--navy-deep);
+}
+.art-cta .wrap{padding:56px 0}
+.art-cta .inner{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.art-cta h3{font-family:var(--serif);font-weight:500;font-size:clamp(24px,3vw,34px);letter-spacing:-.01em;line-height:1.18;max-width:20ch}
+.art-cta h3 em{font-style:italic}
+.art-cta p{font-size:14.5px;font-weight:500;color:#3A2E10;margin-top:10px;max-width:44ch}
+.btn-navy{
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-decoration:none;
+  background:var(--navy-deep);color:var(--paper);padding:17px 32px;white-space:nowrap;
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+}
+.btn-navy:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(8,21,39,.65)}
+
+.disclaimer{max-width:760px;margin:44px auto 0;padding-top:26px;border-top:1px solid rgba(212,162,58,.16)}
+.disclaimer p{font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--cloud-dim);letter-spacing:.01em}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(212,162,58,.16);padding:34px 0 60px;background:var(--navy-deep);margin-top:70px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--cloud-dim)}
+footer a{color:var(--cloud-dim);text-decoration:none}
+footer a:hover{color:var(--gold)}
+
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ---------- mobile menu ---------- */
+.nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;margin-left:12px;background:none;border:1px solid var(--navy-line);color:var(--paper);cursor:pointer}
+.nav-toggle span,.nav-toggle span::before,.nav-toggle span::after{display:block;width:18px;height:1.5px;background:currentColor;transition:transform .25s,background .25s}
+.nav-toggle span{position:relative}
+.nav-toggle span::before,.nav-toggle span::after{content:"";position:absolute;left:0}
+.nav-toggle span::before{top:-6px}.nav-toggle span::after{top:6px}
+header.open .nav-toggle span{background:transparent}
+header.open .nav-toggle span::before{transform:translateY(6px) rotate(45deg)}
+header.open .nav-toggle span::after{transform:translateY(-6px) rotate(-45deg)}
+@media(max-width:1080px){
+  .nav-toggle{display:inline-flex}
+  .nav-cta{margin-left:auto}
+  header.open nav.links{display:flex;flex-direction:column;gap:0;position:absolute;top:76px;left:0;right:0;padding:6px 24px 18px;background:var(--navy-deep);border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a{padding:14px 0;font-size:16px;border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="../index.html#top">
+      <img src="../assets/ecoenergy_leaf_mark.svg" alt="EcoEnergy leaf mark">
+      <span class="logo-text">
+        <span class="logo-mark">Eco<b>Energy</b></span>
+        <span class="logo-sub">Consultancy</span>
+      </span>
+    </a>
+    <nav class="links" id="site-nav">
+      <a href="../index.html#services">Services</a>
+      <a href="../index.html#sectors">Sectors</a>
+      <a href="../index.html#approach">Approach</a>
+      <a href="../index.html#models">Engagement</a>
+      <a href="index.html">Insights</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span></span></button>
+    <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
+  </div>
+</header>
+<section class="art-hero"><div class="wrap">
+  <p class="kicker">Personal Data Protection Act 2010</p>
+  <h1>Privacy <em>notice.</em></h1>
+  <div class="art-meta"><span class="who">EcoEnergy Consultancy Sdn. Bhd.</span><span>Effective 1 November 2026</span></div>
+</div></section>
+<section class="article"><div class="wrap"><div class="prose">
+<p>This notice explains how EcoEnergy Consultancy Sdn. Bhd. ("EcoEnergy", "we") handles personal data you give us through this website, by email or by phone, as required by the Personal Data Protection Act 2010 (PDPA).</p>
+<h2>What we collect</h2>
+<ul><li>Your name, work email, phone number, company and role, when you give them to us.</li><li>Site and project details you choose to send (location, acreage, KML files, land title details).</li><li>The content of your messages to us.</li></ul>
+<p>We do not use advertising cookies or tracking pixels. If we add website analytics, this notice will be updated first.</p>
+<h2>Why we use it</h2>
+<ul><li>To reply to your enquiry and arrange the consult you asked for.</li><li>To prepare a proposal or carry out an engagement you request.</li><li>To keep records required by law (tax, accounting, contracts).</li></ul>
+<p>We do not sell your data or add you to a mailing list without your consent.</p>
+<h2>Who we share it with</h2>
+<p>Only service providers that help us run this website and our email: our form-handling service (FormSubmit), our email providers, and our website host (GitHub Pages). Some of them store data outside Malaysia; we use them only where the transfer is permitted under the PDPA. We share data with other parties only with your consent or where the law requires it.</p>
+<h2>How long we keep it</h2>
+<p>Enquiries that do not become engagements are deleted within 24 months of our last contact. Engagement records are kept for as long as the law requires.</p>
+<h2>Your rights</h2>
+<p>You may ask to see the personal data we hold about you, ask us to correct it, withdraw your consent, or ask us to stop processing it, subject to the PDPA. Write to <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a>. We will reply within 21 days.</p>
+<h2>Is it compulsory?</h2>
+<p>Giving us your name and email is needed for us to reply. Everything else is optional.</p>
+<h2>Contact</h2>
+<p>EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a> · +60 3 8744 6478</p>
+<hr>
+<h2>Notis privasi (Bahasa Malaysia)</h2>
+<p>EcoEnergy Consultancy Sdn. Bhd. mengumpul nama, e-mel kerja, nombor telefon, syarikat, jawatan dan butiran tapak yang anda berikan kepada kami melalui laman web ini, e-mel atau telefon. Data ini digunakan untuk menjawab pertanyaan anda, menyediakan cadangan atau melaksanakan perkhidmatan yang anda minta, dan untuk menyimpan rekod yang dikehendaki oleh undang-undang. Kami tidak menjual data anda.</p>
+<p>Data dikongsi hanya dengan penyedia perkhidmatan yang mengendalikan borang, e-mel dan hosting laman web kami, sebahagiannya di luar Malaysia, setakat yang dibenarkan oleh Akta Perlindungan Data Peribadi 2010. Pertanyaan yang tidak menjadi perkhidmatan dipadam dalam tempoh 24 bulan.</p>
+<p>Anda berhak meminta akses kepada data anda, membetulkannya, menarik balik persetujuan atau meminta kami berhenti memprosesnya. Hubungi <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a>. Nama dan e-mel diperlukan untuk kami menjawab; maklumat lain adalah pilihan. Jika terdapat percanggahan, versi Bahasa Inggeris terpakai.</p>
+</div></div></section>
+<footer>
+  <div class="wrap">
+    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
+    <p><a href="index.html">All insights</a> &nbsp;·&nbsp; <a href="../index.html#contact">Contact</a> &nbsp;·&nbsp; <a href="../privacy/">Privacy</a></p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var h=document.querySelector('header'),b=h&&h.querySelector('.nav-toggle');
+  if(!b)return;
+  function set(o){h.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false')}
+  b.addEventListener('click',function(){set(!h.classList.contains('open'))});
+  h.querySelectorAll('nav.links a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
+</body>
+</html>

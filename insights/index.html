@@ -180,6 +180,23 @@ footer a{color:var(--cloud-dim);text-decoration:none}
 footer a:hover{color:var(--gold)}
 
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ---------- mobile menu ---------- */
+.nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;margin-left:12px;background:none;border:1px solid var(--navy-line);color:var(--paper);cursor:pointer}
+.nav-toggle span,.nav-toggle span::before,.nav-toggle span::after{display:block;width:18px;height:1.5px;background:currentColor;transition:transform .25s,background .25s}
+.nav-toggle span{position:relative}
+.nav-toggle span::before,.nav-toggle span::after{content:"";position:absolute;left:0}
+.nav-toggle span::before{top:-6px}.nav-toggle span::after{top:6px}
+header.open .nav-toggle span{background:transparent}
+header.open .nav-toggle span::before{transform:translateY(6px) rotate(45deg)}
+header.open .nav-toggle span::after{transform:translateY(-6px) rotate(-45deg)}
+@media(max-width:1080px){
+  .nav-toggle{display:inline-flex}
+  .nav-cta{margin-left:auto}
+  header.open nav.links{display:flex;flex-direction:column;gap:0;position:absolute;top:76px;left:0;right:0;padding:6px 24px 18px;background:var(--navy-deep);border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a{padding:14px 0;font-size:16px;border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a::after{display:none}
+}
 </style>
 </head>
 <body>
@@ -193,7 +210,7 @@ footer a:hover{color:var(--gold)}
         <span class="logo-sub">Consultancy</span>
       </span>
     </a>
-    <nav class="links">
+    <nav class="links" id="site-nav">
       <a href="../index.html#services">Services</a>
       <a href="../index.html#sectors">Sectors</a>
       <a href="../index.html#approach">Approach</a>
@@ -202,6 +219,7 @@ footer a:hover{color:var(--gold)}
       <a href="https://tools.ecoconsultancy.services/?utm_source=website&amp;utm_campaign=terrain_tool&amp;utm_medium=nav">Terrain check</a>
       <a href="../index.html#contact">Contact</a>
     </nav>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span></span></button>
     <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
   </div>
 </header>
@@ -267,9 +285,19 @@ footer a:hover{color:var(--gold)}
 <footer>
   <div class="wrap">
     <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
-    <p><a href="../index.html#contact">Contact</a> &nbsp;·&nbsp; <a href="../index.html#top">Home</a></p>
+    <p><a href="../index.html#contact">Contact</a> &nbsp;·&nbsp; <a href="../index.html#top">Home</a> &nbsp;·&nbsp; <a href="../privacy/">Privacy</a></p>
   </div>
 </footer>
 
+<script>
+(function(){
+  var h=document.querySelector('header'),b=h&&h.querySelector('.nav-toggle');
+  if(!b)return;
+  function set(o){h.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false')}
+  b.addEventListener('click',function(){set(!h.classList.contains('open'))});
+  h.querySelectorAll('nav.links a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+})();
+</script>
 </body>
 </html>

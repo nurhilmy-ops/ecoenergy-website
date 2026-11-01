@@ -544,6 +544,8 @@ nav.links a:hover::after{width:100%}
 footer{border-top:1px solid rgba(212,162,58,.16);padding:34px 0 130px;background:var(--navy-deep)}
 footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
 footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--cloud-dim)}
+footer a{color:var(--cloud-dim);text-decoration:none}
+footer a:hover{color:var(--gold)}
 
 /* ---------- sticky book bar ---------- */
 .bookbar{
@@ -595,6 +597,23 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
   .js .reveal .scribble svg path{stroke-dashoffset:0!important}
   html{scroll-behavior:auto}
 }
+
+/* ---------- mobile menu ---------- */
+.nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;margin-left:12px;background:none;border:1px solid var(--navy-line);color:var(--paper);cursor:pointer}
+.nav-toggle span,.nav-toggle span::before,.nav-toggle span::after{display:block;width:18px;height:1.5px;background:currentColor;transition:transform .25s,background .25s}
+.nav-toggle span{position:relative}
+.nav-toggle span::before,.nav-toggle span::after{content:"";position:absolute;left:0}
+.nav-toggle span::before{top:-6px}.nav-toggle span::after{top:6px}
+header.open .nav-toggle span{background:transparent}
+header.open .nav-toggle span::before{transform:translateY(6px) rotate(45deg)}
+header.open .nav-toggle span::after{transform:translateY(-6px) rotate(-45deg)}
+@media(max-width:1080px){
+  .nav-toggle{display:inline-flex}
+  .nav-cta{margin-left:auto}
+  header.open nav.links{display:flex;flex-direction:column;gap:0;position:absolute;top:76px;left:0;right:0;padding:6px 24px 18px;background:var(--navy-deep);border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a{padding:14px 0;font-size:16px;border-bottom:1px solid var(--navy-line)}
+  header.open nav.links a::after{display:none}
+}
 </style>
 </head>
 <body>
@@ -610,7 +629,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
         <span class="logo-sub">Consultancy</span>
       </span>
     </a>
-    <nav class="links">
+    <nav class="links" id="site-nav">
       <a href="#services">Services</a>
       <a href="#sectors">Sectors</a>
       <a href="#approach">Approach</a>
@@ -620,6 +639,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       <a href="#faq">FAQ</a>
       <a href="#contact">Contact</a>
     </nav>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span></span></button>
     <a class="nav-cta" href="#contact">Start an engagement</a>
   </div>
 </header>
@@ -656,7 +676,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
         <div class="float-card">
           <div class="lbl">Scheme-Fit Consult</div>
           <p>30 minutes, no fee. Bring the KML — leave knowing which scheme fits and whether the site deserves a study.</p>
-          <a class="btn-gold" href="mailto:contact@ecoconsultancy.services?subject=Scheme-fit%20consult">Book a consult →<i>✦</i><i>✦</i></a>
+          <a class="btn-gold" href="consult/#consult">Book a consult →<i>✦</i><i>✦</i></a>
           <a class="alt" href="tel:+60387446478">or call +60 3 8744 6478</a>
         </div>
       </div>
@@ -672,10 +692,9 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
 
 <div class="ticker" aria-label="Malaysian renewable-energy schemes covered">
   <div class="wrap ticker-track">
-    <span class="ticker-item">NEM — Net Energy Metering</span>
+    <span class="ticker-item">Solar ATAP — Self-Generation</span>
     <span class="ticker-item">SELCO — Self-Consumption</span>
     <span class="ticker-item">LSS — Large Scale Solar</span>
-    <span class="ticker-item">CGPP — Corporate Green Power</span>
     <span class="ticker-item">CRESS — Corporate RE Supply</span>
     <span class="ticker-item">Corporate PPA</span>
   </div>
@@ -695,7 +714,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
         <span class="no">01</span>
         <h3>Scheme Selection &amp; Regulatory Strategy</h3>
         <p>Matching your site, load and capital structure to the right Malaysian programme — and defending that choice before the Energy Commission and offtakers.</p>
-        <div class="tags"><span>NEM</span><span>SELCO</span><span>LSS</span><span>CGPP</span><span>CRESS</span></div>
+        <div class="tags"><span>Solar ATAP</span><span>SELCO</span><span>LSS</span><span>CRESS</span><span>CPPA</span></div>
       </article>
       <article class="svc reveal">
         <span class="no">02</span>
@@ -712,7 +731,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       <article class="svc reveal">
         <span class="no">04</span>
         <h3>Project Finance &amp; Financial Modelling</h3>
-        <p>Bank-grade models covering DSCR, IRR and tariff solving, structured to Energy Commission preferences — including sukuk and Islamic financing structures for Malaysian capital markets.</p>
+        <p>Bank-grade models covering DSCR, IRR and tariff solving, built to the tests your lender will run — including sukuk and Islamic financing structures for Malaysian capital markets.</p>
         <div class="tags"><span>DSCR</span><span>IRR</span><span>Tariff</span><span>Sukuk</span></div>
       </article>
       <article class="svc reveal">
@@ -773,7 +792,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-3 6h6zM17 7l-3 6h6z"/></svg>Regulation as design input</h4><p>Scheme rules, licensing and eligibility windows shape the project from day one, not as an afterthought at submission.</p></div>
       </div>
       <div class="step">
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg>Bankability by construction</h4><p>Financial models solve for the best tariff within Energy Commission preferences, with every figure traceable to its source row.</p></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg>Bankability by construction</h4><p>Financial models solve for the tariff that meets your target equity IRR at bankable debt, with every figure traceable to its source row.</p></div>
       </div>
       <div class="step">
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V4M4 4h12l-2 4 2 4H4"/></svg>Honest boundaries</h4><p>Where jurisdictional certainty is lacking, we say so — and point you to the licensed professional who should confirm.</p></div>
@@ -798,7 +817,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Terrain &amp; KML desktop review</li>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>JMG geology &amp; flood screen</li>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Grid-proximity assessment</li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Scheme-fit matrix (NEM–CRESS)</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Scheme-fit matrix (Solar ATAP to CRESS)</li>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Red-flag register</li>
         </ul>
         <div class="t-fee">Fixed fee · scope by proposal</div>
@@ -844,7 +863,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       <p>Send the KML before the call and we'll table a one-page pre-screen — scheme options, obvious red flags, and whether a study is worth your money. No fee, no obligation.</p>
       <p class="offer-alt">Want to look at the ground first? <a href="https://tools.ecoconsultancy.services/?utm_source=website&amp;utm_campaign=terrain_tool&amp;utm_medium=offer">Run a free desktop terrain screening on your KML →</a></p>
     </div>
-    <a class="btn-navy" href="mailto:contact@ecoconsultancy.services?subject=Scheme-fit%20consult">Claim the consult →</a>
+    <a class="btn-navy" href="consult/#consult">Claim the consult →</a>
   </div>
 </section>
 
@@ -870,7 +889,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       </article>
       <article class="rec reveal">
         <span class="r-type">Project finance</span>
-        <h4>Bank-grade financial models built to Energy Commission preferences</h4>
+        <h4>Bank-grade financial models built to lender DSCR and equity-IRR tests</h4>
         <p>Tariff-solving models with DSCR and equity-IRR discipline, structured for conventional and sukuk-compatible financing.</p>
       </article>
     </div>
@@ -960,7 +979,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
         <div class="lbl">Web</div>
         <a href="https://www.ecoconsultancy.services">www.ecoconsultancy.services</a>
       </div>
-      <a class="btn-gold" href="mailto:contact@ecoconsultancy.services">Request a consultation →<i>✦</i><i>✦</i></a>
+      <a class="btn-gold" href="consult/#consult">Request a consultation →<i>✦</i><i>✦</i></a>
     </div>
   </div>
 </section>
@@ -968,24 +987,24 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
 <footer>
   <div class="wrap">
     <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
-    <p>Solar PV · BESS · Hydropower · Waste-to-Energy</p>
+    <p>Solar PV · BESS · Hydropower · Waste-to-Energy &nbsp;·&nbsp; <a href="privacy/">Privacy</a></p>
   </div>
 </footer>
 
 <div class="bookbar" id="bookbar">
   <div class="wrap">
     <div class="bb-copy">
-      <span class="bb-tag">Now scheduling Q3 2026</span>
+      <span class="bb-tag">Now scheduling</span>
       <span class="bb-txt">We take a limited number of feasibility engagements per quarter.</span>
     </div>
-    <a class="btn-gold" href="mailto:contact@ecoconsultancy.services?subject=Scheme-fit%20consult">Book a consult →</a>
+    <a class="btn-gold" href="consult/#consult">Book a consult →</a>
   </div>
 </div>
 
 <aside class="nudge" id="nudge" aria-live="polite">
   <button id="nudge-close" aria-label="Dismiss">×</button>
   <div class="n-lbl">Still weighing it up?</div>
-  <p>Start with the <a href="mailto:contact@ecoconsultancy.services?subject=Scheme-fit%20consult">free 30-minute scheme-fit consult</a> — send the KML, get a one-page pre-screen. No fee either way.</p>
+  <p>Start with the <a href="consult/#consult">free 30-minute scheme-fit consult</a> — send the KML, get a one-page pre-screen. No fee either way.</p>
 </aside>
 
 <script>
@@ -1060,6 +1079,16 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       nudge.classList.remove('show');
     });
   }
+})();
+</script>
+<script>
+(function(){
+  var h=document.querySelector('header'),b=h&&h.querySelector('.nav-toggle');
+  if(!b)return;
+  function set(o){h.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false')}
+  b.addEventListener('click',function(){set(!h.classList.contains('open'))});
+  h.querySelectorAll('nav.links a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
 })();
 </script>
 </body>
