@@ -45,9 +45,8 @@ through the AWS and Namecheap websites, and paste **one command** into a browser
      root user: add a passkey or an authenticator app.
 
    If you already have an AWS account that you manage in **AWS Settings** (settings.aws.com) or
-   sign in to with Google, GitHub or Apple, it cannot use Malaysia as it is: either create a new
-   account with the link above, or in AWS Settings choose **Billing → Upgrade** and then
-   **Activate advanced features**.
+   sign in to with Google, GitHub or Apple, it cannot use Malaysia as it is: follow
+   [A2](#a2-if-your-account-uses-aws-settings-the-new-simplified-experience) first.
 2. Sign in to the **AWS Management Console** (<https://console.aws.amazon.com>) as **Root user**,
    with the email and password from step 1.
 3. Click your **account name** at the top right, then **Account**.
@@ -60,6 +59,50 @@ through the AWS and Namecheap websites, and paste **one command** into a browser
    name at the top right → **Account** → **Profile** tab → **Supported opt-in Regions**. The
    Malaysia region must show **Opt-in status: Enabled** (if it shows **Start opt-in**, click it
    and follow the steps; it leads to the same **Enable** button as step 5).
+
+### A2. If your account uses AWS Settings (the new simplified experience)
+
+You can tell: the console's settings page is **AWS Settings** with only **Projects, Team,
+Billing and Support**, the home page shows your Free plan days and credits, **Account → AWS
+Regions** says *Page Not Found*, and Lightsail has no **Change AWS Region** link.
+
+Accounts made with AWS's new sign-up (launched September 2026) are tied to one region chosen
+from the contact-address country — **Malaysia addresses get Asia Pacific (Sydney)** — and
+"cannot modify" it or use opt-in regions such as Malaysia
+([AWS: Sign up for AWS](https://docs.aws.amazon.com/accounts/latest/reference/sign-up-for-aws.html),
+[AWS: project Regions](https://docs.aws.amazon.com/accounts/latest/reference/project-regions.html)).
+To reach Malaysia on such an account, all of the following are needed, in this order. **Steps 1
+and 2 cannot be undone.**
+
+1. **Upgrade to the Paid plan:** AWS Settings → **Billing** → **Upgrade** → **Get started**, add
+   the company card, **Upgrade account**
+   ([AWS](https://docs.aws.amazon.com/accounts/latest/reference/upgrade-account.html)). Credits you
+   already have keep paying your bills until they expire; you pay only what the credits do not
+   cover; the account no longer closes when the free period ends. (A commercial tool needs the
+   Paid plan anyway: a Free plan account is suspended after 6 months and its data deleted 90 days
+   later — [AWS Free Tier FAQ](https://aws.amazon.com/free/free-tier-faqs/).)
+2. **Activate advanced features:** AWS Settings → **Projects** → **Actions** → **Explore advanced
+   features** (or the **Activate advanced features** button) → enter a team name, choose and
+   verify the management-account email (`contact@ecoconsultancy.services`) → **Review and
+   complete activation** → **Activate**
+   ([AWS](https://docs.aws.amazon.com/accounts/latest/reference/activate-advanced-features.html)).
+   It is free and changes nothing that is already running, but: spend limits are removed and
+   cannot be set again (use a Budget alert instead, Part H), and you can no longer earn the extra
+   activity credits.
+3. **Allow the Malaysia region in the organization policy:** AWS Settings → **Projects** →
+   **Manage this organization** → **Manage policies** (opens AWS Organizations) → **Service control
+   policies** → the AWS-managed project policy → **Edit policy**. In the statement with
+   `"Sid": "RegionFloor"`, add `"ap-southeast-5"` to the list of allowed regions next to the
+   existing ones, then **Save changes**
+   ([AWS](https://docs.aws.amazon.com/accounts/latest/reference/scps-and-rcps-for-projects.html)).
+   If unsure, take a screenshot of the policy before changing it.
+4. **Enable the Malaysia region:** in the console's account menu → **Account** → **AWS Regions** →
+   **Asia Pacific (Malaysia)** → **Enable** (steps 3–7 of Part A), or in AWS Organizations →
+   **AWS accounts** → your project account → **Regions** → **Enable**.
+
+A Lightsail server already created in Sydney while the account was simplified is not moved by
+this: create the new one in Malaysia (Part B), then delete the Sydney instance **and** its static
+IP (both keep costing money until deleted).
 
 ---
 
