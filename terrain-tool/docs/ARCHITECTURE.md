@@ -55,8 +55,9 @@ terrain-tool/
     mailer.py            send_mail(settings, to, subject, text, html, headers) → outbox | smtp | ses
     jobs.py              enqueue/claim/process + worker thread + retention sweeps
     admin.py             admin router (HTTP Basic), CSV exports
-    manage.py            python -m app.manage withdraw EMAIL …: staff record a written withdrawal;
-                         test-email ADDRESS [--env-file F]: send a test email, explain failures
+    manage.py            python -m app.manage withdraw EMAIL … [--env-file F]: staff record a written
+                         withdrawal (never creates a database); test-email ADDRESS [--env-file F]:
+                         send a test email, explain failures
     terrain/             screening engine (ported from the kml-terrain-screening skill)
       __init__.py        public API: ScreeningError, SiteInput, validate_upload, run_screening
       kml.py             safe KML/KMZ parsing (defusedxml, zip limits, 2.2/2.1/no namespace)
@@ -74,7 +75,8 @@ terrain-tool/
     static/              css, logo, small JS (status polling)
     data/boundaries/     dosm_administrative_2_district.geojson: DOSM's 160 districts with their state
                          (github.com/dosm-malaysia/data-open, DOSM Open Data Licence)
-  deploy/aws-lightsail/  production kit: setup.sh (one-command Ubuntu install), terrain-tool (admin
+  deploy/aws-lightsail/  production kit: setup.sh (one-command Ubuntu 24.04 install and update, with
+                         rollback), constraints.txt (pinned library versions), terrain-tool (admin
                          helper), systemd units, Caddyfile, settings template; owner guide README.md
   tests/
   docs/ARCHITECTURE.md
@@ -287,7 +289,8 @@ the notice is not the place for blanket consent). Every row stores the exact wor
   newsletter subscription and no activity for `INACTIVE_PURGE_DAYS` (730) are erased the
   same way by the retention sweep.
 - Written withdrawals and s.43 objections that arrive by email are applied with
-  `python -m app.manage withdraw EMAIL [--followup] [--newsletter] --note TEXT`: it ends
+  `python -m app.manage withdraw EMAIL [--followup] [--newsletter] --note TEXT [--env-file F]`
+  (on the server: `sudo terrain-tool withdraw …`, which passes the server's settings file): it ends
   follow-up for every live report and/or unsubscribes, appending `withdrawn` rows that carry
   the note.
 - Admin: `/admin/leads` lists one row per live screening with Follow-up yes/no and a
@@ -311,9 +314,10 @@ then creates indexes on migrated columns. Add a new column to both `SCHEMA` and
 ## Security and privacy rules (apply everywhere)
 
 - Raw magic tokens and session ids are never stored — only sha256 hashes.
-- The client IP (rate-limit key) is the TCP peer, or with `TRUST_PROXY_HEADERS=true` the
+- The client IP is the TCP peer, or with `TRUST_PROXY_HEADERS=true` the
   `X-Forwarded-For` hop `TRUSTED_PROXY_HOPS` from the right (the hops to its left are
-  client-supplied), used only if it parses as an IP address.
+  client-supplied), used only if it parses as an IP address. Per-IP rate limits (event kinds
+  ending in `_ip`) count an IPv6 address by its /64 network, since one connection gets a whole /64.
 - Unsubscribe values are HMAC-signed for the subscriber id AND the email address, so a link
   made for an erased subscriber never acts on a later sign-up that reuses the id; any
   well-formed value gets the same neutral page.
@@ -368,8 +372,10 @@ then creates indexes on migrated columns. Add a new column to both `SCHEMA` and
   stand-in Python), `run_local.ps1` and `python -m app` (HOST/PORT/LOG_LEVEL from `.env`,
   BASE_URL following PORT, quiet Ctrl+C).
 - `tests/test_deploy_kit.py`: the Lightsail kit (bash syntax, shellcheck if installed, the
-  systemd units' user/hardening, the Caddyfile, the settings template has no fixed secrets,
-  `setup.sh` refuses non-root and other systems, README commands match real paths and branch).
+  systemd units' user/hardening, the Caddyfile (admin API on a socket), the settings template
+  has no fixed secrets, `constraints.txt` pins every requirement, `setup.sh` refuses non-root
+  and other systems (22.04 too), keeps the previous version for rollback, README commands match
+  real paths and branch).
 - `tests/test_integration.py`: the real app, engine and renderers together over HTTP,
   with a synthetic GeoTIFF through the `geotiff` DEM provider (offline). It also checks
   `result.json` against the key sets above.

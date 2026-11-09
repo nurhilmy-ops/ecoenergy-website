@@ -9,7 +9,10 @@ ask in writing that direct marketing stop (s.43). Record such a request with:
 ``--followup`` ends staff follow-up for every live report of that address (they drop out
 of the leads CSV at once); ``--newsletter`` unsubscribes the address. Each change is
 appended to the consent ledger with the note, like a withdrawal made in the tool.
-Run it from the terrain-tool folder with the same .env / environment as the app.
+Run it from the terrain-tool folder with the same .env / environment as the app. On the
+Lightsail server use ``sudo terrain-tool withdraw EMAIL ...``, which runs it as the app user
+with ``--env-file /etc/terrain-tool/terrain-tool.env`` (the server has no .env). It never
+creates a database: if none is found where the settings point, it stops with an error.
 
 Check that email delivery works with the production settings (the server's
 ``sudo terrain-tool test-email ADDRESS`` runs this as the app user):
@@ -24,6 +27,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from dataclasses import fields
 from pathlib import Path
 
 from .config import Settings, _load_dotenv, get_settings
@@ -116,18 +120,22 @@ def explain_mail_error(exc: BaseException, settings: Settings) -> str:
 
 def main(argv: list[str] | None = None, settings: Settings | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.manage", description=__doc__.split("\n\n")[0])
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--env-file", help="settings file to use, e.g. /etc/terrain-tool/terrain-tool.env "
+                                           "(its AWS keys are used too; real environment variables win)")
     sub = parser.add_subparsers(dest="command", required=True)
-    w = sub.add_parser("withdraw", help="record a written withdrawal of consent (PDPA s.38 / s.43)")
+    w = sub.add_parser("withdraw", parents=[common],
+                       help="record a written withdrawal of consent (PDPA s.38 / s.43)")
     w.add_argument("email")
     w.add_argument("--followup", action="store_true", help="stop staff follow-up for every live report")
     w.add_argument("--newsletter", action="store_true", help="unsubscribe from the newsletter")
     w.add_argument("--note", required=True,
                    help='how the request arrived, e.g. "Email from the subscriber, 12 Oct 2026"')
-    t = sub.add_parser("test-email", help="send a test email with the current mail settings")
+    t = sub.add_parser("test-email", parents=[common], help="send a test email with the current mail settings")
     t.add_argument("address")
-    t.add_argument("--env-file", help="settings file to use, e.g. /etc/terrain-tool/terrain-tool.env "
-                                       "(its AWS keys are used too; real environment variables win)")
     args = parser.parse_args(argv)
+    if args.env_file and not Path(args.env_file).is_file():
+        parser.error(f"settings file {args.env_file} not found")
     if args.command == "test-email":
         return run_test_email(args, settings)
     if not (args.followup or args.newsletter):
@@ -135,7 +143,13 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
     if not args.note.strip():
         parser.error("--note must describe the request")
 
-    settings = settings or get_settings()
+    settings = settings or load_settings(args.env_file)
+    if not settings.db_path.is_file():
+        # Never create an empty database here: that would only hide a wrong DATA_DIR / --env-file.
+        print(f"No database at {settings.db_path}: nothing changed. Check DATA_DIR, or pass the "
+              "server's settings with --env-file (on the server: sudo terrain-tool withdraw ...).",
+              file=sys.stderr)
+        return 2
     init_db(settings.db_path)
     changed = withdraw(settings, args.email, followup=args.followup, newsletter=args.newsletter,
                        note=args.note)
@@ -149,15 +163,23 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
     return 0
 
 
+def load_settings(env_file: str | None) -> Settings:
+    """Settings as the app sees them: from ``env_file`` if given (else .env), real environment
+    variables winning."""
+    if env_file is None:
+        return get_settings()
+    # The server runs the app with this file as its environment (systemd EnvironmentFile), so
+    # its variables that are not settings (the AWS keys for boto3) must reach this process too.
+    settings_keys = {f.name.upper() for f in fields(Settings)}
+    for key, value in _load_dotenv(Path(env_file)).items():
+        if key not in settings_keys:
+            os.environ.setdefault(key, value)
+    return Settings.from_env(env_file=Path(env_file))
+
+
 def run_test_email(args: argparse.Namespace, settings: Settings | None = None) -> int:
     if settings is None:
-        env_file = Path(args.env_file) if args.env_file else None
-        if env_file is not None:
-            # The server runs the app with this file as its environment (systemd EnvironmentFile),
-            # so AWS keys in it must reach boto3 the same way.
-            for key, value in _load_dotenv(env_file).items():
-                os.environ.setdefault(key, value)
-        settings = Settings.from_env(env_file=env_file)
+        settings = load_settings(args.env_file)
     sender = settings.mail_from
     backend = {"ses": f"Amazon SES ({settings.ses_region})", "smtp": f"SMTP {settings.smtp_host}:{settings.smtp_port}",
                "outbox": "the development outbox"}.get(settings.mail_backend, settings.mail_backend)

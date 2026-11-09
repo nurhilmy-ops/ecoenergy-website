@@ -28,7 +28,11 @@ EcoEnergy terrain screening tool: server commands (run each with sudo)
                                            to another branch or tag, e.g. --ref main after the merge.
   sudo terrain-tool admin-password         Show the user name and password for the /admin pages.
   sudo terrain-tool set-aws-keys           Enter the access keys of the IAM user terrain-tool-ses.
+  sudo terrain-tool set-turnstile-keys     Enter the Cloudflare Turnstile keys (the human check).
   sudo terrain-tool test-email ADDRESS     Send a test email with the real settings.
+  sudo terrain-tool withdraw EMAIL [--followup] [--newsletter] --note TEXT
+                                           Record a withdrawal of consent received in writing
+                                           (PDPA s.38 / s.43), e.g. --note "Email of 12 Oct 2026".
   sudo terrain-tool backup-now             Back up the database now (it also happens every night).
   sudo terrain-tool help                   This list.
 EOF
@@ -120,6 +124,10 @@ cmd_status() {
   printf 'EcoEnergy terrain screening tool on %s\n\n' "$(hostname)"
   line "Address:" "https://$(domain)   (admin: https://$(domain)/admin)"
   line "Version:" "$ref (commit $commit)"
+  if [[ $ref != main && ! $ref =~ ^v[0-9] ]]; then
+    line "" "WARNING: this server follows the branch '$ref', not main: anything pushed to that"
+    line "" "branch is installed by the next update. Once it is merged: sudo terrain-tool update --ref main"
+  fi
   for unit in terrain-tool caddy terrain-tool-backup.timer; do
     state=$(systemctl is-active "$unit" 2>/dev/null || true)
     case $unit in
@@ -155,7 +163,13 @@ cmd_status() {
   else
     line "Email:" "$(env_value MAIL_BACKEND) (from $(env_value MAIL_FROM))"
   fi
-  [[ -f /var/run/reboot-required ]] && line "Restart:" "an update asks for a restart; it happens at 03:30 Malaysia time (or now: sudo reboot)"
+  if [[ -n $(env_value TURNSTILE_SITE_KEY) && -n $(env_value TURNSTILE_SECRET_KEY) ]]; then
+    line "Human check:" "on (Cloudflare Turnstile)"
+  else
+    line "Human check:" "OFF: turn it on before asking AWS for production access (README Part E8):"
+    line "" "sudo terrain-tool set-turnstile-keys"
+  fi
+  [[ -f /var/run/reboot-required ]] && line "Restart:" "an update asks for a restart; it happens at 04:00 Malaysia time (or now: sudo reboot)"
   return 0
 }
 
@@ -182,6 +196,7 @@ cmd_update() {
   local ref
   ref=$(head -n 1 "$REF_FILE" 2>/dev/null || true)
   ref=${ref:-main}
+  local stored=$ref
   while (($#)); do
     case $1 in
       --ref) [[ -n ${2:-} ]] || die "--ref needs a branch or tag name, e.g. --ref main"; ref=$2; shift 2 ;;
@@ -191,6 +206,10 @@ cmd_update() {
   done
   [[ -f $KIT_DIR/setup.sh ]] || die "The setup script is missing ($KIT_DIR/setup.sh). Run the setup command again:
   curl -fsSL $RAW_URL/$ref/terrain-tool/deploy/aws-lightsail/setup.sh | sudo TOOL_REF=$ref bash"
+  if [[ $ref == "$stored" && $ref == claude/* ]]; then
+    echo "Note: '$ref' is the pull request's working branch. Once it is merged into main, use:"
+    echo "  sudo terrain-tool update --ref main"
+  fi
   echo "Updating to '$ref' ..."
   TOOL_REF=$ref bash "$KIT_DIR/setup.sh" </dev/null
 }
@@ -226,6 +245,32 @@ EOF
   echo "Done. Now send yourself a test email: sudo terrain-tool test-email you@example.com"
 }
 
+cmd_set_turnstile_keys() {
+  need_root set-turnstile-keys
+  local site secret
+  cat <<'EOF'
+Enter the two keys of your Cloudflare Turnstile widget (Cloudflare dashboard > Turnstile >
+your widget for tools.ecoconsultancy.services; README Part E8). Both usually start with 0x.
+To paste in the Lightsail browser window: copy it, click the clipboard icon at the bottom
+right, paste into the box there, then right-click in this window.
+EOF
+  read -r -p "Site key: " site
+  site=${site//[[:space:]]/}
+  [[ $site =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] || die "That does not look like a Turnstile site key (0x followed by letters and digits). Nothing was changed."
+  read -r -s -p "Secret key (it stays hidden while you paste): " secret
+  echo
+  secret=${secret//[[:space:]]/}
+  [[ $secret =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] || die "That does not look like a Turnstile secret key (0x followed by letters and digits). Nothing was changed."
+  [[ $secret != "$site" ]] || die "The secret key is the same as the site key: copy the Secret key from Cloudflare. Nothing was changed."
+  set_env_value TURNSTILE_SITE_KEY "$site"
+  set_env_value TURNSTILE_SECRET_KEY "$secret"
+  echo "Saved in $ENV_FILE (readable only by the tool). Restarting the tool ..."
+  systemctl restart terrain-tool
+  wait_healthy || die "The tool did not come back. See: sudo terrain-tool logs"
+  echo "Done. Open https://$(domain) in a private browser window: the sign-up form now shows the"
+  echo "Cloudflare check. Ask for a sign-in link once to be sure it still works."
+}
+
 cmd_test_email() {
   need_root test-email
   local address=${1:-}
@@ -234,6 +279,15 @@ cmd_test_email() {
   cd "$APP_DIR"
   # As the app user, with the same settings file the service uses.
   runuser -u terrain -- "$VENV/bin/python" -m app.manage test-email --env-file "$ENV_FILE" "$address"
+}
+
+cmd_withdraw() {
+  need_root withdraw
+  (($#)) || die 'Give the address and what to stop, e.g.:
+  sudo terrain-tool withdraw someone@example.com --followup --newsletter --note "Email of 12 Oct 2026"'
+  cd "$APP_DIR"
+  # As the app user, against the server's own database (the settings file says where it is).
+  runuser -u terrain -- "$VENV/bin/python" -m app.manage withdraw --env-file "$ENV_FILE" "$@"
 }
 
 cmd_backup_now() {
@@ -260,7 +314,9 @@ main() {
     update) cmd_update "$@" ;;
     admin-password) cmd_admin_password ;;
     set-aws-keys) cmd_set_aws_keys ;;
+    set-turnstile-keys) cmd_set_turnstile_keys ;;
     test-email) cmd_test_email "$@" ;;
+    withdraw) cmd_withdraw "$@" ;;
     backup-now) cmd_backup_now ;;
     help | -h | --help) usage ;;
     *) usage >&2; die "Unknown command '$cmd'." ;;

@@ -5,6 +5,8 @@ import base64
 import json
 import re
 
+import pytest
+
 from app import jobs
 from app.db import db
 
@@ -383,7 +385,7 @@ def test_privacy_page(client, settings):
     assert resp.status_code == 200
     html = resp.text
     assert "Draft for legal review" in html
-    assert settings.notice_version == "2026-11-draft-4" and settings.notice_version in html
+    assert settings.notice_version == "2026-11-draft-5" and settings.notice_version in html
     # Copernicus requests are described as they are: tile name plus byte ranges of a ~30 km block.
     assert "only the 1° map tile names are requested" not in html
     assert "a block of roughly 30 km" in html and "blok kira-kira 30 km" in html
@@ -411,6 +413,13 @@ def test_privacy_page(client, settings):
         # Retention.
         f"{settings.retention_days} days", f"after {settings.unverified_purge_days} days", "one-way hash",
         "reg 3(5)",
+        # Backups keep deleted data for a while (deploy/aws-lightsail: 14 daily DB copies, 7 snapshots).
+        "deletes them from the tool immediately (for backups, see below)",
+        "copies of the tool's database for 14 days", "snapshots of the whole server for 7 days",
+        "site files and reports for up to 7 days", "for up to about 3 weeks",
+        "[Backup retention wording to be confirmed by legal review]",
+        "memadamnya daripada alat ini serta-merta", "pangkalan data alat ini selama 14 hari",
+        "sehingga kira-kira 3 minggu",
         # Rights.
         "21 days", "14 days", "sections 31 and 35", "section 38", "section 43)", "section 43A",
         # Age.
@@ -745,6 +754,48 @@ def test_manage_withdraw_records_written_withdrawal(flow, query, settings, clien
                         "--note", "again"], settings=settings) == 0
     assert len(query("SELECT * FROM consents WHERE action = 'withdrawn'")) == 3
     assert manage.main(["withdraw", "nobody@example.com", "--followup", "--note", "x"], settings=settings) == 1
+
+
+def test_manage_withdraw_uses_the_server_settings_file_and_never_creates_a_database(
+        flow, query, settings, tmp_path, monkeypatch, capsys):
+    """On the server there is no .env: `sudo terrain-tool withdraw` passes the settings file.
+    Without the right settings the command must fail loudly, not report "No account" from a
+    fresh empty database."""
+    from app import manage
+
+    flow.login("server@example.com", newsletter=True)
+    flow.upload_job(followup="yes")
+    env_file = tmp_path / "terrain-tool.env"
+    env_file.write_text(f"APP_ENV=production\nSECRET_KEY={'s' * 64}\nMAIL_BACKEND=ses\n"
+                        f"DATA_DIR={settings.data_dir}\n", encoding="utf-8")
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    monkeypatch.delenv("APP_ENV", raising=False)
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("MAIL_BACKEND", raising=False)
+    # --env-file works for withdraw, before or after the other arguments.
+    assert manage.main(["withdraw", "--env-file", str(env_file), "server@example.com", "--followup",
+                        "--note", "Letter of 1 Nov 2026"]) == 0
+    assert "1 report(s)" in capsys.readouterr().out
+    assert query("SELECT followup_consent FROM jobs")[0]["followup_consent"] == 0
+    assert manage.main(["withdraw", "server@example.com", "--newsletter", "--note", "Letter of 1 Nov 2026",
+                        "--env-file", str(env_file)]) == 0
+    assert query("SELECT newsletter_status FROM subscribers")[0]["newsletter_status"] == "unsubscribed"
+
+    # Settings that point at an empty folder: an error, and no database is created there.
+    empty = tmp_path / "elsewhere"
+    wrong = tmp_path / "wrong.env"
+    wrong.write_text(f"APP_ENV=production\nSECRET_KEY={'s' * 64}\nMAIL_BACKEND=ses\nDATA_DIR={empty}\n",
+                     encoding="utf-8")
+    assert manage.main(["withdraw", "server@example.com", "--followup", "--note", "x",
+                        "--env-file", str(wrong)]) == 2
+    err = capsys.readouterr().err
+    assert "No database at" in err and "No account" not in err
+    assert not (empty / "app.db").exists()
+    # A settings file that does not exist is refused before anything else.
+    with pytest.raises(SystemExit):
+        manage.main(["withdraw", "server@example.com", "--followup", "--note", "x",
+                     "--env-file", str(tmp_path / "missing.env")])
+    assert "not found" in capsys.readouterr().err
 
 
 def test_worker_inline_false_is_logged_as_a_warning(app_factory, caplog):

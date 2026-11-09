@@ -144,7 +144,14 @@ def _footer(fig: Figure, stamp: str) -> None:
     confined to the area above the stamp's measured height, so axis labels never overlap it."""
     text = fig.text(0.01, 0.008, _mpl(stamp), fontsize=FOOTER_FONT_PT, color=INK_MUTED,
                     ha="left", va="bottom", linespacing=1.35)
-    top = text.get_window_extent(fig.canvas.get_renderer()).y1 / fig.bbox.height
+    renderer = fig.canvas.get_renderer()
+    box = text.get_window_extent(renderer)
+    room = fig.bbox.width * 0.99 - box.x0
+    if box.width > room:
+        # A wider fallback font (DejaVu Sans where Inter is not installed, e.g. on a server)
+        # must not push the end of the stamp off the narrowest figure: shrink it to fit.
+        text.set_fontsize(FOOTER_FONT_PT * room / box.width)
+    top = text.get_window_extent(renderer).y1 / fig.bbox.height
     frac = min(0.2, top + FOOTER_GAP_IN / fig.get_figheight())
     fig.get_layout_engine().set(rect=(0, frac, 1, 1 - frac))
 

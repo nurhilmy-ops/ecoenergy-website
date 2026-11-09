@@ -950,20 +950,24 @@ def test_figure_stamp():
     assert "\n" not in srtm and "11–22 February 2000" in srtm
 
 
-def test_figure_footer_fits_on_the_narrowest_figure():
-    """Both stamp lines fit inside a 7.5 in wide figure at the footer font size."""
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from matplotlib.figure import Figure
+@pytest.mark.parametrize("family", ["DejaVu Sans", None], ids=["dejavu", "configured-font"])
+def test_figure_footer_fits_on_the_narrowest_figure(family):
+    """Both stamp lines fit inside a 7.5 in wide figure, with the configured font (Inter where a
+    matplotlibrc asks for it) and with matplotlib's own DejaVu Sans, the font a server without
+    Inter uses: there the footer is shrunk to fit rather than cut off at the right edge."""
+    import matplotlib
 
     from app.terrain import figures
 
     stamp = flags.figure_stamp({"provider": "copernicus", "name": dem.COPERNICUS_NAME,
                                 "epoch": dem.COPERNICUS_EPOCH})
-    fig = Figure(figsize=(7.5, 5.9), dpi=figures.DPI)
-    canvas = FigureCanvasAgg(fig)
-    for line in stamp.split("\n"):
-        t = fig.text(0.01, 0.0, line, fontsize=figures.FOOTER_FONT_PT)
-        assert t.get_window_extent(canvas.get_renderer()).x1 < fig.bbox.width
+    with matplotlib.rc_context({"font.family": family} if family else {}):
+        fig = figures._new_figure((7.5, 5.9))
+        figures._footer(fig, stamp)
+        (text,) = fig.texts
+        box = text.get_window_extent(fig.canvas.get_renderer())
+        assert box.x1 < fig.bbox.width
+        assert text.get_fontsize() >= figures.FOOTER_FONT_PT * 0.85        # still readable
 
 
 def test_summary_md_prints_dem_disclaimer(tmp_path):

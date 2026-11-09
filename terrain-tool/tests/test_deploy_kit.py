@@ -123,6 +123,12 @@ def test_setup_refuses_other_systems(tmp_path):
     result = run(["bash", str(SETUP)], capture_output=True, text=True,
                             env={**os.environ, "TT_OS_RELEASE": str(old)}, timeout=30)
     assert result.returncode == 1 and "Ubuntu 20.04.6 LTS" in result.stderr
+    # 22.04 too: its python3.11 is a pre-release build from universe without regular security fixes.
+    jammy = fake_os_release(tmp_path, "ubuntu", "22.04", "Ubuntu 22.04.5 LTS")
+    result = run(["bash", str(SETUP)], capture_output=True, text=True,
+                            env={**os.environ, "TT_OS_RELEASE": str(jammy)}, timeout=30)
+    assert result.returncode == 1 and "Ubuntu 22.04.5 LTS" in result.stderr
+    assert "PYTHON_PACKAGES=(python3 python3-venv)" in text(SETUP) and "python3.11-venv" not in text(SETUP)
 
 
 @needs_bash
@@ -152,7 +158,8 @@ def test_helper_needs_root_except_for_help():
                             env=env, cwd="/", timeout=30)
     assert result.returncode == 0
     for command in ("status", "logs [-f]", "restart", "update [--ref NAME]", "admin-password",
-                    "set-aws-keys", "test-email ADDRESS", "backup-now", "help"):
+                    "set-aws-keys", "set-turnstile-keys", "test-email ADDRESS",
+                    "withdraw EMAIL [--followup] [--newsletter] --note TEXT", "backup-now", "help"):
         assert f"sudo terrain-tool {command}" in result.stdout, command
     result = run([*prefix, "bash", str(HELPER), "frobnicate"], capture_output=True, text=True,
                             env=env, cwd="/", timeout=30)
@@ -190,8 +197,9 @@ def test_setup_sources_and_secrets():
     assert "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt" in setup
     assert "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" in setup
     assert "debian-keyring" in setup and "debian-archive-keyring" in setup and "apt-transport-https" in setup
-    # pip prefers wheels and adds boto3 for MAIL_BACKEND=ses.
-    assert '--prefer-binary \\\n    -r "$APP_DIR/requirements.txt" boto3' in setup
+    # pip installs the pinned versions (and moves an existing environment to them), plus boto3.
+    assert ('--prefer-binary --upgrade \\\n    -c "$KIT_DIR/constraints.txt" -r "$APP_DIR/requirements.txt" boto3'
+            in setup)
     # Secrets are generated on the server (never fixed), long enough, and created only once.
     assert "random_token 64" in setup and "random_token 24" in setup
     assert "secrets.choice" in setup
@@ -204,6 +212,64 @@ def test_setup_sources_and_secrets():
     for setting in ("DEBIAN_FRONTEND=noninteractive", "NEEDRESTART_MODE=a", "GIT_TERMINAL_PROMPT=0",
                     "DPkg::Lock::Timeout=600"):
         assert setting in setup, setting
+    # The admin password never goes to the screen output, which is also the setup log.
+    assert "env_value ADMIN_PASSWORD" not in setup and "sudo terrain-tool admin-password" in setup
+
+
+def test_setup_survives_locks_and_a_closed_window():
+    setup = text(SETUP)
+    # `apt-get update` does not wait for the package-list lock: wait for Ubuntu's own jobs, then retry.
+    assert "systemctl is-active --quiet apt-daily.service apt-daily-upgrade.service" in setup
+    assert "[[ $1 == update ]] && tail -n \"+$((start + 1))\" \"$LOG\" | grep -q 'Could not get lock'" in setup
+    # An install cut off earlier is finished first (else every apt-get install refuses to run).
+    assert "dpkg --force-confdef --force-confold --configure -a" in setup
+    assert setup.index("dpkg --force-confdef") < setup.index("  apt_get update\n")
+    # A lost terminal (SIGHUP) does not stop it; output also goes to the log through tee.
+    assert "trap '' HUP" in setup
+    assert "exec > >(tee -a \"$LOG\" --output-error=warn) 2>&1" in setup
+    assert setup.index("trap '' HUP") < setup.index("exec > >(tee")
+
+
+def test_setup_stops_the_tool_while_updating_and_puts_back_the_previous_version():
+    setup = text(SETUP)
+    fetch = setup[setup.index("fetch_source() {"):setup.index("\n}\n", setup.index("fetch_source() {"))]
+    # Before switching the code: remember the running commit and stop the service.
+    assert fetch.index('update-ref "$PREV_GIT_REF" "$current"') < fetch.index("checkout --quiet --force --detach FETCH_HEAD")
+    assert fetch.index("systemctl stop terrain-tool.service") < fetch.index("checkout --quiet --force --detach FETCH_HEAD")
+    assert 'if [[ -n $current && $current != "$new" ]]; then' in fetch     # only when the code changes
+    # Every failure path restores it; success forgets it.
+    die = setup[setup.index("die() {"):setup.index("}", setup.index("die() {"))]
+    on_error = setup[setup.index("on_error() {"):setup.index("\n}\n", setup.index("on_error() {"))]
+    assert "restore_previous" in die and "restore_previous" in on_error
+    restore = setup[setup.index("restore_previous() {"):setup.index("\n}\n", setup.index("restore_previous() {"))]
+    for step in ('checkout --quiet --force --detach "$commit"', '-c "$KIT_DIR/constraints.txt"',
+                 "install -m 0644 \"$KIT_DIR/terrain-tool.service\"", "systemctl restart terrain-tool.service",
+                 "health_ok 90"):
+        assert step in restore, step
+    assert "((CAN_RESTORE)) && [[ -f $PREV_FILE ]] || return 0" in restore   # not before the lock is held
+    assert setup.index("start_app\n  forget_previous\n") > setup.index("install_caddy\n")
+    assert "The previous settings are unchanged" not in setup
+
+
+def test_constraints_pin_every_requirement_to_a_matching_version():
+    from packaging.requirements import Requirement
+    from packaging.utils import canonicalize_name
+
+    pins = {}
+    for line in text(KIT / "constraints.txt").splitlines():
+        if line.strip() and not line.startswith("#"):
+            name, _, version = line.partition("==")
+            assert version and "<" not in version and ">" not in version, line
+            pins[canonicalize_name(name)] = version.strip()
+    wanted = [Requirement(line.split("#")[0].strip()) for line in text(ROOT / "requirements.txt").splitlines()
+              if line.split("#")[0].strip()] + [Requirement("boto3")]
+    for req in wanted:
+        name = canonicalize_name(req.name)
+        assert name in pins, f"{req.name} is not pinned in constraints.txt"
+        assert req.specifier.contains(pins[name], prereleases=True), (req, pins[name])
+    # The packages the app imports at start-up come with their own pins (not left to chance).
+    for dep in ("starlette", "h11", "botocore", "pydantic", "pillow", "urllib3", "certifi"):
+        assert dep in pins, dep
 
 
 # ----------------------------------------------------------------------------
@@ -240,7 +306,22 @@ def test_backup_units():
     assert service["ReadWritePaths"] == ["/var/lib/terrain-tool"] and service["ProtectSystem"] == ["strict"]
     assert timer["OnCalendar"] == ["*-*-* 02:30:00 Asia/Kuala_Lumpur"] and timer["Persistent"] == ["true"]
     journald = unit(KIT / "journald-terrain-tool.conf")
-    assert journald["SystemMaxUse"] == ["500M"]
+    assert journald["SystemMaxUse"] == ["500M"] and journald["MaxRetentionSec"] == ["30day"]
+    # Daily journal files, so whole files older than 30 days can go; nothing copied to /var/log/syslog.
+    assert journald["MaxFileSec"] == ["1day"] and journald["ForwardToSyslog"] == ["no"]
+
+
+def test_unattended_upgrades_cover_caddy_and_reboot_after_the_snapshot():
+    conf = text(KIT / "unattended-upgrades.conf")
+    assert 'Unattended-Upgrade::Origins-Pattern:: "origin=cloudsmith/caddy/stable";' in conf
+    assert 'Unattended-Upgrade::Automatic-Reboot "true";' in conf
+    # Snapshot at 19:00 UTC can take until 19:45 (Lightsail): reboot at 20:00 UTC = 04:00 Malaysia.
+    assert 'Unattended-Upgrade::Automatic-Reboot-Time "20:00";' in conf
+    timer = unit(KIT / "terrain-tool-backup.timer")
+    assert timer["OnCalendar"] == ["*-*-* 02:30:00 Asia/Kuala_Lumpur"]
+    for path in (SETUP, HELPER, KIT / "README.md"):
+        assert "03:30" not in text(path), path
+        assert "04:00 Malaysia time" in text(path) or "**04:00 Malaysia" in text(path), path
 
 
 def load_backup_module(monkeypatch):
@@ -287,7 +368,8 @@ def test_backup_script_copies_a_live_wal_database_and_keeps_14(tmp_path, monkeyp
 def test_caddyfile_template():
     caddy = text(KIT / "Caddyfile")
     body = "\n".join(line for line in caddy.splitlines() if not line.strip().startswith("#"))
-    assert re.search(r"^\{\n\temail contact@ecoconsultancy\.services\n\}", body, re.MULTILINE)
+    assert re.search(r"^\{\n\temail contact@ecoconsultancy\.services\n\tadmin unix//var/lib/caddy/admin\.sock\n\}",
+                     body, re.MULTILINE)
     assert re.search(r"^@TOOL_DOMAIN@ \{$", body, re.MULTILINE)          # replaced by setup.sh
     for directive in ("encode gzip", "max_size 6MB", "reverse_proxy 127.0.0.1:8000",
                       '?Strict-Transport-Security "max-age=31536000"', "-Server"):
@@ -303,6 +385,9 @@ def test_caddyfile_template():
     assert '${template//@TOOL_DOMAIN@/$TOOL_DOMAIN}' in setup
     assert "grep -q '@TOOL_DOMAIN@' \"$new\" && die" in setup
     assert 'caddy validate --adapter caddyfile --config "$new"' in setup
+    # The admin API moved from localhost:2019 to a socket: only a restart applies that.
+    caddy_step = setup[setup.index("install_caddy() {"):setup.index("\n}\n", setup.index("install_caddy() {"))]
+    assert "systemctl restart caddy" in caddy_step and "reload-or-restart caddy" not in caddy_step
 
 
 def test_caddyfile_validates_with_caddy(tmp_path):
@@ -384,6 +469,9 @@ def test_readme_commands_point_at_real_files_and_the_right_branch():
     used = set(re.findall(r"sudo terrain-tool ([a-z][a-z-]*)", guide))
     assert used and used <= helper_commands | {"help"}, used - helper_commands
     assert "update --ref main" in guide
+    # The status command warns while the server follows a working branch rather than main.
+    assert "WARNING: this server follows the branch" in text(HELPER)
+    assert "sudo terrain-tool update --ref main" in text(SETUP)        # hint when a branch is gone
     # The maintainer table lists every file of the kit, and nothing else.
     table = guide[guide.index("## For the maintainer"):]
     listed = {name for cell in re.findall(r"^\| (`[^|]+`) \|", table, re.MULTILINE)
@@ -393,6 +481,28 @@ def test_readme_commands_point_at_real_files_and_the_right_branch():
     for link in re.findall(r"\]\((\.\./\.\./README\.md)[^)]*\)", guide):
         assert (KIT / link).resolve().is_file()
     assert "(deploy/aws-lightsail/README.md)" in main_readme
+
+
+def test_readme_owner_steps_in_a_safe_order():
+    guide = text(KIT / "README.md")
+    # Full sign-up (the simplified one cannot use opt-in regions such as Malaysia), paid plan.
+    assert "https://signin.aws.amazon.com/signup?request_type=register" in guide
+    assert "**Paid account plan**" in guide and "Supported opt-in Regions" in guide
+    assert "may suggest enabling the Malaysia region" not in guide
+    # No HTTPS on IPv6 (there is no AAAA record; it would only help dodge per-address limits).
+    assert "do **not** add HTTPS there" in guide
+    assert "IPv6 Firewall** section, add **HTTPS**" not in guide
+    # Malaysia's DKIM targets, and Turnstile before production access, which comes before the merge.
+    assert ".dkim.ap-southeast-5.amazonses.com" in guide and "abcd1234efgh.dkim.amazonses.com" not in guide
+    assert guide.index("### E8. Turn on the human check") < guide.index("### E9. Ask AWS for production access")
+    part_g = guide[guide.index("## Part G"):guide.index("## Part H")]
+    assert part_g.index("Wait for SES production access") < part_g.index("Merge the pull request")
+    assert "Ready for review" in part_g and "pull/11" in part_g
+    assert f"{RAW}/{PR_BRANCH}/terrain-tool/tests/fixtures/hilly_site_pahang.kml" in part_g
+    assert (ROOT / "tests" / "fixtures" / "hilly_site_pahang.kml").is_file()
+    # Backups: the honest figure (snapshots also hold the database copies).
+    assert "gone from these backups after 14 days" not in guide and "about **3 weeks**" in guide
+    assert "8% service tax" in guide
 
 
 def test_readme_iam_policy_allows_only_sending_from_the_tool_address():

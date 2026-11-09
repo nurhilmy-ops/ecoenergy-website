@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # EcoEnergy terrain screening tool: one-command server setup for Amazon Lightsail
-# (Ubuntu 24.04 LTS or 22.04 LTS, "OS Only" blueprint). Paste into the Lightsail browser SSH window:
+# (Ubuntu 24.04 LTS, "OS Only" blueprint). Paste into the Lightsail browser SSH window:
 #
 #   curl -fsSL https://raw.githubusercontent.com/nurhilmy-ops/ecoenergy-website/main/terrain-tool/deploy/aws-lightsail/setup.sh | sudo bash
 #
@@ -17,11 +17,15 @@
 #
 # Running it again is safe and is how the server is updated (`sudo terrain-tool update` does it):
 # it fetches the code again, installs what changed and restarts the tool. Settings and secrets
-# in /etc/terrain-tool/terrain-tool.env are kept; only missing settings are added.
+# in /etc/terrain-tool/terrain-tool.env are kept; only missing settings are added. When the code
+# changes, the tool is stopped for the few minutes of the update, and if the update fails the
+# previous version is put back and started again. A closed browser window does not stop it: the
+# whole output is also written to /var/log/terrain-tool-setup.log.
 #
 # What it does: Ubuntu packages and automatic security updates; 2 GB swap if there is none; a
 # system user "terrain"; the code in /opt/terrain-tool/src (only the terrain-tool folder of the
-# repository); a Python environment in /opt/terrain-tool/venv; data in /var/lib/terrain-tool;
+# repository); a Python environment in /opt/terrain-tool/venv with the library versions pinned in
+# constraints.txt; data in /var/lib/terrain-tool;
 # the settings file with fresh random secrets; the systemd service; Caddy (HTTPS) from Caddy's
 # official apt repository; a nightly database backup (14 days kept); a size cap on the system
 # log; then it starts everything, waits until the tool answers and prints a summary.
@@ -42,12 +46,14 @@ readonly DATA_DIR=/var/lib/terrain-tool
 readonly ETC_DIR=/etc/terrain-tool
 readonly ENV_FILE=$ETC_DIR/terrain-tool.env
 readonly REF_FILE=$ETC_DIR/ref
+readonly PREV_FILE=$ETC_DIR/previous-version          # commit + ref to put back if an update fails
+readonly PREV_GIT_REF=refs/terrain-tool/previous      # keeps that commit in the (shallow) clone
 readonly SWAPFILE=/swapfile
 readonly SWAP_MB=2048
 readonly HEALTH_URL=http://127.0.0.1:8000/healthz
 readonly CADDY_KEYRING=/usr/share/keyrings/caddy-stable-archive-keyring.gpg
 readonly CADDY_LIST=/etc/apt/sources.list.d/caddy-stable.list
-readonly LOG=/var/log/terrain-tool-setup.log      # full output of apt, for when something fails
+readonly LOG=/var/log/terrain-tool-setup.log      # everything shown on screen, plus apt's output
 
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a                  # never stop to ask which services to restart
@@ -57,6 +63,7 @@ export LC_ALL=C.UTF-8
 
 STEP="starting"
 DONE=()
+CAN_RESTORE=0                              # set once this run holds the setup lock as root
 
 step() { STEP=$1; printf '\n==> %s\n' "$1"; }
 ok() { printf '    %s\n' "$*"; }
@@ -65,6 +72,7 @@ did() { DONE+=("$*"); }
 
 die() {
   printf '\nSETUP STOPPED: %s\n' "$*" >&2
+  restore_previous
   exit 1
 }
 
@@ -74,19 +82,90 @@ on_error() {
   printf '\nSETUP FAILED during "%s" (setup.sh line %s, exit code %s).\n' "$STEP" "$line" "$rc" >&2
   printf 'Nothing is lost: run the same command again to retry. If it fails again, copy the\n' >&2
   printf 'messages above (the full log is in %s) and send them to whoever maintains the tool.\n' "$LOG" >&2
+  restore_previous
   exit "$rc"
 }
 trap 'on_error $LINENO' ERR
 
-apt_get() {
-  # Waits (up to 10 minutes) while Ubuntu's own updates hold the package lock on a new server.
-  # The (long) output goes to the log; on failure its end is shown.
-  printf '\n### apt-get %s (%s)\n' "$*" "$(date -u +%FT%TZ)" >>"$LOG"
-  if ! apt-get -q -y -o DPkg::Lock::Timeout=600 -o Dpkg::Options::=--force-confdef \
-      -o Dpkg::Options::=--force-confold "$@" </dev/null >>"$LOG" 2>&1; then
-    tail -n 25 "$LOG" >&2
-    return 1
+health_ok() {   # does the tool answer within about $1 seconds?
+  local _
+  for _ in $(seq 1 "$1"); do
+    curl -fsS --max-time 2 "$HEALTH_URL" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  return 1
+}
+
+restore_previous() {
+  # After a failed update: put back the version that was running before (recorded by
+  # fetch_source just before it switched the code), with its own libraries and service file.
+  ((CAN_RESTORE)) && [[ -f $PREV_FILE ]] || return 0
+  trap - ERR
+  set +e
+  local commit ref
+  commit=$(sed -n 1p "$PREV_FILE")
+  ref=$(sed -n 2p "$PREV_FILE")
+  printf '\nPutting back the previous version (%s, commit %s) ...\n' "${ref:-main}" "${commit:0:7}" >&2
+  if ! git -C "$SRC" checkout --quiet --force --detach "$commit" >>"$LOG" 2>&1; then
+    printf 'Could not put back the previous version automatically: send the messages above to\n' >&2
+    printf 'whoever maintains the tool.\n' >&2
+    return 0
   fi
+  git -C "$SRC" clean -ffdxq >>"$LOG" 2>&1
+  printf '%s\n' "${ref:-main}" >"$REF_FILE"
+  if [[ -f $KIT_DIR/constraints.txt && -x $VENV/bin/python ]]; then
+    "$VENV/bin/python" -m pip install --quiet --progress-bar off --prefer-binary --upgrade \
+      -c "$KIT_DIR/constraints.txt" -r "$APP_DIR/requirements.txt" boto3 >>"$LOG" 2>&1 \
+      || printf 'NOTE: its Python libraries could not all be put back (see %s).\n' "$LOG" >&2
+  fi
+  if [[ -f $KIT_DIR/terrain-tool.service ]]; then
+    install -m 0644 "$KIT_DIR/terrain-tool.service" /etc/systemd/system/terrain-tool.service
+    systemctl daemon-reload
+  fi
+  systemctl restart terrain-tool.service >>"$LOG" 2>&1
+  if health_ok 90; then
+    rm -f "$PREV_FILE"
+    git -C "$SRC" update-ref -d "$PREV_GIT_REF" >/dev/null 2>&1
+    printf 'The previous version is back and the tool is running again (sudo terrain-tool status).\n' >&2
+  else
+    printf 'The previous version is back, but the tool did not start. Run: sudo terrain-tool logs\n' >&2
+  fi
+  return 0
+}
+
+wait_for_apt_jobs() {
+  # A new server runs Ubuntu's daily package jobs in its first minutes, and they hold apt's
+  # locks. Wait for them (up to 10 minutes).
+  local i
+  for i in $(seq 1 120); do
+    systemctl is-active --quiet apt-daily.service apt-daily-upgrade.service 2>/dev/null || return 0
+    ((i == 1)) && ok "Waiting for Ubuntu's own automatic updates to finish (this can take a few minutes) ..."
+    sleep 5
+  done
+  return 0
+}
+
+apt_get() {
+  # The (long) output goes to the log; on failure its end is shown. DPkg::Lock::Timeout makes
+  # installs wait for dpkg's lock; `apt-get update` does not wait for the package-list lock, so
+  # it is retried (for up to 10 minutes) while another program holds that lock.
+  local attempt start
+  for attempt in $(seq 1 60); do
+    start=$(wc -l <"$LOG")
+    printf '\n### apt-get %s (%s)\n' "$*" "$(date -u +%FT%TZ)" >>"$LOG"
+    if apt-get -q -y -o DPkg::Lock::Timeout=600 -o Dpkg::Options::=--force-confdef \
+        -o Dpkg::Options::=--force-confold "$@" </dev/null >>"$LOG" 2>&1; then
+      return 0
+    fi
+    if [[ $1 == update ]] && tail -n "+$((start + 1))" "$LOG" | grep -q 'Could not get lock'; then
+      ((attempt == 1)) && ok "Waiting for another program that is updating the package lists ..."
+      sleep 10
+      continue
+    fi
+    break
+  done
+  tail -n 25 "$LOG" >&2
+  return 1
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -105,21 +184,18 @@ check_system() {
     # shellcheck source=/dev/null
     pretty=$(. "$os_release" && printf '%s' "${PRETTY_NAME:-$ID $VERSION_ID}")
   fi
-  if [[ $id != ubuntu || ( $version != 24.04 && $version != 22.04 ) ]]; then
-    die "This setup is for Ubuntu 24.04 LTS (or 22.04 LTS) only, but this server runs ${pretty}.
+  # Ubuntu 22.04 is refused too: its python3 is too old for the tool, and its python3.11 is a
+  # pre-release build from "universe" that gets no regular security updates.
+  if [[ $id != ubuntu || $version != 24.04 ]]; then
+    die "This setup is for Ubuntu 24.04 LTS only, but this server runs ${pretty}.
 Create the Lightsail instance with Linux/Unix > OS Only > Ubuntu 24.04 LTS and run it there."
   fi
   if [[ $EUID -ne 0 ]]; then
     die "It needs administrator rights. Put sudo in front of bash, like this:
   curl -fsSL <the setup.sh address> | sudo bash"
   fi
-  if [[ $version == 22.04 ]]; then
-    PYTHON=python3.11            # the tool needs Python 3.11 or newer; 22.04's python3 is 3.10
-    PYTHON_PACKAGES=(python3.11 python3.11-venv)
-  else
-    PYTHON=python3
-    PYTHON_PACKAGES=(python3 python3-venv)
-  fi
+  PYTHON=python3                 # Python 3.12 on Ubuntu 24.04
+  PYTHON_PACKAGES=(python3 python3-venv)
 }
 
 env_value() {   # value of KEY in the settings file (empty if absent)
@@ -164,6 +240,10 @@ take_lock() {
 
 install_git() {
   step "Preparing Ubuntu (package lists, git)"
+  wait_for_apt_jobs
+  # Finish any package installation that was cut off (for example by a window closed during an
+  # earlier run); otherwise every apt-get install would refuse to run.
+  dpkg --force-confdef --force-confold --configure -a </dev/null >>"$LOG" 2>&1 || true
   apt_get update
   apt_get install --no-install-recommends git ca-certificates curl
 }
@@ -181,6 +261,11 @@ has_kit() {   # does commit $2 of the repository in $1 contain the kit? (reads t
 fetch_source() {
   step "Downloading the tool ($TOOL_REF)"
   local failed="Could not download '$TOOL_REF' from $TOOL_REPO. Check the branch or tag name (it is case-sensitive) and the server's internet connection."
+  if [[ $TOOL_REF != main ]]; then
+    failed+="
+If the pull request has been merged, its branch may be gone: switch to main with
+  sudo terrain-tool update --ref main"
+  fi
   mkdir -p "$BASE" "$ETC_DIR"
   if [[ -d $SRC/.git ]]; then
     local old_url
@@ -194,6 +279,23 @@ fetch_source() {
     if ! has_kit "$SRC" FETCH_HEAD; then
       git -C "$SRC" remote set-url origin "${old_url:-$TOOL_REPO}"
       no_kit
+    fi
+    local current new
+    current=$(git -C "$SRC" rev-parse --verify --quiet HEAD || true)
+    new=$(git -C "$SRC" rev-parse FETCH_HEAD)
+    if [[ -n $current && $current != "$new" ]]; then
+      # Remember the running version so that a failed update can put it back (restore_previous).
+      # An entry left by an earlier failed update is kept: it is the last version that worked.
+      if [[ ! -f $PREV_FILE ]]; then
+        git -C "$SRC" update-ref "$PREV_GIT_REF" "$current"
+        printf '%s\n%s\n' "$current" "$(head -n 1 "$REF_FILE" 2>/dev/null || echo main)" >"$PREV_FILE"
+      fi
+      # The running tool must not pick up half-old, half-new files: stop it until the new
+      # version starts at the end (a few minutes; a screening in progress is queued again).
+      if systemctl is-active --quiet terrain-tool.service; then
+        ok "Stopping the tool while it is updated (a few minutes)"
+        systemctl stop terrain-tool.service
+      fi
     fi
     git -C "$SRC" sparse-checkout set terrain-tool
     git -C "$SRC" checkout --quiet --force --detach FETCH_HEAD
@@ -224,8 +326,8 @@ install_packages() {
     debian-archive-keyring apt-transport-https unattended-upgrades tzdata libexpat1 \
     "${PYTHON_PACKAGES[@]}"
   install -m 0644 "$KIT_DIR/unattended-upgrades.conf" /etc/apt/apt.conf.d/52terrain-tool-upgrades
-  ok "Automatic security updates: on (restart at 03:30 Malaysia time only when an update needs it)"
-  did "Ubuntu packages installed and up to date; automatic security updates on"
+  ok "Automatic security updates (Ubuntu and Caddy): on (restart at 04:00 Malaysia time only when an update needs it)"
+  did "Ubuntu packages installed and up to date; automatic security updates on (Ubuntu and Caddy)"
 }
 
 setup_swap() {
@@ -293,9 +395,11 @@ python_env() {
     ok "Created $VENV (Python $want)"
   fi
   "$VENV/bin/python" -m pip install --quiet --progress-bar off --upgrade pip
-  # boto3: the Amazon SES API client (MAIL_BACKEND=ses). Ready-built wheels only where possible.
-  "$VENV/bin/python" -m pip install --quiet --progress-bar off --prefer-binary \
-    -r "$APP_DIR/requirements.txt" boto3
+  # boto3: the Amazon SES API client (MAIL_BACKEND=ses). Every library is pinned to the tested
+  # version in constraints.txt, and --upgrade moves an existing environment to those versions,
+  # so an update installs exactly the libraries (and their security fixes) of the new release.
+  "$VENV/bin/python" -m pip install --quiet --progress-bar off --prefer-binary --upgrade \
+    -c "$KIT_DIR/constraints.txt" -r "$APP_DIR/requirements.txt" boto3
   "$VENV/bin/python" -c "import rasterio, pyproj, shapely, matplotlib, scipy, boto3, uvicorn, fastapi" \
     || die "The Python libraries did not install correctly (see the messages above)."
   "$VENV/bin/python" -m compileall -q "$APP_DIR/app" >/dev/null || true
@@ -399,7 +503,9 @@ install_caddy() {
   chmod 0644 "$new"
   mv -f "$new" /etc/caddy/Caddyfile
   systemctl enable --quiet caddy
-  systemctl reload-or-restart caddy
+  # Restart rather than reload: a reload cannot move Caddy's admin endpoint off the TCP port an
+  # older configuration opened (it is now a socket that only Caddy can use).
+  systemctl restart caddy
   ok "Caddy $(caddy version 2>/dev/null | cut -d' ' -f1) serves https://$TOOL_DOMAIN and gets its certificate by itself"
   did "Caddy installed: https://$TOOL_DOMAIN -> the tool (certificate from Let's Encrypt, renewed automatically)"
 }
@@ -419,7 +525,12 @@ start_app() {
     sleep 1
   done
   journalctl -u terrain-tool.service -n 40 --no-pager >&2 || true
-  die "The tool did not start (its last log lines are above). The previous settings are unchanged."
+  die "The tool did not start (its last log lines are above)."
+}
+
+forget_previous() {   # the update worked: nothing to put back any more
+  rm -f "$PREV_FILE"
+  git -C "$SRC" update-ref -d "$PREV_GIT_REF" >/dev/null 2>&1 || true
 }
 
 summary() {
@@ -429,20 +540,10 @@ summary() {
   for item in "${DONE[@]}"; do printf '  - %s\n' "$item"; done
   printf '\n'
   /usr/local/sbin/terrain-tool status || true
-  # The admin password is printed once, at the end of the first setup that completes.
-  if [[ ! -f $ETC_DIR/.admin-password-shown ]]; then
-    cat <<EOF
-
-ADMIN PAGES: https://$TOOL_DOMAIN/admin
-  user:     $(env_value ADMIN_USER)
-  password: $(env_value ADMIN_PASSWORD)
-Write the password down somewhere safe now (a password manager). It is shown only this
-once; to see it again later run: sudo terrain-tool admin-password
-EOF
-    touch "$ETC_DIR/.admin-password-shown"
-  else
-    printf '\nAdmin pages: https://%s/admin (password: sudo terrain-tool admin-password)\n' "$TOOL_DOMAIN"
-  fi
+  # The password is not printed here: this output also goes to the setup log, which may be sent
+  # to someone for help.
+  printf '\nADMIN PAGES: https://%s/admin\n' "$TOOL_DOMAIN"
+  printf '  To see the user name and password, run: sudo terrain-tool admin-password\n'
   if [[ $(env_value MAIL_BACKEND) == ses && -z $(env_value AWS_ACCESS_KEY_ID) ]]; then
     cat <<EOF
 
@@ -454,14 +555,36 @@ EOF
   fi
   printf '\nEveryday commands: sudo terrain-tool help\n'
   if [[ -f /var/run/reboot-required ]]; then
-    printf '\nUbuntu asks for a restart to finish an update: it happens by itself at 03:30 Malaysia time,\nor now with: sudo reboot\n'
+    printf '\nUbuntu asks for a restart to finish an update: it happens by itself at 04:00 Malaysia time,\nor now with: sudo reboot\n'
   fi
+}
+
+# shellcheck disable=SC2329  # called by the EXIT trap
+flush_output() {
+  # Let the copy to the screen and the log (tee) finish before the shell prompt comes back.
+  [[ -n ${TT_TEE_PID:-} ]] || return 0
+  exec >&- 2>&-
+  local _
+  for _ in $(seq 1 50); do
+    kill -0 "$TT_TEE_PID" 2>/dev/null || return 0
+    sleep 0.1
+  done
 }
 
 main() {
   check_system
   take_lock
   touch "$LOG" && chmod 0600 "$LOG"
+  CAN_RESTORE=1
+  if [[ ${TT_SETUP_STAGE:-1} != 2 ]]; then
+    # Keep going if the browser terminal window closes: ignore the hang-up signal (everything
+    # started from here inherits that) and show the output through tee, which also writes it
+    # to the log and carries on if the screen has gone away.
+    trap '' HUP
+    exec > >(tee -a "$LOG" --output-error=warn) 2>&1
+    export TT_TEE_PID=$!
+  fi
+  trap flush_output EXIT
   resolve_settings
   if [[ ${TT_SETUP_STAGE:-1} != 2 ]]; then
     printf 'EcoEnergy terrain screening tool: server setup (%s, %s)\n' "$TOOL_REF" "$TOOL_DOMAIN"
@@ -479,6 +602,7 @@ main() {
   install_service_files
   install_caddy
   start_app
+  forget_previous
   summary
 }
 

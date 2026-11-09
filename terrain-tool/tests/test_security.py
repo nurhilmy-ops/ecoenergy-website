@@ -158,6 +158,28 @@ def test_link_rate_limit_per_ip(app_factory):
     assert len(flow.mails()) == 2
 
 
+def test_ipv6_addresses_share_their_64_for_rate_limits(app_factory):
+    """One IPv6 connection gets a whole /64: a fresh address per request must not reset the
+    per-IP limits (the sign-in form would otherwise email anyone, as often as asked)."""
+    assert security.ip_rate_key("2001:db8:1:2:aaaa::1") == security.ip_rate_key("2001:db8:1:2:ffff::9") \
+        == "2001:db8:1:2::/64"
+    assert security.ip_rate_key("2001:db8:1:3::1") != security.ip_rate_key("2001:db8:1:2::1")
+    assert security.ip_rate_key("203.0.113.9") == "203.0.113.9"
+    assert security.ip_rate_key("::ffff:203.0.113.9") == "203.0.113.9"
+    assert security.ip_rate_key("unknown") == "unknown"
+
+    flow = app_factory("ipv6limit", trust_proxy_headers=True, rate_link_per_ip_hour=2)
+    for i in range(4):
+        resp = flow.client.post("/request-link", data={"email": f"victim{i}@example.com"},
+                                headers={"X-Forwarded-For": f"2001:db8:77:1:{i + 1}::1"})
+        assert resp.status_code == 200
+    assert len(flow.mails()) == 2
+    # Another /64 has its own allowance; email-keyed limits are unchanged.
+    resp = flow.client.post("/request-link", data={"email": "other@example.com"},
+                            headers={"X-Forwarded-For": "2001:db8:77:2::1"})
+    assert resp.status_code == 200 and len(flow.mails()) == 3
+
+
 def test_resignup_after_erasure_lifts_suppression(flow, query):
     flow.request_link("back@example.com")
     with db(flow.settings.db_path) as conn:

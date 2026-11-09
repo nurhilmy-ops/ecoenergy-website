@@ -138,7 +138,7 @@ line: everything after `=` is the value.
 | `TRUST_PROXY_HEADERS` | `false` | Take the client IP from `X-Forwarded-For`. Set `true` only behind your own reverse proxy, and only if it appends the address it received the request from (nginx `$proxy_add_x_forwarded_for`, AWS ALB, Cloudflare) or overwrites the header — never if it passes a client-supplied header on unchanged. |
 | `TRUSTED_PROXY_HOPS` | `1` | How many of your proxies append to `X-Forwarded-For` (e.g. `2` for Cloudflare in front of nginx). The client IP is taken that many hops from the right; the left-most hops can be forged by the client. |
 | **privacy notice** | | |
-| `NOTICE_VERSION` | `2026-11-draft-4` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
+| `NOTICE_VERSION` | `2026-11-draft-5` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
 | **email** | | |
 | `MAIL_BACKEND` | `outbox` | `outbox` (development: mail is stored and shown at `/dev/outbox`), `smtp`, or `ses` (Amazon SES v2 API; `pip install boto3`). |
 | `MAIL_FROM` | `EcoEnergy Consultancy <no-reply@ecoconsultancy.services>` | From header of every email. |
@@ -285,12 +285,17 @@ version `NOTICE_VERSION`).
   `RETENTION_DAYS` (30) or at once with Delete. Never-confirmed addresses:
   `UNVERIFIED_PURGE_DAYS` (7). Confirmed accounts with no report left, no newsletter and no
   activity: `INACTIVE_PURGE_DAYS` (730). Abuse counters: 2 days. SQLite runs with
-  `secure_delete` on, so erased rows are overwritten in `app.db`.
+  `secure_delete` on, so erased rows are overwritten in `app.db`. On the Lightsail server,
+  deleted data stays in the backups until they are overwritten: database copies 14 days and
+  whole-server snapshots 7 days, so database records up to about 3 weeks and site files up to
+  7 days after deletion (stated in the notice, section 10).
 - **Written requests.** Someone who withdraws consent or objects to direct marketing by email
-  (s.38, s.43) is recorded with `python -m app.manage withdraw EMAIL --followup --newsletter
-  --note "Email of 12 Oct 2026"`: follow-up ends for every live report, the newsletter is
-  unsubscribed, and the ledger gets a `withdrawn` row with the note. For the newsletter alone,
-  the `unsubscribe_url` column of the newsletter CSV does the same.
+  (s.38, s.43) is recorded on the production server with `sudo terrain-tool withdraw EMAIL
+  --followup --newsletter --note "Email of 12 Oct 2026"` (elsewhere: `python -m app.manage
+  withdraw EMAIL … [--env-file FILE]` with the app's settings): follow-up ends for every live
+  report, the newsletter is unsubscribed, and the ledger gets a `withdrawn` row with the note.
+  It stops with an error, changing nothing, if it finds no database where the settings point.
+  For the newsletter alone, the `unsubscribe_url` column of the newsletter CSV does the same.
 - **Self-service rights.** `/account` shows everything held, exports it as JSON, and
   deletes the account; erasure leaves only sha256(email) in a suppression list so the
   person is not contacted again (a new sign-up lifts it).
@@ -306,9 +311,11 @@ version `NOTICE_VERSION`).
 - the hosting and email providers are now named (Amazon Web Services: Lightsail hosting and
   Amazon SES email, both in the AWS Asia Pacific (Malaysia) Region); still to confirm: the AWS
   contracting entity and data processing terms, and for any provider that processes data
-  outside Malaysia (Google Fonts, Cloudflare Turnstile if enabled) the s.129 basis for each
-  transfer (a transfer impact assessment, contract, or contractual clauses), with the records
-  the Cross Border Personal Data Transfer guideline asks for;
+  outside Malaysia (Google Fonts, Cloudflare Turnstile once it is turned on) the s.129 basis for
+  each transfer (a transfer impact assessment, contract, or contractual clauses), with the
+  records the Cross Border Personal Data Transfer guideline asks for;
+- the backup retention wording (section 10: database copies 14 days, server snapshots 7 days,
+  so deleted data can remain in backups for up to about 3 weeks);
 - how long consent records and the email address are kept after an account is erased
   (reg 3(5) puts the burden of proving consent on the data user);
 - whether staff follow-up counts as direct marketing under s.43 (the tool already treats
@@ -356,7 +363,9 @@ Items marked *(kit)* are done by the kit; the others are still yours.
       port 465), but a provider outside Malaysia is a cross-border transfer (PDPA s.129).
 - [ ] **SPF, DKIM and DMARC** for the sending domain in `MAIL_FROM` (guide, Parts E and F), then
       send yourself a test link and check it lands in the inbox (Gmail and Outlook).
-- [ ] **Cloudflare Turnstile** keys (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`).
+- [ ] **Cloudflare Turnstile** keys (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`) *(guide, Part E8:
+      `sudo terrain-tool set-turnstile-keys`)*: turn it on before asking AWS for SES production
+      access, because from then on anyone can make the form email any address.
 - [x] **`ADMIN_PASSWORD`** *(kit)*: 24 random characters generated on the server, shown once
       (`sudo terrain-tool admin-password`); share it only with staff who handle leads.
 - [x] **`SECRET_KEY`** *(kit)*: 64 random characters generated on the server, never in git.
@@ -373,6 +382,13 @@ Items marked *(kit)* are done by the kit; the others are still yours.
       `NOTICE_VERSION`), a **DPO assessment**, and a **transfer impact assessment** for any
       provider outside Malaysia; a breach-response plan (a breach likely to cause significant
       harm must be notified to the Commissioner within 72 hours).
+  - [ ] **AWS as processor** (notice section 7): confirm the contracting entity. AWS says that
+        from 1 October 2022 Amazon Web Services Malaysia Sdn. Bhd. (Registration No.
+        201501028710 (1154031-W)) is the reseller of AWS services for AWS accounts located in
+        Malaysia (<https://aws.amazon.com/tax-help/malaysia/>); check the name on the AWS
+        invoice. Also confirm the data-processing terms (the AWS Customer Agreement and the AWS
+        Data Processing Addendum in the AWS Service Terms), then replace the bracketed item in
+        both languages and bump `NOTICE_VERSION`.
 - [ ] **Fonts**: consider self-hosting the three typefaces so visitors' browsers do not
       contact Google (then remove the Google Fonts line from the notice and the CSP).
 - [ ] **Posting**: share on LinkedIn and Threads with utm tags so the admin channel table

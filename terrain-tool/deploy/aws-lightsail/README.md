@@ -8,7 +8,7 @@ through the AWS and Namecheap websites, and paste **one command** into a browser
 | | |
 |---|---|
 | **Time** | about 1 hour of clicking, plus waiting (region: minutes to hours; DNS: usually under 30 minutes; SES production access: up to about 4 days) |
-| **Cost** | about **US$12–13 a month** (details in [Part H](#what-it-costs)) |
+| **Cost** | about **US$13.50–14.60 a month** including 8% service tax (details in [Part H](#what-it-costs)) |
 | **You need** | a credit or debit card for AWS, your Namecheap login, and access to the `contact@ecoconsultancy.services` mailbox |
 
 **The parts, in order:**
@@ -30,18 +30,36 @@ through the AWS and Namecheap websites, and paste **one command** into a browser
 
 ## Part A — AWS account and the Malaysia region
 
-1. If you have no AWS account yet, go to <https://aws.amazon.com>, choose **Create an AWS
-   Account** and follow the steps (email, password, contact details, card, phone check). Choose
-   the **Basic support – Free** plan. New accounts may get AWS Free Tier credits; the steps here
-   work either way. During sign-up AWS may suggest enabling the Malaysia region: accept it.
-2. Sign in to the **AWS Management Console** (<https://console.aws.amazon.com>) with the email
-   and password of the account.
+1. Create the account on AWS's full sign-up page:
+   **<https://signin.aws.amazon.com/signup?request_type=register>** (AWS calls it *Sign up for AWS
+   (advanced)*). Do **not** use the **Create account** or **Sign up** buttons on aws.amazon.com,
+   and do not sign up with Google, GitHub or Apple: those create a simplified account that AWS
+   ties to one region chosen for you, and it **cannot use the Malaysia region**.
+   - **Root user email address:** `contact@ecoconsultancy.services` (a company mailbox you will
+     keep). **AWS account name:** `EcoEnergy Consultancy`. Use a company phone number.
+   - **Choose your account plan:** **Paid account plan**. New accounts still get AWS's sign-up
+     credits. A *Free plan* account is suspended when its free period ends (at most 6 months),
+     and the tool would go offline.
+   - **Support plan:** **Basic support – Free**.
+   - The first time you sign in, AWS asks you to add multi-factor authentication (MFA) for the
+     root user: add a passkey or an authenticator app.
+
+   If you already have an AWS account that you manage in **AWS Settings** (settings.aws.com) or
+   sign in to with Google, GitHub or Apple, it cannot use Malaysia as it is: either create a new
+   account with the link above, or in AWS Settings choose **Billing → Upgrade** and then
+   **Activate advanced features**.
+2. Sign in to the **AWS Management Console** (<https://console.aws.amazon.com>) as **Root user**,
+   with the email and password from step 1.
 3. Click your **account name** at the top right, then **Account**.
 4. Scroll down to the section **AWS Regions**. Find **Asia Pacific (Malaysia)**
-   (code `ap-southeast-5`). If its status is **Enabled**, go to Part B.
+   (code `ap-southeast-5`). If its status is **Enabled**, go to step 7.
 5. Select it, click **Enable**, read the message and click **Enable region**.
 6. Wait until the status is **Enabled**. This usually takes a few minutes but can take several
    hours. You cannot use the region before then (Part B will not offer it).
+7. Check that Lightsail sees it too: open <https://lightsail.aws.amazon.com>, click your account
+   name at the top right → **Account** → **Profile** tab → **Supported opt-in Regions**. The
+   Malaysia region must show **Opt-in status: Enabled** (if it shows **Start opt-in**, click it
+   and follow the steps; it leads to the same **Enable** button as step 5).
 
 ---
 
@@ -51,8 +69,9 @@ through the AWS and Namecheap websites, and paste **one command** into a browser
 
 1. Open the Lightsail console: <https://lightsail.aws.amazon.com>.
 2. Click **Create instance**.
-3. Under **Instance location**, click **Change AWS Region and Availability Zone** and choose
-   **Asia Pacific (Malaysia)** (`ap-southeast-5`). Leave the Availability Zone as it is.
+3. Under **Instance location**, click **Change AWS Region and Availability Zone** and choose the
+   Malaysia region. Lightsail may label it **Malaysia** or **Kuala Lumpur**; the code is always
+   `ap-southeast-5`. Leave the Availability Zone as it is.
 4. **Select a platform:** **Linux/Unix**.
 5. **Select a blueprint:** click **OS Only**, then **Ubuntu 24.04 LTS**.
 6. Leave **Optional** settings (launch script, SSH key) as they are. If you see
@@ -84,7 +103,9 @@ delete the static IP too: an unattached one costs US$0.005 an hour.)
    **HTTP (80)**: keep both (HTTP is needed to get the free certificate and to redirect to
    HTTPS; SSH is needed for the browser terminal).
 3. Click **Add rule**, choose **Application: HTTPS**, and click **Create**.
-4. (Optional) If there is also an **IPv6 Firewall** section, add **HTTPS** there in the same way.
+4. Leave the **IPv6 Firewall** section as it is: do **not** add HTTPS there. The address
+   `tools.ecoconsultancy.services` has only an IPv4 (A) record, so visitors never use IPv6, and
+   an open IPv6 HTTPS port would only help someone get round the tool's per-address limits.
 
 ### B4. Automatic snapshots (whole-server backups)
 
@@ -151,17 +172,24 @@ It is one long line: paste it whole.
 
 Lines starting with `==>` show each step: preparing Ubuntu, downloading the tool, installing
 packages, swap space, the app user, the Python environment, the settings file, the services,
-the Caddy web server (HTTPS), starting the tool. **It takes about 3–8 minutes.** Do not close
-the window while it runs.
+the Caddy web server (HTTPS), starting the tool. **It takes about 3–8 minutes.** Leave the
+window open while it runs. If the window closes anyway or the connection drops, the setup keeps
+running on the server: open a new window (D1), watch it finish with
+`sudo tail -f /var/log/terrain-tool-setup.log` (Ctrl+C stops watching; the setup carries on), then
+run `sudo terrain-tool status`.
 
 At the end you get a **summary**:
 
 - what was set up;
 - a **status** block: whether the tool answers, whether `tools.ecoconsultancy.services` points
   to this server (**DNS: OK**) and whether HTTPS works (**HTTPS: OK**);
-- **ADMIN PAGES** with the user name `admin` and a random **password**. **Copy the password
-  into your password manager now.** It is shown only this once (you can display it again later
-  with `sudo terrain-tool admin-password`).
+- **ADMIN PAGES**: the address of the admin pages. Their user name (`admin`) and random
+  password are not printed there, because everything on the screen is also saved in the setup
+  log, which you may send to someone for help. Run
+  `sudo terrain-tool admin-password` to show them and **copy the password into your password
+  manager now**: select it with the mouse, click the **clipboard icon** at the bottom right of the
+  terminal, select the text in the box that opens and press Ctrl+C (Cmd+C on a Mac). You can show
+  it again at any time with the same command.
 
 If it stops with **SETUP STOPPED** or **SETUP FAILED**, read the message: it says what to do.
 Running the same command again is always safe. See [Troubleshooting](#troubleshooting).
@@ -202,8 +230,9 @@ its HTTPS API (AWS offers no SES SMTP server in that region; the tool does not n
 3. **Identity type:** **Domain**. **Domain:** `ecoconsultancy.services` (without `www`).
 4. Leave **Assign a default configuration set** and **Use a custom MAIL FROM domain** unticked.
 5. Open **Advanced DKIM settings**: **Identity type: Easy DKIM**, **DKIM signing key length:
-   RSA_2048_BIT**, and make sure **DKIM signatures** is **Enabled**. (**Publish DNS records to
-   Route53** does not apply: your DNS is at Namecheap.)
+   RSA_2048_BIT**, and make sure **DKIM signatures** is **Enabled**. If **Publish DNS records to
+   Route53** is shown, untick **Enabled**: your DNS is at Namecheap, and you add the records
+   yourself in E2.
 6. Click **Create identity**. The identity page opens with status **Verification pending**.
 7. On its **Authentication** tab, open **Publish DNS records**. There are **three CNAME
    records**. Click **Download .csv record set** to keep a copy.
@@ -217,7 +246,9 @@ ADD NEW RECORD**, then:
 - **Host:** the **Name** from SES **without** `.ecoconsultancy.services` at the end. Example: SES
   shows `abcd1234efgh._domainkey.ecoconsultancy.services` → type `abcd1234efgh._domainkey`
   (Namecheap adds the domain by itself).
-- **Value / Target:** the **Value** from SES exactly, e.g. `abcd1234efgh.dkim.amazonses.com`
+- **Value / Target:** the **Value** from SES, copied exactly, e.g.
+  `abcd1234efgh.dkim.ap-southeast-5.amazonses.com` (in the Malaysia region every value ends in
+  `.dkim.ap-southeast-5.amazonses.com`)
 - **TTL:** `Automatic`, then the **green tick** (✓).
 
 Do not change the existing MX or SPF (`v=spf1 include:spf.privateemail.com ~all`) records: SES
@@ -227,8 +258,8 @@ does not need SPF changes, because DKIM signs its mail for `ecoconsultancy.servi
 
 Back in SES (**Configuration → Identities**), refresh after 10–30 minutes. The domain should
 show **Identity status: Verified** and **DKIM configuration: Successful**. (It can take up to
-72 hours; if it does not verify, check that the Host fields have no extra
-`.ecoconsultancy.services`.)
+72 hours. If it does not verify, check that the Host fields have no extra
+`.ecoconsultancy.services` and that each Value ends in `.dkim.ap-southeast-5.amazonses.com`.)
 
 ### E4. A sending-only user for the server (IAM)
 
@@ -309,14 +340,15 @@ says **Done**. You can now click **Done** on the AWS page.
 
 ### E7. Send yourself a test email (SES "sandbox")
 
-New SES accounts start in the **sandbox**: they can send **only to addresses you have verified
-in SES**, at most **200 emails a day** and **1 per second**. While in the sandbox, real visitors
-cannot get their sign-in emails — that is why E8 matters.
+New SES accounts start in the **sandbox**: they can send **only to addresses and domains you
+have verified in SES**, at most **200 emails a day** and **1 per second**. While in the sandbox,
+real visitors cannot get their sign-in emails — that is why E9 matters.
 
-1. In SES (**Malaysia**): **Configuration → Identities → Create identity → Email address**,
-   type your own address (e.g. `contact@ecoconsultancy.services`), **Create identity**, then
-   click the link in the email from AWS (subject *Amazon Web Services – Email Address
-   Verification Request in region Asia Pacific (Malaysia)*).
+1. Addresses ending in `@ecoconsultancy.services` can receive the test as soon as E3 shows
+   **Verified**, so go straight to step 2. To test an outside address (e.g. Gmail) while still in
+   the sandbox, verify it first: in SES (**Malaysia**) choose **Configuration → Identities →
+   Create identity → Email address**, type the address, choose **Create identity**, then click
+   the link in the email from AWS.
 2. In the terminal:
 
    ```bash
@@ -328,7 +360,35 @@ cannot get their sign-in emails — that is why E8 matters.
      and this address is not verified*, *AWS does not recognise the access key ID*, or *the IAM
      user is not allowed to send this email*. Fix it and run the test again.
 
-### E8. Ask AWS for production access (leave the sandbox)
+### E8. Turn on the human check (Cloudflare Turnstile)
+
+Do this **before** E9. Once AWS lets the account send to anyone, the sign-up form could be used by
+a program to send sign-in emails to many strangers; the bounces and complaints that follow can
+get the SES account paused, and with it all of the tool's email. Cloudflare Turnstile (free) adds
+a quick check, usually invisible, that a person is filling in the form.
+
+1. Sign up or sign in at <https://dash.cloudflare.com> (a free account is enough; your domain
+   does **not** move to Cloudflare).
+2. Open **Turnstile** in the left menu and click **Add widget**.
+3. **Widget name:** `terrain-tool`. Under hostnames, add `tools.ecoconsultancy.services`.
+   **Widget mode:** **Managed**. Leave the other options as they are and click **Create**.
+4. The page shows a **Site Key** and a **Secret Key**. In the Lightsail terminal run:
+
+   ```bash
+   sudo terrain-tool set-turnstile-keys
+   ```
+
+   paste the Site Key, press Enter, paste the Secret Key (nothing appears while you paste it) and
+   press Enter. The tool restarts and says **Done**.
+5. Open `https://tools.ecoconsultancy.services` in a private browser window: the form now shows
+   the Cloudflare check. Ask for a sign-in link with an `@ecoconsultancy.services` address to be
+   sure it still works.
+
+With the check on, the visitor's browser contacts Cloudflare (outside Malaysia). The privacy
+notice then names Cloudflare by itself; the legal review covers this transfer
+([`terrain-tool/README.md`](../../README.md#privacy-pdpa-design)).
+
+### E9. Ask AWS for production access (leave the sandbox)
 
 1. In SES (**Malaysia**), click **Account dashboard** in the left menu. In the box *Your Amazon
    SES account is in the sandbox*, click **View Get set up page**, then **Request production
@@ -347,13 +407,15 @@ cannot get their sign-in emails — that is why E8 matters.
    > a visitor triggers themselves: (1) a sign-in link after they type their address into our
    > form, and (2) a notice that their report is ready. Nothing is sent to purchased or
    > imported lists. The sign-in link itself confirms the address (double opt-in); addresses
-   > that are never confirmed are deleted after 7 days, and the form is rate-limited per
-   > address and per IP. Newsletter consent is a separate, unticked box and is confirmed by
-   > the emailed link; we do not send newsletters through this account, and every newsletter
-   > we send elsewhere carries a one-click unsubscribe. Each email names the sender, links our
-   > privacy notice and account page, and has Reply-To contact@ecoconsultancy.services, which
-   > we read. We expect about 50–300 emails a month (well under 1,000), and we monitor bounces
-   > and complaints in the SES account dashboard and remove addresses that bounce or complain.
+   > that are never confirmed are deleted after 7 days, and the form is protected by a
+   > Cloudflare Turnstile human check and rate-limited per address and per IP. Newsletter
+   > consent is a separate, unticked box and is confirmed by the emailed link; we do not send
+   > newsletters through this account, and every newsletter we send elsewhere carries a
+   > one-click unsubscribe. Each email names the sender, links our privacy notice and account
+   > page, and has Reply-To contact@ecoconsultancy.services, which we read. We expect about
+   > 50–300 emails a month (well under 1,000). SES's account-level suppression list, which is
+   > on for our account, stops sending to any address that hard-bounces or complains, and we
+   > check the bounce and complaint rates on the SES account dashboard every week.
 
 4. When AWS approves, the dashboard no longer shows the sandbox box: anyone can now receive the
    tool's emails. Test with an address you have **not** verified (e.g. a Gmail address):
@@ -373,9 +435,14 @@ They also help your normal Namecheap Private Email.
 2. Under **DKIM**, click **Show DKIM** (or **Generate** if there is no key yet). It shows a TXT
    record. Its host is `default._domainkey` for subscriptions bought before 2 June 2026, or
    `privateemail._domainkey` for newer ones — use exactly what the page shows.
-3. **Domain List → Manage → Advanced DNS → ADD NEW RECORD:** **Type:** `TXT Record`, **Host:**
-   that host (e.g. `default._domainkey`), **Value:** the whole `v=DKIM1; k=rsa; p=…` text
-   (without quotes), **TTL:** `Automatic`, then the green tick.
+3. **First check whether it is already there** (on BasicDNS, Namecheap often adds it by
+   itself): **Domain List → Manage → Advanced DNS**. Look under **HOST RECORDS** (and **MAIL
+   SETTINGS**) for a **TXT Record** whose host is `default._domainkey` or
+   `privateemail._domainkey`. If it is there and its value matches what **Show DKIM** displays,
+   do nothing and go to F2 (two records for the same host can make DKIM checks fail). Only if it
+   is missing: **ADD NEW RECORD**, **Type:** `TXT Record`, **Host:** the host that Show DKIM gives
+   (e.g. `privateemail._domainkey`), **Value:** the whole `v=DKIM1; k=rsa; p=…` text (without
+   quotes), **TTL:** `Automatic`, then the green tick.
 
 ### F2. DMARC
 
@@ -389,33 +456,51 @@ v=DMARC1; p=none; rua=mailto:contact@ecoconsultancy.services; fo=1
 `p=none` only reports, it blocks nothing: Google, Microsoft and others then email daily
 summaries (XML attachments) to `contact@ecoconsultancy.services`. After 2–4 weeks in which those
 reports show your own mail passing, change `p=none` to `p=quarantine` (failing mail goes to
-spam). Check the whole setup with a free tester such as <https://www.mail-tester.com>: send
-`sudo terrain-tool test-email <the address it gives you>` and read the score.
+spam). After AWS has approved production access (E9), check the whole setup with a free tester
+such as <https://www.mail-tester.com>: run `sudo terrain-tool test-email <the address it gives
+you>` and read the score. (While SES is still in the sandbox this test fails, because that
+address is not verified.)
 
 ---
 
 ## Part G — Go live
 
-1. `sudo terrain-tool status` shows **Tool: active, answering**, **DNS: OK**, **HTTPS: OK** and
-   an **Email** line with your key.
-2. Open **https://tools.ecoconsultancy.services**, sign up with your own address, open the
-   email, press **Continue**, upload `hilly_site_pahang.kml` (from `terrain-tool/tests/fixtures/`
-   in the repository) and check the result page, the PDF and the Word file.
+1. `sudo terrain-tool status` shows **Tool: active, answering**, **DNS: OK**, **HTTPS: OK**, an
+   **Email** line with your key and **Human check: on**.
+2. Open **https://tools.ecoconsultancy.services**, sign up with an `@ecoconsultancy.services`
+   address, open the email, press **Continue**, and upload the sample file
+   `hilly_site_pahang.kml`. Download it first: right-click
+   <https://raw.githubusercontent.com/nurhilmy-ops/ecoenergy-website/claude/admiring-albattani-j1beqs/terrain-tool/tests/fixtures/hilly_site_pahang.kml>
+   → **Save link as…** (after the merge, replace `claude/admiring-albattani-j1beqs` with
+   `main`). Then check the result page, the PDF and the Word file.
 3. Open **https://tools.ecoconsultancy.services/admin**, sign in as `admin` with the password
    (`sudo terrain-tool admin-password`) and find your own test screening under **Leads**.
-4. **Merge the pull request** on GitHub (`claude/admiring-albattani-j1beqs` into `main`). This
-   also publishes the links to the tool on the main website (GitHub Pages updates within a few
-   minutes).
-5. Switch the server to `main`, so later updates come from there:
+4. **Wait for SES production access (E9).** Run `sudo terrain-tool test-email someone@gmail.com`
+   with an address you have **not** verified in SES. It must say **Sent** and the email must
+   arrive. Until then every real visitor sees "We couldn't send the email right now", so do not
+   merge or announce yet.
+5. **Merge the pull request** on GitHub: open
+   <https://github.com/nurhilmy-ops/ecoenergy-website/pull/11>, click **Ready for review** (it is
+   still a draft), then **Merge pull request** and **Confirm merge**. This also publishes the
+   links to the tool on the main website (GitHub Pages updates within a few minutes).
+6. Straight away, switch the server to `main`, so later updates come from there:
 
    ```bash
    sudo terrain-tool update --ref main
    ```
 
-   From now on `sudo terrain-tool update` (without `--ref`) keeps following `main`.
-6. Before announcing the tool, work through the **Before going live** list in
+   From now on `sudo terrain-tool update` (without `--ref`) keeps following `main`. (Until you
+   do this, `sudo terrain-tool status` shows a **WARNING** that the server follows a working
+   branch.)
+7. **Protect what the server installs.** `sudo terrain-tool update` installs whatever is on
+   `main` on GitHub and runs its setup as administrator, so anyone who can push to `main` can
+   change what runs on this server. Keep two-factor authentication on for every GitHub account
+   with write access to the repository (GitHub → **Settings** → **Password and
+   authentication**), give write access only to people you trust, and ask your maintainer to
+   turn on branch protection for `main` (changes only through reviewed pull requests).
+8. Before announcing the tool, work through the **Before going live** list in
    [`terrain-tool/README.md`](../../README.md#before-going-live) (privacy notice legal review,
-   Cloudflare Turnstile keys, monitoring).
+   monitoring).
 
 ---
 
@@ -432,17 +517,24 @@ lists them.
 | `sudo terrain-tool update` | Installs the newest version of the tool (`--ref NAME` switches branch or tag) |
 | `sudo terrain-tool admin-password` | Shows the admin user name and password |
 | `sudo terrain-tool set-aws-keys` | Enters (or replaces) the SES access key |
+| `sudo terrain-tool set-turnstile-keys` | Enters (or replaces) the Cloudflare Turnstile keys (E8) |
 | `sudo terrain-tool test-email ADDRESS` | Sends a test email with the real settings |
+| `sudo terrain-tool withdraw EMAIL --followup --newsletter --note "Email of 12 Oct 2026"` | Records a withdrawal of consent or an objection to marketing that arrived in writing (PDPA s.38 / s.43): staff follow-up ends for all of that person's reports (`--followup`) and/or the newsletter is unsubscribed (`--newsletter`); the note goes into the consent records |
 | `sudo terrain-tool backup-now` | Backs up the database now |
 
 ### Updates
 
-- **Ubuntu security updates install themselves** every day. When one needs a restart (for
-  example a new Linux kernel), the server restarts by itself at **03:30 Malaysia time**; the
-  tool is back within about a minute.
-- **The tool** is updated when you run `sudo terrain-tool update` (for example after a change
-  has been merged on GitHub). It keeps your settings, secrets, data and backups. It also
-  updates Caddy and installs any new Python libraries the new version asks for.
+- **Ubuntu security updates and Caddy updates install themselves** every day. When one needs a
+  restart (for example a new Linux kernel), the server restarts by itself at **04:00 Malaysia
+  time**; the tool is back within about a minute.
+- **The tool and its Python libraries** are updated **only** when you run
+  `sudo terrain-tool update` (for example after a change has been merged on GitHub). The
+  libraries are fixed to the versions tested with each release (the kit's `constraints.txt`),
+  so they get security fixes only when a maintainer updates that file and you then run the
+  update: ask your maintainer to do this about once a month. The update keeps your settings,
+  secrets, data and backups. The tool is offline for the few minutes it takes; if something
+  goes wrong, the previous version is put back and started again by itself, and the message
+  says so.
 - **Changing a setting** (for example `RETENTION_DAYS`, or Cloudflare Turnstile keys): run
   `sudo nano /etc/terrain-tool/terrain-tool.env`, change the line, save with Ctrl+O, Enter,
   Ctrl+X, then `sudo terrain-tool restart`. Every setting is explained in
@@ -451,9 +543,11 @@ lists them.
 ### Backups
 
 - **Database, every night at about 02:30 Malaysia time**: a consistent copy of the SQLite
-  database in `/var/lib/terrain-tool/backups/app-YYYYMMDD.db`. The newest **14** are kept, so
-  data deleted in the tool is gone from these backups after 14 days.
+  database in `/var/lib/terrain-tool/backups/app-YYYYMMDD.db`. The newest **14** are kept.
 - **Whole server, every night (Lightsail automatic snapshots, B4)**: the newest **7** are kept.
+  Each snapshot also holds that night's database copies, so data deleted in the tool stays in
+  the backups for up to about **3 weeks** (database records: 14 days of copies plus 7 days of
+  snapshots) and site files and reports for up to **7 days**. The privacy notice says so.
   To go back to a snapshot: Lightsail → **Snapshots** tab → the snapshot's menu → **Create new
   instance**, then move the static IP to the new instance (**Networking → static IP → Attach**)
   and delete the old instance.
@@ -477,10 +571,11 @@ lists them.
 | Lightsail instance, 2 GB plan (includes the static IP while attached, and 1.5 TB data transfer in Malaysia) | 12.00 |
 | Automatic snapshots: US$0.05 per GB-month; the first holds the used disk (about 5–8 GB), later ones only what changed | about 0.30–1.00 |
 | Amazon SES: US$0.10 per 1,000 emails (attachments US$0.12 per GB; the tool sends none) | under 0.10 |
-| **Total** | **about 12.50–13.50** |
+| Malaysian service tax (SST), 8% | about 1.00–1.10 |
+| **Total** | **about 13.50–14.60** |
 
-Prices are AWS's list prices in November 2026, before any Malaysian service tax AWS adds to the
-bill. New AWS accounts may get Free Tier credits that cover the first months. See
+Prices are AWS's list prices in November 2026; AWS Malaysia adds 8% service tax (SST) to the
+bill. New AWS accounts get sign-up credits that cover the first months. See
 **Billing and Cost Management** in the AWS console for the real figures; you can set a budget
 alert there (**Budgets → Create budget**, e.g. US$20).
 
@@ -499,16 +594,18 @@ alert there (**Budgets → Create budget**, e.g. US$20).
 
 | What you see | What to do |
 |---|---|
-| Part B does not offer **Asia Pacific (Malaysia)** | The region is not enabled yet (Part A). Check **Account → AWS Regions**; enabling can take hours. |
+| Part B does not offer the Malaysia region (`ap-southeast-5`) | The region is not enabled yet (Part A), or the account was made with the simplified sign-up (Part A step 1). In Lightsail open your account menu → **Account** → **Profile** → **Supported opt-in Regions**: Malaysia must show **Enabled**. Enabling can take hours. |
 | `curl: (22) The requested URL returned error: 404` after pasting the command | You used the *after merge* command before the merge, or the line was cut. Paste the *before merge* command from D2, in one piece. |
 | **SETUP STOPPED: … does not contain the server kit** | Same cause: use the *before merge* command (with `TOOL_REF=claude/admiring-albattani-j1beqs`). |
 | **SETUP STOPPED: It needs administrator rights** | `sudo` is missing before `bash`. Paste the command exactly as shown. |
 | **SETUP FAILED during "…"** | Run the same command again (it continues safely). If it fails again, send the messages and `/var/log/terrain-tool-setup.log` to whoever maintains the tool. |
+| An update failed and says **Putting back the previous version** | Nothing to do: the version that worked before runs again (check with `sudo terrain-tool status`). Send the messages to whoever maintains the tool. |
+| The browser window closed while the setup was running | It keeps running. Open a new window (D1) and run `sudo tail -f /var/log/terrain-tool-setup.log` to watch it finish (Ctrl+C stops watching), then `sudo terrain-tool status`. If it had stopped, run the setup command again. |
 | Status **DNS: NOT SET** or **WRONG** | Check the `tools` A record in Namecheap (Part C): Host `tools`, Value = the static IP. Wait 5–30 minutes. |
 | Status **HTTPS: NOT YET** although DNS is OK | Check that **HTTPS (443)** and **HTTP (80)** are in the Lightsail **IPv4 Firewall** (B3), wait 5 minutes, then `sudo terrain-tool restart`. |
 | Status says HTTPS works on the server but not through the public address | Port 443 is closed in the Lightsail firewall (B3). |
-| Visitors see "We couldn't send the email right now" | Run `sudo terrain-tool test-email you@…`: it says why (no keys yet → E6; sandbox → E7/E8; wrong key → E5/E6). |
-| Test email works, but visitors get nothing | SES is still in the sandbox: only verified addresses receive mail (E8). Also check spam folders and Part F. |
+| Visitors see "We couldn't send the email right now" | Run `sudo terrain-tool test-email you@…`: it says why (no keys yet → E6; sandbox → E7/E9; wrong key → E5/E6). |
+| Test email works, but visitors get nothing | SES is still in the sandbox: only verified addresses and domains receive mail (E9). Also check spam folders and Part F. |
 | Emails land in spam | Do Part F (DMARC), check that SES shows DKIM **Successful**, and test with mail-tester.com. |
 | **Tool: … NOT answering**, or out-of-memory messages in the logs | `sudo terrain-tool restart`. The tool may use up to 1.5 GB; the 2 GB swap file absorbs short peaks. If it keeps happening, move to the US$24 (4 GB) plan: create a snapshot, **Create new instance** from it with the bigger plan, and move the static IP. |
 | Admin page asks for a password again and again | User `admin`, password from `sudo terrain-tool admin-password` (copy it exactly). |
@@ -524,18 +621,19 @@ instance `terrain-tool` and in its automatic snapshots, unless stated otherwise.
 |---|---|---|
 | Visitors' email addresses, consent records, newsletter status, hashed sign-in links and sessions, abuse counters (hashed IP addresses) | SQLite database `/var/lib/terrain-tool/app.db` | as set in the app (see `/privacy`: unconfirmed addresses 7 days, accounts until deleted or 730 days inactive, abuse counters about 2 days) |
 | Uploaded site files (KML/KMZ), results, maps, PDF and Word reports | `/var/lib/terrain-tool/jobs/` | 30 days (`RETENTION_DAYS`), or until the visitor deletes them |
-| Database backups | `/var/lib/terrain-tool/backups/` | 14 days |
-| Whole-server snapshots (contain all of the above) | Lightsail automatic snapshots, same region | 7 days |
-| System and app logs: requests reach the app from Caddy, so visitors' IP addresses are not logged (Caddy keeps no access log); an email error can quote the recipient's address | systemd journal on the server | at most 30 days and 500 MB |
+| Database backups | `/var/lib/terrain-tool/backups/` | 14 days (and inside the snapshots below for 7 more days: deleted database records up to about 3 weeks in all) |
+| Whole-server snapshots (contain all of the above) | Lightsail automatic snapshots, same region | 7 days (deleted site files and reports up to 7 days) |
+| System and app logs: requests reach the app from Caddy, so visitors' IP addresses are not logged (Caddy keeps no access log); an email error can quote the recipient's address | systemd journal on the server (not passed on to `/var/log/syslog`) | at most about 30 days and 500 MB |
 | Secrets (signing key, admin password, SES access key) | `/etc/terrain-tool/terrain-tool.env` (readable only by root and the app) | until changed |
 | Outgoing emails (address, subject, message) | **Amazon SES**, same region (AWS keeps sending records according to its own terms) | per AWS |
 
-Outside Malaysia: the visitor's browser loads fonts from Google Fonts (and Cloudflare Turnstile,
-if you enable it); the server reads public elevation tiles from the Copernicus DEM bucket in
-AWS `eu-central-1` (Frankfurt) by tile name only — no personal data or site coordinates are
-sent. The privacy notice at `/privacy` names AWS (Lightsail and SES, Malaysia region) as the
-hosting and email providers; the AWS contracting entity and data processing terms are marked
-there for legal review.
+Outside Malaysia: the visitor's browser loads fonts from Google Fonts and, once it is turned on
+(E8), the Cloudflare Turnstile check; the server reads public elevation tiles from the Copernicus
+DEM bucket in AWS `eu-central-1` (Frankfurt). It requests the tile by name and only the parts of
+that tile file that cover the site's general area (a block of roughly 30 km). No personal data,
+file contents or exact site coordinates are sent. The privacy notice at `/privacy` names AWS
+(Lightsail and SES, Malaysia region) as the hosting and email providers; the AWS contracting
+entity and data processing terms are marked there for legal review.
 
 ---
 
@@ -544,6 +642,7 @@ there for legal review.
 | File | Installed as |
 |---|---|
 | `setup.sh` | run once per install or update (`sudo terrain-tool update` runs it) |
+| `constraints.txt` | not installed: pins every Python library (and its dependencies) that `setup.sh` installs into `/opt/terrain-tool/venv` |
 | `terrain-tool` | `/usr/local/sbin/terrain-tool` (admin helper) |
 | `terrain-tool.service` | `/etc/systemd/system/terrain-tool.service` (user `terrain`, `EnvironmentFile`, hardening, `MemoryMax=1500M`) |
 | `terrain-tool.env.template` | `/etc/terrain-tool/terrain-tool.env` (root:terrain 0640), created once with fresh secrets; later runs only add missing keys |
@@ -555,10 +654,24 @@ there for legal review.
 Other paths: code `/opt/terrain-tool/src` (sparse, shallow checkout of `terrain-tool/` at the ref
 in `/etc/terrain-tool/ref`), Python environment `/opt/terrain-tool/venv`, data
 `/var/lib/terrain-tool` (owner `terrain`, 0750), swap `/swapfile` (2 GB, `vm.swappiness=10`),
-setup log `/var/log/terrain-tool-setup.log`. The app listens on `127.0.0.1:8000` only; Caddy
-(Caddy's official apt repository) terminates HTTPS, replaces any client-sent `X-Forwarded-For`
-(so `TRUST_PROXY_HEADERS=true`, `TRUSTED_PROXY_HOPS=1`), limits request bodies to 6 MB and adds
-HSTS only where the app has not set it. `setup.sh` first downloads the requested ref, then
-re-runs the `setup.sh` from that download, so an update always runs the matching steps.
+setup log `/var/log/terrain-tool-setup.log` (0600: everything the setup printed, plus apt's
+output; never the admin password). The app listens on `127.0.0.1:8000` only; Caddy (Caddy's
+official apt repository, updated by unattended-upgrades) terminates HTTPS, replaces any
+client-sent `X-Forwarded-For` (so `TRUST_PROXY_HEADERS=true`, `TRUSTED_PROXY_HOPS=1`), limits
+request bodies to 6 MB, adds HSTS only where the app has not set it, and has its admin API on
+the socket `/var/lib/caddy/admin.sock` (not `localhost:2019`, which the app's user could reach).
+`setup.sh` first downloads the requested ref, then re-runs the `setup.sh` from that download, so
+an update always runs the matching steps. When the commit changes it stops the tool first and
+records the running commit in `/etc/terrain-tool/previous-version` (and the git ref
+`refs/terrain-tool/previous`); if the update then fails, it checks that commit out again,
+reinstalls its pinned libraries and service file, and starts it. It ignores SIGHUP, so a closed
+browser terminal does not stop it.
+
+**Refreshing `constraints.txt`** (about monthly, and whenever `requirements.txt` changes): on a
+fresh Ubuntu 24.04 machine or container, in the `terrain-tool` folder, run
+`python3 -m venv /tmp/v && /tmp/v/bin/pip install --upgrade -r requirements.txt boto3 &&
+/tmp/v/bin/pip freeze`, replace the version lines of `deploy/aws-lightsail/constraints.txt` with
+that output (keep its comment lines and update their date), run the test suite (and ideally one
+screening on a test server), commit, and then run `sudo terrain-tool update` on the server.
 Settings for testing only: `TOOL_REPO` (another git URL or path) and `TT_OS_RELEASE`.
 `tests/test_deploy_kit.py` checks these files.

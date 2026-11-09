@@ -6,6 +6,10 @@
 # policies, and HSTS on https), so they are not repeated here.
 {
 	email contact@ecoconsultancy.services
+	# Caddy's admin API on a Unix socket in Caddy's own home folder instead of the default
+	# localhost:2019, which any program on the server (including the app's user) could reach
+	# to replace this configuration. Only Caddy itself (and root) can use the socket.
+	admin unix//var/lib/caddy/admin.sock
 }
 
 @TOOL_DOMAIN@ {

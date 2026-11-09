@@ -82,11 +82,12 @@
 
   <h2>10. How long we keep it</h2>
   <ul>
-    <li><strong>Site files, results and reports:</strong> {{ settings.retention_days }} days after upload, or earlier on request. The Delete button deletes them immediately.</li>
+    <li><strong>Site files, results and reports:</strong> {{ settings.retention_days }} days after upload, or earlier on request. The Delete button deletes them from the tool immediately (for backups, see below).</li>
     <li><strong>Email addresses that are never confirmed:</strong> deleted after {{ settings.unverified_purge_days }} days.</li>
     <li><strong>Your account and consent records:</strong> kept until you delete your account or, if you have no report left and are not subscribed to the newsletter, until {{ settings.inactive_purge_days }} days after you last used the tool, when we delete them as if you had deleted your account. [Consent-record retention after deletion to be confirmed by legal review — reg 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on the data user.]</li>
     <li><strong>After you delete your account</strong> we keep only a one-way hash of your email address, so we can honour "do not contact". Requesting a new link later counts as a fresh sign-up.</li>
     <li><strong>Short-lived data:</strong> access links expire after {{ settings.token_ttl_hours }} hours, sign-in sessions after {{ settings.session_ttl_hours }} hours, and hashed abuse counters after about 2 days.</li>
+    <li><strong>Backups:</strong> we keep nightly copies of the tool's database for 14 days and nightly snapshots of the whole server for 7 days, both in the AWS Asia Pacific (Malaysia) Region. Data that you delete, or that we delete on the schedule above, remains in these backups until they are overwritten: site files and reports for up to 7 days, and database records (such as your email address, consent records and your answers about a site) for up to about 3 weeks. We use backups only to restore the tool after a failure. [Backup retention wording to be confirmed by legal review]</li>
   </ul>
 
   <h2>11. Security</h2>
@@ -184,11 +185,12 @@
 
   <h2>10. Tempoh penyimpanan</h2>
   <ul>
-    <li><strong>Fail tapak, hasil dan laporan:</strong> {{ settings.retention_days }} hari selepas dimuat naik, atau lebih awal atas permintaan anda. Butang Delete memadamnya serta-merta.</li>
+    <li><strong>Fail tapak, hasil dan laporan:</strong> {{ settings.retention_days }} hari selepas dimuat naik, atau lebih awal atas permintaan anda. Butang Delete memadamnya daripada alat ini serta-merta (bagi salinan sandaran, lihat di bawah).</li>
     <li><strong>Alamat e-mel yang tidak pernah disahkan:</strong> dipadam selepas {{ settings.unverified_purge_days }} hari.</li>
     <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda atau, jika anda tiada laporan lagi dan tidak melanggan surat berita, sehingga {{ settings.inactive_purge_days }} hari selepas anda kali terakhir menggunakan alat ini, apabila kami memadamnya seolah-olah anda telah memadam akaun anda. [Tempoh penyimpanan rekod persetujuan selepas pemadaman akan disahkan melalui semakan undang-undang — peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas pengguna data.]</li>
     <li><strong>Selepas anda memadam akaun,</strong> kami hanya menyimpan cincang sehala alamat e-mel anda supaya kami dapat mematuhi permintaan "jangan hubungi". Meminta pautan baharu kemudian dikira sebagai pendaftaran baharu.</li>
     <li><strong>Data jangka pendek:</strong> pautan akses tamat selepas {{ settings.token_ttl_hours }} jam, sesi log masuk selepas {{ settings.session_ttl_hours }} jam, dan pembilang penyalahgunaan yang dicincang selepas kira-kira 2 hari.</li>
+    <li><strong>Salinan sandaran:</strong> kami menyimpan salinan harian pangkalan data alat ini selama 14 hari dan salinan harian keseluruhan pelayan (snapshot) selama 7 hari, kedua-duanya di Wilayah AWS Asia Pasifik (Malaysia). Data yang anda padam, atau yang kami padam mengikut jadual di atas, kekal dalam salinan sandaran ini sehingga ditimpa: fail tapak dan laporan sehingga 7 hari, dan rekod pangkalan data (seperti alamat e-mel anda, rekod persetujuan dan jawapan anda tentang sesuatu tapak) sehingga kira-kira 3 minggu. Kami menggunakan salinan sandaran hanya untuk memulihkan alat ini selepas berlaku kegagalan. [Perkataan tempoh penyimpanan sandaran akan disahkan melalui semakan undang-undang]</li>
   </ul>
 
   <h2>11. Keselamatan</h2>

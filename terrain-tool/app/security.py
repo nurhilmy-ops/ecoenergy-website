@@ -158,6 +158,27 @@ def _window_start(window_seconds: int) -> str:
     return iso(utcnow() - timedelta(seconds=window_seconds))
 
 
+def ip_rate_key(ip: str) -> str:
+    """The rate-limit key for a client address: IPv4 as is, IPv6 as its /64 network.
+
+    One ordinary IPv6 connection gets a whole /64, so counting single IPv6 addresses would let
+    a visitor use a fresh address for every request."""
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return ip
+    if addr.version == 6:
+        if addr.ipv4_mapped is not None:
+            return str(addr.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{addr}/64", strict=False))
+    return str(addr)
+
+
+def _rate_key(kind: str, raw_key: str) -> str:
+    """Hashed events key; per-IP kinds (``*_ip``) count an IPv6 /64 as one address."""
+    return sha256_hex(ip_rate_key(raw_key) if kind.endswith("_ip") else raw_key)
+
+
 def rate_limit(settings: Settings, kind: str, raw_key: str, limit: int, window_seconds: int) -> bool:
     """Return True and record an event if fewer than ``limit`` events of ``kind`` exist for
     ``raw_key`` within the window; otherwise return False and record nothing."""
@@ -172,13 +193,13 @@ def rate_limit_all(settings: Settings, checks: list[tuple[str, str, int, int]]) 
         for kind, raw_key, limit, window_seconds in checks:
             (count,) = conn.execute(
                 "SELECT COUNT(*) FROM events WHERE kind = ? AND key = ? AND created_at > ?",
-                (kind, sha256_hex(raw_key), _window_start(window_seconds)),
+                (kind, _rate_key(kind, raw_key), _window_start(window_seconds)),
             ).fetchone()
             if count >= limit:
                 return False
         now = now_iso()
         conn.executemany("INSERT INTO events (kind, key, created_at) VALUES (?, ?, ?)",
-                         [(kind, sha256_hex(raw_key), now) for kind, raw_key, _, _ in checks])
+                         [(kind, _rate_key(kind, raw_key), now) for kind, raw_key, _, _ in checks])
         return True
 
 
@@ -186,7 +207,7 @@ def record_event(settings: Settings, kind: str, raw_key: str) -> None:
     """Record an event unconditionally (e.g. a failed admin login)."""
     with db(settings.db_path) as conn:
         conn.execute("INSERT INTO events (kind, key, created_at) VALUES (?, ?, ?)",
-                     (kind, sha256_hex(raw_key), now_iso()))
+                     (kind, _rate_key(kind, raw_key), now_iso()))
 
 
 def rate_remaining(settings: Settings, kind: str, raw_key: str, limit: int, window_seconds: int) -> int:
@@ -194,7 +215,7 @@ def rate_remaining(settings: Settings, kind: str, raw_key: str, limit: int, wind
     with db(settings.db_path) as conn:
         (count,) = conn.execute(
             "SELECT COUNT(*) FROM events WHERE kind = ? AND key = ? AND created_at > ?",
-            (kind, sha256_hex(raw_key), _window_start(window_seconds)),
+            (kind, _rate_key(kind, raw_key), _window_start(window_seconds)),
         ).fetchone()
     return max(0, limit - count)
 
