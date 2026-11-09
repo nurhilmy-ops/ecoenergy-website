@@ -20,6 +20,7 @@ import secrets
 import shutil
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from email.utils import parseaddr
 from pathlib import Path
 from typing import Any
 
@@ -342,8 +343,11 @@ def _request_link(request: Request, form: dict[str, str]) -> HTMLResponse:
     if not verify_turnstile(settings, form.get("cf-turnstile-response"), ip):
         return form_error("Please complete the quick human check and try again.")
 
-    # From here on every outcome renders the same page, so the response never reveals
-    # whether an address is known, suppressed or rate-limited.
+    # From here on the response never reveals whether an address is known, suppressed or
+    # rate-limited: those all get the same page. Only a failure on our side (the database, or
+    # the mail service refusing or being unreachable, e.g. SES keys not set yet) says so, since
+    # the visitor would otherwise wait for an email that never comes; it does not depend on
+    # the address being known.
     if rate_limit_all(settings, [("link_ip", ip, settings.rate_link_per_ip_hour, 3600),
                                  ("link_email", email, settings.rate_link_per_email_hour, 3600)]):
         try:
@@ -351,10 +355,18 @@ def _request_link(request: Request, form: dict[str, str]) -> HTMLResponse:
                                         request.headers.get("user-agent"))
             send_magic_link_email(settings, email, magic_link(settings, raw), newsletter=newsletter)
         except Exception:
-            log.exception("Link request could not be completed")
+            log.exception("Link request could not be completed (mail backend %s)", settings.mail_backend)
+            return landing_response(request, email=raw_email, newsletter=newsletter, utm=utm,
+                                    ref=ref_origin, error=send_failed_message(settings), status_code=503)
     else:
         log.info("Link request rate-limited")
     return render(request, "check_inbox.html", email=email)
+
+
+def send_failed_message(settings: Settings) -> str:
+    contact = parseaddr(settings.mail_reply_to)[1]
+    return ("We couldn't send the email right now — please try again later."
+            + (f" If it keeps happening, write to us at {contact}." if contact else ""))
 
 
 def register_link_request(settings: Settings, email: str, newsletter: bool, utm: dict,

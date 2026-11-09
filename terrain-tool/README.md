@@ -138,7 +138,7 @@ line: everything after `=` is the value.
 | `TRUST_PROXY_HEADERS` | `false` | Take the client IP from `X-Forwarded-For`. Set `true` only behind your own reverse proxy, and only if it appends the address it received the request from (nginx `$proxy_add_x_forwarded_for`, AWS ALB, Cloudflare) or overwrites the header — never if it passes a client-supplied header on unchanged. |
 | `TRUSTED_PROXY_HOPS` | `1` | How many of your proxies append to `X-Forwarded-For` (e.g. `2` for Cloudflare in front of nginx). The client IP is taken that many hops from the right; the left-most hops can be forged by the client. |
 | **privacy notice** | | |
-| `NOTICE_VERSION` | `2026-10-draft-3` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
+| `NOTICE_VERSION` | `2026-11-draft-4` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
 | **email** | | |
 | `MAIL_BACKEND` | `outbox` | `outbox` (development: mail is stored and shown at `/dev/outbox`), `smtp`, or `ses` (Amazon SES v2 API; `pip install boto3`). |
 | `MAIL_FROM` | `EcoEnergy Consultancy <no-reply@ecoconsultancy.services>` | From header of every email. |
@@ -303,9 +303,12 @@ version `NOTICE_VERSION`).
 
 - contact person's designation (reg 4 requires a designation and phone number), company
   registration number, publication date, and which language version prevails;
-- the hosting and email providers, the countries they process data in, and the s.129
-  basis for each transfer (a transfer impact assessment, contract, or contractual clauses),
-  with the records the Cross Border Personal Data Transfer guideline asks for;
+- the hosting and email providers are now named (Amazon Web Services: Lightsail hosting and
+  Amazon SES email, both in the AWS Asia Pacific (Malaysia) Region); still to confirm: the AWS
+  contracting entity and data processing terms, and for any provider that processes data
+  outside Malaysia (Google Fonts, Cloudflare Turnstile if enabled) the s.129 basis for each
+  transfer (a transfer impact assessment, contract, or contractual clauses), with the records
+  the Cross Border Personal Data Transfer guideline asks for;
 - how long consent records and the email address are kept after an account is erased
   (reg 3(5) puts the burden of proving consent on the data user);
 - whether staff follow-up counts as direct marketing under s.43 (the tool already treats
@@ -321,29 +324,51 @@ prescribed under s.43A(3) yet.
 
 ## Before going live
 
-- [ ] **Domain and HTTPS.** A subdomain (e.g. `tools.ecoconsultancy.services`, your choice)
-      behind a TLS-terminating reverse proxy; `BASE_URL=https://…`, `APP_ENV=production`,
-      `TRUST_PROXY_HEADERS=true` only if the proxy appends to (or overwrites)
-      `X-Forwarded-For`, with `TRUSTED_PROXY_HOPS` set to the number of such proxies.
-- [ ] **Email.** To keep processing in Malaysia use Amazon SES in `ap-southeast-5`
-      (Asia Pacific, Malaysia; available since 21 Nov 2025). AWS lists **no SES SMTP
-      endpoint in that region**, only the HTTPS API, so set `MAIL_BACKEND=ses`,
-      `SES_REGION=ap-southeast-5` and `pip install boto3`. Any other provider works over
-      `MAIL_BACKEND=smtp` (`SMTP_PORT=587` + `SMTP_STARTTLS=true`, or port 465), but a
-      provider outside Malaysia is a cross-border transfer (PDPA s.129).
-- [ ] **SPF, DKIM and DMARC** for the sending domain in `MAIL_FROM`, then send yourself a
-      test link and check it lands in the inbox (Gmail and Outlook).
+**Production hosting: Amazon Lightsail in AWS Asia Pacific (Malaysia).** The step-by-step guide
+for the owner (AWS account and region, the server, the Namecheap record, Amazon SES, DMARC, going
+live, everyday commands, costs and troubleshooting) is
+[`deploy/aws-lightsail/README.md`](deploy/aws-lightsail/README.md). On the server, one command
+installs everything:
+
+```bash
+# before the pull request is merged
+curl -fsSL https://raw.githubusercontent.com/nurhilmy-ops/ecoenergy-website/claude/admiring-albattani-j1beqs/terrain-tool/deploy/aws-lightsail/setup.sh | sudo TOOL_REF=claude/admiring-albattani-j1beqs bash
+# after it is merged into main
+curl -fsSL https://raw.githubusercontent.com/nurhilmy-ops/ecoenergy-website/main/terrain-tool/deploy/aws-lightsail/setup.sh | sudo bash
+```
+
+Items marked *(kit)* are done by the kit; the others are still yours.
+
+- [x] **Domain and HTTPS** *(kit)*: `tools.ecoconsultancy.services` (one Namecheap A record) behind
+      Caddy, which gets and renews the Let's Encrypt certificate; `BASE_URL=https://…`,
+      `APP_ENV=production`, `TRUST_PROXY_HEADERS=true` and `TRUSTED_PROXY_HOPS=1` (Caddy replaces
+      any client-sent `X-Forwarded-For`). Elsewhere: any TLS-terminating reverse proxy that
+      appends to or overwrites `X-Forwarded-For`, with `TRUSTED_PROXY_HOPS` set to the number
+      of such proxies.
+- [ ] **Email** *(kit + guide, Part E)*: Amazon SES in `ap-southeast-5` (Asia Pacific, Malaysia;
+      available since 21 Nov 2025) keeps processing in Malaysia. AWS lists **no SES SMTP
+      endpoint in that region**, only the HTTPS API, so the kit sets `MAIL_BACKEND=ses`,
+      `SES_REGION=ap-southeast-5` and installs `boto3`; you verify the domain (Easy DKIM), create
+      the sending-only IAM user, enter its key (`sudo terrain-tool set-aws-keys`), test
+      (`sudo terrain-tool test-email you@…`) and request SES production access. Until then a
+      visitor who asks for a link is told the email could not be sent and to try later. Any
+      other provider works over `MAIL_BACKEND=smtp` (`SMTP_PORT=587` + `SMTP_STARTTLS=true`, or
+      port 465), but a provider outside Malaysia is a cross-border transfer (PDPA s.129).
+- [ ] **SPF, DKIM and DMARC** for the sending domain in `MAIL_FROM` (guide, Parts E and F), then
+      send yourself a test link and check it lands in the inbox (Gmail and Outlook).
 - [ ] **Cloudflare Turnstile** keys (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`).
-- [ ] **`ADMIN_PASSWORD`** — long and unique; share it only with staff who handle leads.
-- [ ] **`SECRET_KEY`** — long and random (`python -c "import secrets; print(secrets.token_urlsafe(48))"`),
-      kept out of git.
-- [ ] **Backups** of `DATA_DIR` (the SQLite file with WAL; use `sqlite3 app.db ".backup …"`),
-      encrypted, with a tested restore and the same retention as the data.
+- [x] **`ADMIN_PASSWORD`** *(kit)*: 24 random characters generated on the server, shown once
+      (`sudo terrain-tool admin-password`); share it only with staff who handle leads.
+- [x] **`SECRET_KEY`** *(kit)*: 64 random characters generated on the server, never in git.
+      Elsewhere: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+- [x] **Backups** *(kit)*: a nightly consistent copy of the SQLite database (SQLite online backup
+      API), 14 days kept on the server, plus Lightsail automatic snapshots (7 days, guide Part
+      B4). Test a restore once (guide, Part H).
 - [ ] **One instance only** with SQLite and the inline worker. Before running more than one
       app instance, move to Postgres (the schema avoids SQLite-only types) and run the
       worker as a separate process.
 - [ ] **Monitoring**: uptime check on `/healthz`, alerts on error logs and failed jobs,
-      disk space for `DATA_DIR`.
+      disk space for `DATA_DIR` (`sudo terrain-tool status` shows the basics on demand).
 - [ ] **Legal review** of the privacy notice (fill every bracketed item, bump
       `NOTICE_VERSION`), a **DPO assessment**, and a **transfer impact assessment** for any
       provider outside Malaysia; a breach-response plan (a breach likely to cause significant
@@ -386,4 +411,7 @@ python -m pytest -q
 The suite runs offline (the web tests use a fake engine; the integration tests use a
 synthetic GeoTIFF). To also fetch real Copernicus tiles:
 `RUN_NETWORK_TESTS=1 python -m pytest -q -m network`. Behind a TLS-intercepting proxy, point
-`CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` at its CA bundle in your shell — never in the app.
+`CURL_CA_BUNDLE`, `GDAL_CURL_CA_BUNDLE` (rasterio 1.5 sets it to certifi's bundle otherwise) and
+`REQUESTS_CA_BUNDLE` at its CA bundle in your shell — never in the app.
+`tests/test_deploy_kit.py` checks the Lightsail kit in `deploy/aws-lightsail/` (bash syntax,
+shellcheck when installed, the systemd units, the Caddyfile and the settings template).

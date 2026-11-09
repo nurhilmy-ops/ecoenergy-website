@@ -1,0 +1,27 @@
+# Daily copy of the tool's SQLite database, started by terrain-tool-backup.timer
+# (or `sudo terrain-tool backup-now`). Installed by setup.sh.
+[Unit]
+Description=Back up the terrain screening tool database (keeps 14 daily copies)
+After=terrain-tool.service
+
+[Service]
+Type=oneshot
+User=terrain
+Group=terrain
+UMask=0077
+ExecStart=/usr/bin/python3 /usr/local/lib/terrain-tool/backup-db.py /var/lib/terrain-tool/app.db /var/lib/terrain-tool/backups 14
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+PrivateNetwork=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/terrain-tool
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=

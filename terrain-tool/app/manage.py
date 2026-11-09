@@ -10,13 +10,23 @@ ask in writing that direct marketing stop (s.43). Record such a request with:
 of the leads CSV at once); ``--newsletter`` unsubscribes the address. Each change is
 appended to the consent ledger with the note, like a withdrawal made in the tool.
 Run it from the terrain-tool folder with the same .env / environment as the app.
+
+Check that email delivery works with the production settings (the server's
+``sudo terrain-tool test-email ADDRESS`` runs this as the app user):
+
+    python -m app.manage test-email you@example.com --env-file /etc/terrain-tool/terrain-tool.env
+
+It sends one short message through the configured backend and explains a failure (for
+example Amazon SES sandbox limits or wrong access keys) in plain English.
 """
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+from pathlib import Path
 
-from .config import Settings, get_settings
+from .config import Settings, _load_dotenv, get_settings
 from .db import init_db, tx
 
 STAFF_USER_AGENT = "staff record (python -m app.manage)"
@@ -50,6 +60,60 @@ def withdraw(settings: Settings, email: str, *, followup: bool, newsletter: bool
     return changed
 
 
+TEST_EMAIL_SUBJECT = "Test email from the EcoEnergy terrain screening tool"
+
+
+def send_test_email(settings: Settings, to: str) -> None:
+    """Send one plain message through the configured backend; raises whatever the backend raises."""
+    from .mailer import send_mail
+
+    text = ("This is a test message from the EcoEnergy terrain screening tool at "
+            f"{settings.base_url}.\n\nIf you can read it, email delivery works: visitors will "
+            "receive their sign-in links and report notices.\n")
+    send_mail(settings, to, TEST_EMAIL_SUBJECT, text)
+
+
+def explain_mail_error(exc: BaseException, settings: Settings) -> str:
+    """Plain-English reason for a failed send (Amazon SES / botocore errors, SMTP errors)."""
+    name = type(exc).__name__
+    region = settings.ses_region
+    error = (getattr(exc, "response", None) or {}).get("Error", {})
+    code, message = error.get("Code", ""), error.get("Message", "") or str(exc)
+    if name in {"NoCredentialsError", "PartialCredentialsError"}:
+        return ("No AWS access keys are set on this server, so Amazon SES cannot be used yet. "
+                "Run: sudo terrain-tool set-aws-keys")
+    if name in {"EndpointConnectionError", "ConnectTimeoutError", "ConnectionClosedError"}:
+        return (f"Could not reach Amazon SES in {region}. Check that the server can reach the "
+                f"internet and that SES_REGION ({region}) is right.")
+    if code == "MessageRejected" and "not verified" in message.lower():
+        return ("Amazon SES refused the message: " + message + "\n"
+                "While your SES account is in the sandbox it only sends to addresses you have "
+                f"verified in SES (region {region}), and only from a verified domain. Verify this "
+                "address under SES > Identities (or wait for production access), and check that "
+                "the domain identity shows \"Verified\".")
+    if code in {"InvalidClientTokenId", "UnrecognizedClientException"}:
+        return ("AWS does not recognise the access key ID. Re-enter it with: sudo terrain-tool "
+                "set-aws-keys. Also check that the key is Active in IAM and that the Asia Pacific "
+                "(Malaysia) region is enabled for your AWS account.")
+    if code == "SignatureDoesNotMatch":
+        return ("The secret access key does not match the access key ID. Re-enter both with: "
+                "sudo terrain-tool set-aws-keys")
+    if code in {"AccessDenied", "AccessDeniedException"}:
+        return ("The IAM user is not allowed to send this email: " + message + "\nCheck the "
+                "terrain-tool-ses permissions policy (deploy/aws-lightsail/README.md, Part E) and "
+                "that MAIL_FROM uses the address the policy allows.")
+    if code in {"AccountSuspendedException", "SendingPausedException"}:
+        return ("Amazon SES has paused sending for this account: " + message + "\nOpen the SES "
+                "console (Account dashboard) for the reason.")
+    if code in {"LimitExceededException", "TooManyRequestsException", "Throttling"}:
+        return "Amazon SES sending limit reached: " + message + "\nTry again later."
+    if code:
+        return f"Amazon SES error {code}: {message}"
+    if name.startswith("SMTP") or isinstance(exc, OSError):
+        return f"The mail server could not be used ({name}): {exc}"
+    return f"{name}: {exc}"
+
+
 def main(argv: list[str] | None = None, settings: Settings | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.manage", description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -59,7 +123,13 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
     w.add_argument("--newsletter", action="store_true", help="unsubscribe from the newsletter")
     w.add_argument("--note", required=True,
                    help='how the request arrived, e.g. "Email from the subscriber, 12 Oct 2026"')
+    t = sub.add_parser("test-email", help="send a test email with the current mail settings")
+    t.add_argument("address")
+    t.add_argument("--env-file", help="settings file to use, e.g. /etc/terrain-tool/terrain-tool.env "
+                                       "(its AWS keys are used too; real environment variables win)")
     args = parser.parse_args(argv)
+    if args.command == "test-email":
+        return run_test_email(args, settings)
     if not (args.followup or args.newsletter):
         parser.error("choose --followup, --newsletter or both")
     if not args.note.strip():
@@ -76,6 +146,28 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
         print(f"Staff follow-up withdrawn for {len(changed['followup_jobs'])} report(s).")
     if args.newsletter:
         print("Newsletter: unsubscribed." if changed["newsletter"] else "Newsletter: already unsubscribed.")
+    return 0
+
+
+def run_test_email(args: argparse.Namespace, settings: Settings | None = None) -> int:
+    if settings is None:
+        env_file = Path(args.env_file) if args.env_file else None
+        if env_file is not None:
+            # The server runs the app with this file as its environment (systemd EnvironmentFile),
+            # so AWS keys in it must reach boto3 the same way.
+            for key, value in _load_dotenv(env_file).items():
+                os.environ.setdefault(key, value)
+        settings = Settings.from_env(env_file=env_file)
+    sender = settings.mail_from
+    backend = {"ses": f"Amazon SES ({settings.ses_region})", "smtp": f"SMTP {settings.smtp_host}:{settings.smtp_port}",
+               "outbox": "the development outbox"}.get(settings.mail_backend, settings.mail_backend)
+    print(f"Sending a test email to {args.address} from {sender} via {backend} ...", flush=True)
+    try:
+        send_test_email(settings, args.address)
+    except Exception as exc:  # noqa: BLE001 - every failure is reported in plain English
+        print("FAILED: " + explain_mail_error(exc, settings), file=sys.stderr)
+        return 1
+    print(f"Sent. Check the inbox (and the spam folder) of {args.address}.")
     return 0
 
 

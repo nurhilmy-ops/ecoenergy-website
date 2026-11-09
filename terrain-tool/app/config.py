@@ -47,7 +47,7 @@ class Settings:
     trusted_proxy_hops: int = 1                 # proxies of ours that append to X-Forwarded-For
 
     # --- notice / consent ---
-    notice_version: str = "2026-10-draft-3"     # bump whenever the privacy notice text changes
+    notice_version: str = "2026-11-draft-4"     # bump whenever the privacy notice text changes
 
     # --- email ---
     mail_backend: str = "outbox"                # outbox (dev: stored in db, shown at /dev/outbox) | smtp | ses

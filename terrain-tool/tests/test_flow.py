@@ -39,6 +39,35 @@ def test_landing_defaults_and_attribution(client, settings):
     assert "challenges.cloudflare.com" not in html
 
 
+def test_link_email_that_cannot_be_sent_shows_a_friendly_message(app_factory, monkeypatch, caplog):
+    """SES not set up yet (no keys, sandbox, region not enabled): the visitor is told to try
+    again later instead of waiting for an email that never comes, and the error is logged."""
+    import logging
+    import sys
+    import types
+
+    class FakeSes:
+        def send_email(self, **kwargs):
+            raise RuntimeError("An error occurred (MessageRejected) when calling the SendEmail operation: "
+                               "Email address is not verified.")
+
+    monkeypatch.setitem(sys.modules, "boto3", types.SimpleNamespace(client=lambda *a, **k: FakeSes()))
+    ses = app_factory("ses", mail_backend="ses")
+    with caplog.at_level(logging.ERROR, logger="app.main"):
+        resp = ses.request_link("visitor@example.com", newsletter=True)
+    assert resp.status_code == 503
+    assert "We couldn&#39;t send the email right now — please try again later." in resp.text
+    assert "contact@ecoconsultancy.services" in resp.text
+    assert "Check your inbox" not in resp.text and "Traceback" not in resp.text
+    assert 'value="visitor@example.com"' in resp.text                  # form kept for a retry
+    assert any("could not be completed" in r.getMessage() and r.exc_info for r in caplog.records)
+
+    # Any other failure on the way (e.g. a broken mail backend setting) is handled the same way.
+    broken = app_factory("broken", mail_backend="carrier-pigeon")
+    resp = broken.request_link("visitor@example.com")
+    assert resp.status_code == 503 and "please try again later" in resp.text
+
+
 def test_happy_path_end_to_end(flow, settings, query, fake_engine):
     email = "Developer@Example.COM"
     resp = flow.request_link(email, utm_source="linkedin", utm_medium="social", utm_campaign="lss6",
@@ -354,7 +383,7 @@ def test_privacy_page(client, settings):
     assert resp.status_code == 200
     html = resp.text
     assert "Draft for legal review" in html
-    assert settings.notice_version == "2026-10-draft-3" and settings.notice_version in html
+    assert settings.notice_version == "2026-11-draft-4" and settings.notice_version in html
     # Copernicus requests are described as they are: tile name plus byte ranges of a ~30 km block.
     assert "only the 1° map tile names are requested" not in html
     assert "a block of roughly 30 km" in html and "blok kira-kira 30 km" in html
@@ -371,6 +400,10 @@ def test_privacy_page(client, settings):
     for phrase in (
         "obligatory", "Data portability", "outside Malaysia", "section 129", "[to be confirmed]",
         "Hosting", "email-delivery", "data processors",
+        # Production processors (deploy/aws-lightsail): AWS hosting and SES, both in Malaysia.
+        "<strong>Amazon Web Services</strong> (Amazon Lightsail) in the AWS Asia Pacific (Malaysia) Region",
+        "<strong>Amazon Simple Email Service (Amazon SES)</strong> in the same region",
+        "di Wilayah AWS Asia Pasifik (Malaysia)", "Amazon SES)</strong> di wilayah yang sama",
         # Staff follow-up is a separate opt-in per report, withdrawable per report.
         "separate, optional box on the upload page", "kotak pilihan yang berasingan di halaman muat naik",
         # Elevation data: tile name and byte ranges only, never the coordinates (default Copernicus).

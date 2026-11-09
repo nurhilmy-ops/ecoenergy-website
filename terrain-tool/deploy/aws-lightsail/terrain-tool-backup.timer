@@ -1,0 +1,12 @@
+# Runs terrain-tool-backup.service every night at about 02:30 Malaysia time, before the
+# Lightsail automatic snapshot (set that to 19:00 UTC = 03:00 Malaysia time). Installed by setup.sh.
+[Unit]
+Description=Nightly backup of the terrain screening tool database
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Kuala_Lumpur
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

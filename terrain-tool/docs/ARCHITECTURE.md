@@ -52,10 +52,11 @@ terrain-tool/
     db.py                schema + connection helpers                   [shared, do not fork]
     main.py              FastAPI app factory create_app(settings) and all routes
     security.py          tokens, sessions, CSRF, rate limits, email validation, Turnstile, client IP
-    mailer.py            send_mail(settings, to, subject, text, html, headers) → outbox | smtp
+    mailer.py            send_mail(settings, to, subject, text, html, headers) → outbox | smtp | ses
     jobs.py              enqueue/claim/process + worker thread + retention sweeps
     admin.py             admin router (HTTP Basic), CSV exports
-    manage.py            python -m app.manage withdraw EMAIL …: staff record a written withdrawal
+    manage.py            python -m app.manage withdraw EMAIL …: staff record a written withdrawal;
+                         test-email ADDRESS [--env-file F]: send a test email, explain failures
     terrain/             screening engine (ported from the kml-terrain-screening skill)
       __init__.py        public API: ScreeningError, SiteInput, validate_upload, run_screening
       kml.py             safe KML/KMZ parsing (defusedxml, zip limits, 2.2/2.1/no namespace)
@@ -73,6 +74,8 @@ terrain-tool/
     static/              css, logo, small JS (status polling)
     data/boundaries/     dosm_administrative_2_district.geojson: DOSM's 160 districts with their state
                          (github.com/dosm-malaysia/data-open, DOSM Open Data Licence)
+  deploy/aws-lightsail/  production kit: setup.sh (one-command Ubuntu install), terrain-tool (admin
+                         helper), systemd units, Caddyfile, settings template; owner guide README.md
   tests/
   docs/ARCHITECTURE.md
   requirements.txt  Dockerfile  docker-compose.yml  .env.example  run_local.sh  run_local.ps1  README.md
@@ -334,6 +337,9 @@ then creates indexes on migrated columns. Add a new column to both `SCHEMA` and
   per report afterwards; the landing notice only says that it is a choice made there
   (see "Consent model").
 - The same response is returned whether or not an email already exists (no enumeration).
+  Only a failure on our side while registering or sending the link (database, or the mail
+  backend refusing, e.g. SES keys not set) shows "We couldn't send the email right now"
+  (HTTP 503, error logged); it does not depend on the address being known.
 - Job ids are unguessable and job pages additionally require the owning session.
 - Site files, outputs and derived site fields are deleted after `retention_days`
   or immediately on "Delete now" (follow-up for that site ends with them); erasing an
@@ -361,6 +367,9 @@ then creates indexes on migrated columns. Add a new column to both `SCHEMA` and
 - `tests/test_packaging.py`: the Docker image and compose stack, `run_local.sh` (run with a
   stand-in Python), `run_local.ps1` and `python -m app` (HOST/PORT/LOG_LEVEL from `.env`,
   BASE_URL following PORT, quiet Ctrl+C).
+- `tests/test_deploy_kit.py`: the Lightsail kit (bash syntax, shellcheck if installed, the
+  systemd units' user/hardening, the Caddyfile, the settings template has no fixed secrets,
+  `setup.sh` refuses non-root and other systems, README commands match real paths and branch).
 - `tests/test_integration.py`: the real app, engine and renderers together over HTTP,
   with a synthetic GeoTIFF through the `geotiff` DEM provider (offline). It also checks
   `result.json` against the key sets above.
