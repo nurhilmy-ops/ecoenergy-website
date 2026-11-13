@@ -221,22 +221,102 @@ cmd_admin_password() {
   line "Password:" "$(env_value ADMIN_PASSWORD)"
 }
 
+readonly PASTE_HELP='How to paste: click the copy icon next to the value, then click the orange
+"Paste into terminal" button at the bottom right of this window, then press Enter.
+Nothing is shown while you paste, for either answer. The clipboard holds one value at a
+time, so copy again between the two questions.'
+
+# Read a pasted key without showing it on screen: keys are secrets, and with two of them it is
+# easy to paste the wrong one. Usage: ask_key PROMPT CHECK [ARG...]. CHECK is called as
+# CHECK VALUE [ARG...] (spaces removed) and returns 0 if the value is right, or prints why it is
+# wrong (never the value itself) and returns 1. Three wrong answers stop the command; an empty
+# answer (Enter alone, e.g. after a paste that already ended the line) just asks again.
+# Sets ANSWER.
+ask_key() {
+  local prompt=$1 check=$2 value problem tries=0
+  shift 2
+  while :; do
+    value=""
+    # read fails at the end of input; a last line without a new line still counts.
+    read -r -s -p "$prompt" value || [[ -n $value ]] || { echo; die "No answer was read. Nothing was changed."; }
+    echo
+    value=${value//[[:space:]]/}
+    if problem=$("$check" "$value" "$@"); then
+      ANSWER=$value
+      return 0
+    fi
+    printf '  %s\n' "$problem" >&2
+    [[ -z $value ]] && continue
+    tries=$((tries + 1))
+    ((tries < 3)) || die "Three wrong answers. Nothing was changed. Run the command again when you are ready."
+    printf '  Try again (%d of 3).\n' $((tries + 1)) >&2
+  done
+}
+
+shown_end() { printf '%s...%s' "${1:0:4}" "${1: -4}"; }   # the start and end of a key, for checking
+
+# shellcheck disable=SC2329  # called through ask_key
+check_access_key_id() {
+  [[ $1 =~ ^AKIA[A-Z0-9]{16}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In AWS, click the copy icon next to the Access key (it starts with AKIA)."
+  elif [[ ${#1} -eq 40 && ${1:0:20} == "${1:20}" && ${1:0:20} =~ ^AKIA[A-Z0-9]{16}$ ]]; then
+    echo "The access key ID was pasted twice. Paste it once, then press Enter."
+  elif [[ $1 =~ ^[A-Za-z0-9/+=]{40}$ ]]; then
+    echo "That is the SECRET access key (it was not shown). It belongs in the second question."
+    echo "  First copy the Access key: it starts with AKIA and is shown next to the secret in AWS."
+  else
+    echo "That does not look like an access key ID: got ${#1} characters, expected 20 starting with AKIA."
+  fi
+  return 1
+}
+
+# shellcheck disable=SC2329  # called through ask_key
+check_secret_access_key() {   # VALUE KEY_ID
+  [[ $1 =~ ^[A-Za-z0-9/+=]{40}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In AWS, click the copy icon next to the Secret access key."
+  elif [[ $1 == "$2" || $1 =~ ^AKIA[A-Z0-9]{16}$ ]]; then
+    echo "That is the access key ID again. In AWS, click the copy icon next to the Secret access key"
+    echo "  (or click Show and copy it), then paste."
+  elif [[ ${#1} -eq 80 && ${1:0:40} == "${1:40}" ]]; then
+    echo "The secret access key was pasted twice. Paste it once, then press Enter."
+  else
+    echo "That does not look like a secret access key: got ${#1} characters, expected 40."
+  fi
+  return 1
+}
+
+# shellcheck disable=SC2329  # called through ask_key
+check_turnstile_key() {   # VALUE NAME [SITE_KEY]
+  if [[ -n ${3:-} && $1 == "$3" ]]; then
+    echo "That is the site key again. In Cloudflare, copy the Secret key, then paste."
+    return 1
+  fi
+  [[ $1 =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In Cloudflare, click the copy icon next to the $2."
+  else
+    echo "That does not look like a Turnstile $2: got ${#1} characters, expected 0x followed by letters and digits."
+  fi
+  return 1
+}
+
 cmd_set_aws_keys() {
   need_root set-aws-keys
   local key_id secret
-  cat <<'EOF'
+  cat <<EOF
 Enter the access key of the IAM user terrain-tool-ses (AWS console > IAM > Users >
-terrain-tool-ses > Security credentials > Create access key; README Part E).
-To paste in the Lightsail browser window: copy it, click the clipboard icon at the bottom
-right, paste into the box there, then right-click in this window.
+terrain-tool-ses > Security credentials > Create access key; README Part E5 and E6).
+$PASTE_HELP
 EOF
-  read -r -p "Access key ID (20 characters, starts with AKIA): " key_id
-  key_id=${key_id//[[:space:]]/}
-  [[ $key_id =~ ^AKIA[A-Z0-9]{16}$ ]] || die "That does not look like an access key ID (AKIA followed by 16 capital letters or digits). Nothing was changed."
-  read -r -s -p "Secret access key (40 characters; it stays hidden while you paste): " secret
-  echo
-  secret=${secret//[[:space:]]/}
-  [[ $secret =~ ^[A-Za-z0-9/+=]{40}$ ]] || die "That does not look like a secret access key (40 characters). Nothing was changed."
+  ask_key "Access key ID (starts with AKIA; hidden while you paste): " check_access_key_id
+  key_id=$ANSWER
+  echo "  Access key ID: $(shown_end "$key_id")  OK"
+  echo "Now copy the Secret access key in AWS (the copy icon next to it) and paste it here."
+  ask_key "Secret access key (40 characters; hidden while you paste): " check_secret_access_key "$key_id"
+  secret=$ANSWER
+  echo "  Secret access key: received (40 characters)  OK"
   set_env_value AWS_ACCESS_KEY_ID "$key_id"
   set_env_value AWS_SECRET_ACCESS_KEY "$secret"
   echo "Saved in $ENV_FILE (readable only by the tool). Restarting the tool ..."
@@ -248,20 +328,18 @@ EOF
 cmd_set_turnstile_keys() {
   need_root set-turnstile-keys
   local site secret
-  cat <<'EOF'
+  cat <<EOF
 Enter the two keys of your Cloudflare Turnstile widget (Cloudflare dashboard > Turnstile >
 your widget for tools.ecoconsultancy.services; README Part E8). Both usually start with 0x.
-To paste in the Lightsail browser window: copy it, click the clipboard icon at the bottom
-right, paste into the box there, then right-click in this window.
+$PASTE_HELP
 EOF
-  read -r -p "Site key: " site
-  site=${site//[[:space:]]/}
-  [[ $site =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] || die "That does not look like a Turnstile site key (0x followed by letters and digits). Nothing was changed."
-  read -r -s -p "Secret key (it stays hidden while you paste): " secret
-  echo
-  secret=${secret//[[:space:]]/}
-  [[ $secret =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] || die "That does not look like a Turnstile secret key (0x followed by letters and digits). Nothing was changed."
-  [[ $secret != "$site" ]] || die "The secret key is the same as the site key: copy the Secret key from Cloudflare. Nothing was changed."
+  ask_key "Site key (hidden while you paste): " check_turnstile_key "site key"
+  site=$ANSWER
+  echo "  Site key: $(shown_end "$site")  OK"
+  echo "Now copy the Secret key in Cloudflare and paste it here."
+  ask_key "Secret key (hidden while you paste): " check_turnstile_key "secret key" "$site"
+  secret=$ANSWER
+  echo "  Secret key: received  OK"
   set_env_value TURNSTILE_SITE_KEY "$site"
   set_env_value TURNSTILE_SECRET_KEY "$secret"
   echo "Saved in $ENV_FILE (readable only by the tool). Restarting the tool ..."

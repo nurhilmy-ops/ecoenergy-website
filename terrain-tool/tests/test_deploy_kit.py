@@ -166,6 +166,79 @@ def test_helper_needs_root_except_for_help():
     assert result.returncode == 1 and "Unknown command" in result.stderr
 
 
+# AWS's and Cloudflare's documented example keys: never real ones.
+EXAMPLE_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+EXAMPLE_SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+EXAMPLE_SITE_KEY = "1x00000000000000000000AA"
+EXAMPLE_TURNSTILE_SECRET = "1x0000000000000000000000000000000AA"
+
+
+def run_key_command(tmp_path: Path, command: str, answers: str) -> tuple[subprocess.CompletedProcess, str]:
+    """Run `terrain-tool COMMAND` with typed ANSWERS, with root checks, the settings file and
+    systemd stubbed out. Returns the result and what would have been saved."""
+    saved = tmp_path / "saved.env"
+    stubs = (f'need_root() {{ :; }}\n'
+             f'set_env_value() {{ printf "%s=%s\\n" "$1" "$2" >>"{saved}"; }}\n'
+             f'systemctl() {{ :; }}\nwait_healthy() {{ :; }}\ndomain() {{ printf tools.example; }}\n')
+    script = text(HELPER)
+    assert script.count('\nmain "$@"; exit $?') == 1
+    script = script.replace('\nmain "$@"; exit $?', "\n" + stubs + 'main "$@"; exit $?')
+    path = tmp_path / "terrain-tool"
+    path.write_text(script, encoding="utf-8")
+    result = run(["bash", str(path), command], input=answers, capture_output=True, text=True, timeout=30)
+    return result, saved.read_text(encoding="utf-8") if saved.exists() else ""
+
+
+@needs_bash
+@pytest.mark.parametrize(("answers", "message"), [
+    (f"{EXAMPLE_KEY_ID}\n{EXAMPLE_SECRET}\n", None),
+    # The secret pasted into the first question (it used to be shown on the screen).
+    (f"{EXAMPLE_SECRET}\n{EXAMPLE_KEY_ID}\n{EXAMPLE_SECRET}\n", "That is the SECRET access key"),
+    # The clipboard still held the key ID at the second question.
+    (f"{EXAMPLE_KEY_ID}\n{EXAMPLE_KEY_ID}\n{EXAMPLE_SECRET}\n", "That is the access key ID again"),
+    (f"{EXAMPLE_KEY_ID}{EXAMPLE_KEY_ID}\n{EXAMPLE_KEY_ID}\n{EXAMPLE_SECRET}\n", "pasted twice"),
+    (f"{EXAMPLE_KEY_ID}\n{EXAMPLE_SECRET[:39]}\n{EXAMPLE_SECRET}\n", "got 39 characters, expected 40"),
+    # An extra Enter (e.g. after a paste that already ended the line) is not counted as a try.
+    (f"{EXAMPLE_KEY_ID}\n\n\n\n {EXAMPLE_SECRET} \n", "Nothing was pasted"),
+], ids=["right", "secret-first", "id-twice", "id-doubled", "short-secret", "empty-lines"])
+def test_set_aws_keys_hides_both_answers_and_explains_a_wrong_paste(tmp_path, answers, message):
+    result, saved = run_key_command(tmp_path, "set-aws-keys", answers)
+    assert result.returncode == 0, result.stderr
+    assert saved == f"AWS_ACCESS_KEY_ID={EXAMPLE_KEY_ID}\nAWS_SECRET_ACCESS_KEY={EXAMPLE_SECRET}\n"
+    assert "Access key ID: AKIA...MPLE  OK" in result.stdout and "Done." in result.stdout
+    assert "Paste into terminal" in result.stdout and "clipboard icon" not in result.stdout
+    if message:
+        assert message in result.stderr
+    # Neither answer is ever repeated on the screen, not even the wrong ones.
+    for secret in (EXAMPLE_SECRET, EXAMPLE_SECRET[:39], EXAMPLE_KEY_ID):
+        assert secret not in result.stdout + result.stderr
+
+
+@needs_bash
+@pytest.mark.parametrize(("answers", "message"), [
+    (f"{EXAMPLE_SECRET}\nAKIA123\n{EXAMPLE_SECRET}\n", "Three wrong answers. Nothing was changed."),
+    (f"{EXAMPLE_KEY_ID}\n{EXAMPLE_KEY_ID}\n{EXAMPLE_KEY_ID}\n{EXAMPLE_KEY_ID}\n", "Three wrong answers"),
+    (f"{EXAMPLE_KEY_ID}\n", "No answer was read. Nothing was changed."),
+])
+def test_set_aws_keys_saves_nothing_after_three_wrong_answers(tmp_path, answers, message):
+    result, saved = run_key_command(tmp_path, "set-aws-keys", answers)
+    assert result.returncode == 1 and message in result.stderr
+    assert saved == ""
+    assert EXAMPLE_SECRET not in result.stdout + result.stderr
+
+
+@needs_bash
+def test_set_turnstile_keys_hides_both_answers_and_spots_the_site_key_twice(tmp_path):
+    answers = f"{EXAMPLE_SITE_KEY}\n{EXAMPLE_SITE_KEY}\n{EXAMPLE_TURNSTILE_SECRET}\n"
+    result, saved = run_key_command(tmp_path, "set-turnstile-keys", answers)
+    assert result.returncode == 0, result.stderr
+    assert saved == f"TURNSTILE_SITE_KEY={EXAMPLE_SITE_KEY}\nTURNSTILE_SECRET_KEY={EXAMPLE_TURNSTILE_SECRET}\n"
+    assert "That is the site key again" in result.stderr
+    assert EXAMPLE_TURNSTILE_SECRET not in result.stdout + result.stderr
+    # No key prompt echoes what is typed.
+    assert "read -r -p" not in text(HELPER)
+
+
 def test_setup_paths_match_the_unit_and_the_helper():
     setup, helper = text(SETUP), text(HELPER)
     for line in ("readonly BASE=/opt/terrain-tool", "readonly SRC=$BASE/src", "readonly VENV=$BASE/venv",

@@ -190,9 +190,10 @@ Part D works even if DNS is not ready yet; the HTTPS certificate simply follows 
    **Connect using SSH**. A black terminal window opens in a new browser window, ending with a
    line like `ubuntu@ip-172-26-…:~$`.
 2. **How to paste into this window:** copy the command below as usual (Ctrl+C / Cmd+C), then
-   in the terminal window click the **clipboard icon** at the bottom right, paste into the box
-   that opens, and **right-click** anywhere in the black area. The command appears; press
-   **Enter**.
+   click the orange **Paste into terminal** button at the bottom right of the terminal window (if
+   the browser asks whether the page may see your clipboard, allow it). The command appears;
+   press **Enter**. To copy text *out of* the terminal, select it with the mouse and click
+   **Copy from terminal**.
 
 ### D2. Paste the setup command
 
@@ -230,9 +231,8 @@ At the end you get a **summary**:
   password are not printed there, because everything on the screen is also saved in the setup
   log, which you may send to someone for help. Run
   `sudo terrain-tool admin-password` to show them and **copy the password into your password
-  manager now**: select it with the mouse, click the **clipboard icon** at the bottom right of the
-  terminal, select the text in the box that opens and press Ctrl+C (Cmd+C on a Mac). You can show
-  it again at any time with the same command.
+  manager now**: select it with the mouse and click **Copy from terminal** at the bottom right of
+  the terminal window. You can show it again at any time with the same command.
 
 If it stops with **SETUP STOPPED** or **SETUP FAILED**, read the message: it says what to do.
 Running the same command again is always safe. See [Troubleshooting](#troubleshooting).
@@ -377,9 +377,25 @@ In the Lightsail browser terminal (Part D1), run:
 sudo terrain-tool set-aws-keys
 ```
 
-Paste the **Access key** (starts with `AKIA`), press Enter, then paste the **Secret access key**
-(nothing appears while you paste it — that is normal) and press Enter. The tool restarts and
-says **Done**. You can now click **Done** on the AWS page.
+It asks two questions. **Nothing appears on the screen while you paste either answer** — that is
+normal: it keeps the secret off the screen and out of screenshots.
+
+1. In AWS, click the copy icon next to the **Access key** (it starts with `AKIA`). In the
+   terminal, click **Paste into terminal** and press **Enter**. The tool shows the start and the
+   end of the key with **OK**.
+2. In AWS, click the copy icon next to the **Secret access key**. Copy again even if you think
+   you already did: the clipboard holds one value at a time. Paste it the same way and press
+   **Enter**.
+
+If the wrong one arrives (the secret in the first question, or the access key again in the
+second), the tool says so without showing it and asks again, up to three times; nothing is saved
+until both are right. It then restarts the tool and says **Done**. You can now click **Done** on
+the AWS page.
+
+> **If a secret access key is ever shown on a screen, in a screenshot or in a chat, treat it as
+> exposed.** In IAM, open **terrain-tool-ses → Security credentials**, create a new access key
+> (E5) and put it on the server (E6); then select the old key and choose **Actions → Deactivate**,
+> then **Actions → Delete**. The test email (E7) confirms the new key works.
 
 ### E7. Send yourself a test email (SES "sandbox")
 
@@ -421,8 +437,9 @@ a quick check, usually invisible, that a person is filling in the form.
    sudo terrain-tool set-turnstile-keys
    ```
 
-   paste the Site Key, press Enter, paste the Secret Key (nothing appears while you paste it) and
-   press Enter. The tool restarts and says **Done**.
+   copy the **Site Key**, click **Paste into terminal** and press Enter; then copy the **Secret
+   Key** (copy again: the clipboard holds one value at a time), paste it and press Enter. Nothing
+   appears while you paste either key. The tool restarts and says **Done**.
 5. Open `https://tools.ecoconsultancy.services` in a private browser window: the form now shows
    the Cloudflare check. Ask for a sign-in link with an `@ecoconsultancy.services` address to be
    sure it still works.
