@@ -100,7 +100,7 @@
   <section class="card" aria-labelledby="erase-title">
     <h2 id="erase-title" class="h3">Delete everything</h2>
     {% if delete_error %}<div class="alert alert-error" role="alert">{{ delete_error }}</div>{% endif %}
-    <p class="muted small">Deletes your email address, consent records, site files and reports now. We keep only a one-way fingerprint of your address so we never email you again unless you sign up afresh.</p>
+    <p class="muted small">Deletes your email address, site files and reports now. We keep a one-way fingerprint (hash) of your address so we never email you again unless you sign up afresh, and, for {{ settings.consent_archive_period.en }}, your consent records, linked only to that fingerprint, as proof of what you agreed to (<a href="/privacy#en">privacy notice</a>, section 10).</p>
     <form method="post" action="/account/delete">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <div class="field">

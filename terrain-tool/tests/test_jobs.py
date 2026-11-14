@@ -191,6 +191,10 @@ def test_sweep_erases_confirmed_accounts_inactive_past_the_cutoff(settings, quer
     assert query("SELECT * FROM jobs WHERE id = 'job-gone-000001'") == []
     assert {r["email_sha256"] for r in query("SELECT email_sha256 FROM suppression")} == {
         email_hash("gone@example.com")}
+    # Its consent records stay provable for CONSENT_ARCHIVE_DAYS, keyed by the hash only.
+    archived = query("SELECT * FROM consent_archive")
+    assert [(r["email_sha256"], r["purpose"], r["action"], r["created_at"]) for r in archived] == [
+        (email_hash("gone@example.com"), "service", "granted", old)]
 
 
 def test_sweep_applies_retention(settings, query):
@@ -238,6 +242,8 @@ def test_sweep_applies_retention(settings, query):
     emails = {r["email"] for r in query("SELECT email FROM subscribers")}
     assert emails == {"kept@example.com", "recent@example.com"}
     assert query("SELECT * FROM consents WHERE subscriber_id = ?", (stale_unverified,)) == []
+    # A never-confirmed address proves no consent: nothing of it is archived.
+    assert query("SELECT * FROM consent_archive") == []
     assert {r["token_hash"] for r in query("SELECT token_hash FROM tokens")} == {"live"}
     assert {r["id"] for r in query("SELECT id FROM sessions")} == {"live"}
     assert len(query("SELECT * FROM events")) == 1
@@ -377,3 +383,43 @@ def test_app_runs_on_a_migrated_database(tmp_path, app_factory):
                       {"purpose": "site_followup", "action": "granted", "job_id": job_id}]
     page = flow.client.get("/account")
     assert page.status_code == 200 and "Old site" in page.text
+
+
+def test_erasure_archives_consents_and_sweep_expires_them(settings, query):
+    """PDP Regulations 2013 reg 3(5): consent records of an erased, confirmed account are kept
+    for CONSENT_ARCHIVE_DAYS (hash only, no IP or browser), then the sweep deletes them."""
+    from app.security import email_hash
+
+    sid = add_subscriber(settings, "Proof@Example.com".lower())
+    with db(settings.db_path) as conn:
+        conn.execute("INSERT INTO consents (subscriber_id, purpose, action, notice_version, wording, ip, "
+                     "user_agent, created_at, job_id) VALUES (?, 'newsletter', 'granted', 'v1', 'Send me news', "
+                     "'203.0.113.9', 'Firefox', ?, NULL), (?, 'site_followup', 'withdrawn', 'v1', 'Staff may email', "
+                     "'203.0.113.9', 'Firefox', ?, 'job-abc')", (sid, ago(days=3), sid, ago(days=1)))
+    assert jobs.erase_subscriber(settings, sid)
+    rows = query("SELECT * FROM consent_archive ORDER BY id")
+    assert [(r["purpose"], r["action"], r["notice_version"], r["wording"], r["job_id"]) for r in rows] == [
+        ("newsletter", "granted", "v1", "Send me news", None),
+        ("site_followup", "withdrawn", "v1", "Staff may email", "job-abc")]
+    assert all(r["email_sha256"] == email_hash("proof@example.com") for r in rows)
+    assert "ip" not in rows[0].keys() and "user_agent" not in rows[0].keys()
+    assert query("SELECT * FROM consents") == [] and query("SELECT * FROM subscribers") == []
+
+    # Still there just inside the period; gone once it has passed.
+    with db(settings.db_path) as conn:
+        conn.execute("UPDATE consent_archive SET archived_at = ? WHERE purpose = 'newsletter'",
+                     (ago(days=settings.consent_archive_days - 1),))
+        conn.execute("UPDATE consent_archive SET archived_at = ? WHERE purpose = 'site_followup'",
+                     (ago(days=settings.consent_archive_days + 1),))
+    assert jobs.sweep(settings)["consent_archive"] == 1
+    assert [r["purpose"] for r in query("SELECT purpose FROM consent_archive")] == ["newsletter"]
+
+
+def test_existing_database_gets_the_consent_archive_table(settings, query):
+    """An owner's database from before this change gains the table on start-up (init_db)."""
+    init_db(settings.db_path)
+    with db(settings.db_path) as conn:
+        conn.execute("DROP TABLE consent_archive")
+        assert "consent_archive" not in {r[0] for r in conn.execute("SELECT name FROM sqlite_master")}
+    init_db(settings.db_path)
+    assert query("SELECT * FROM consent_archive") == []

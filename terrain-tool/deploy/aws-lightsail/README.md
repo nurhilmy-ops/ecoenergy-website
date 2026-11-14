@@ -445,7 +445,8 @@ a quick check, usually invisible, that a person is filling in the form.
    sure it still works.
 
 With the check on, the visitor's browser contacts Cloudflare (outside Malaysia). The privacy
-notice then names Cloudflare by itself; the legal review covers this transfer
+notice then names Cloudflare by itself, including in section 8 (transfers outside Malaysia); the
+legal basis for this transfer is still to be confirmed by legal review
 ([`terrain-tool/README.md`](../../README.md#privacy-pdpa-design)).
 
 ### E9. Ask AWS for production access (leave the sandbox)
@@ -582,6 +583,7 @@ lists them.
 | `sudo terrain-tool set-aws-keys` | Enters (or replaces) the SES access key |
 | `sudo terrain-tool set-turnstile-keys` | Enters (or replaces) the Cloudflare Turnstile keys (E8) |
 | `sudo terrain-tool test-email ADDRESS` | Sends a test email with the real settings |
+| `sudo terrain-tool consent-records EMAIL` | Lists the consent records held for an address: the live ones of an existing account and, for 2 years after an account was deleted, the archived ones. Use it to prove consent or answer an access request; it changes nothing |
 | `sudo terrain-tool withdraw EMAIL --followup --newsletter --note "Email of 12 Oct 2026"` | Records a withdrawal of consent or an objection to marketing that arrived in writing (PDPA s.38 / s.43): staff follow-up ends for all of that person's reports (`--followup`) and/or the newsletter is unsubscribed (`--newsletter`); the note goes into the consent records |
 | `sudo terrain-tool backup-now` | Backs up the database now |
 
@@ -683,6 +685,7 @@ instance `terrain-tool` and in its automatic snapshots, unless stated otherwise.
 | What | Where on the server | Kept for |
 |---|---|---|
 | Visitors' email addresses, consent records, newsletter status, hashed sign-in links and sessions, abuse counters (hashed IP addresses) | SQLite database `/var/lib/terrain-tool/app.db` | as set in the app (see `/privacy`: unconfirmed addresses 7 days, accounts until deleted or 730 days inactive, abuse counters about 2 days) |
+| Consent records of deleted accounts (what was agreed, when, wording, notice version), keyed by a one-way hash of the address, without IP address or browser | same database, table `consent_archive` | 2 years after the account was deleted (`CONSENT_ARCHIVE_DAYS`), to prove consent; `sudo terrain-tool consent-records EMAIL` shows them |
 | Uploaded site files (KML/KMZ), results, maps, PDF and Word reports | `/var/lib/terrain-tool/jobs/` | 30 days (`RETENTION_DAYS`), or until the visitor deletes them |
 | Database backups | `/var/lib/terrain-tool/backups/` | 14 days (and inside the snapshots below for 7 more days: deleted database records up to about 3 weeks in all) |
 | Whole-server snapshots (contain all of the above) | Lightsail automatic snapshots, same region | 7 days (deleted site files and reports up to 7 days) |
@@ -695,8 +698,9 @@ Outside Malaysia: the visitor's browser loads fonts from Google Fonts and, once 
 DEM bucket in AWS `eu-central-1` (Frankfurt). It requests the tile by name and only the parts of
 that tile file that cover the site's general area (a block of roughly 30 km). No personal data,
 file contents or exact site coordinates are sent. The privacy notice at `/privacy` names AWS
-(Lightsail and SES, Malaysia region) as the hosting and email providers; the AWS contracting
-entity and data processing terms are marked there for legal review.
+(Lightsail and SES, Malaysia region) as the hosting and email providers, with the contracting
+party Amazon Web Services Malaysia Sdn. Bhd., and section 8 names the services that may process
+data outside Malaysia (Google Fonts, and Cloudflare while the human check is on).
 
 ---
 

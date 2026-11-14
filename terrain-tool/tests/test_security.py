@@ -429,6 +429,13 @@ def test_account_delete_erases_everything_and_suppresses(flow, query, settings):
         assert query(f"SELECT * FROM {table}") == [], table
     assert not (settings.jobs_dir / job_id).exists()
     assert query("SELECT email_sha256 FROM suppression")[0]["email_sha256"] == sha256_hex("erase@example.com")
+    # The consent history survives as proof (reg 3(5)), keyed by the hash, without IP or browser.
+    archived = query("SELECT * FROM consent_archive")
+    assert {(r["purpose"], r["action"]) for r in archived} >= {
+        ("service", "granted"), ("service", "confirmed"), ("newsletter", "granted"), ("newsletter", "confirmed")}
+    assert {r["email_sha256"] for r in archived} == {sha256_hex("erase@example.com")}
+    assert "the English version prevails" not in resp.text      # goodbye page, not the notice
+    assert f"for {settings.consent_archive_period['en']}, your consent records" in resp.text
     assert flow.client.get("/account", follow_redirects=False).status_code == 303
 
 

@@ -47,7 +47,10 @@ class Settings:
     trusted_proxy_hops: int = 1                 # proxies of ours that append to X-Forwarded-For
 
     # --- notice / consent ---
-    notice_version: str = "2026-11-draft-5"     # bump whenever the privacy notice text changes
+    notice_version: str = "2026-11-v1"          # bump whenever the privacy notice text changes
+    notice_date: str = "14 November 2026"       # "Last updated" date on /privacy; change with the version
+    notice_date_ms: str = "14 November 2026"    # the same date in Malay (Januari, Februari, Mac, April, Mei,
+                                                # Jun, Julai, Ogos, September, Oktober, November, Disember)
 
     # --- email ---
     mail_backend: str = "outbox"                # outbox (dev: stored in db, shown at /dev/outbox) | smtp | ses
@@ -70,6 +73,8 @@ class Settings:
     unverified_purge_days: int = 7              # never-verified email addresses
     inactive_purge_days: int = 730              # confirmed accounts with no live report, no
                                                 # newsletter and no activity for this long
+    consent_archive_days: int = 730             # consent records kept after a confirmed account is
+                                                # erased (PDP Regulations 2013 reg 3(5): proof of consent)
 
     # --- abuse controls ---
     rate_link_per_email_hour: int = 3
@@ -110,6 +115,15 @@ class Settings:
     extra: dict = field(default_factory=dict)
 
     # ------------------------------------------------------------------
+    @property
+    def consent_archive_period(self) -> dict[str, str]:
+        """CONSENT_ARCHIVE_DAYS in words for the pages: whole years when it divides evenly."""
+        days = self.consent_archive_days
+        if days % 365 == 0:
+            years = days // 365
+            return {"en": f"{years} year{'s' if years != 1 else ''}", "ms": f"{years} tahun"}
+        return {"en": f"{days} days", "ms": f"{days} hari"}
+
     @property
     def is_dev(self) -> bool:
         return self.app_env != "production"

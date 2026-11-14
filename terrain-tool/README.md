@@ -138,7 +138,9 @@ line: everything after `=` is the value.
 | `TRUST_PROXY_HEADERS` | `false` | Take the client IP from `X-Forwarded-For`. Set `true` only behind your own reverse proxy, and only if it appends the address it received the request from (nginx `$proxy_add_x_forwarded_for`, AWS ALB, Cloudflare) or overwrites the header — never if it passes a client-supplied header on unchanged. |
 | `TRUSTED_PROXY_HOPS` | `1` | How many of your proxies append to `X-Forwarded-For` (e.g. `2` for Cloudflare in front of nginx). The client IP is taken that many hops from the right; the left-most hops can be forged by the client. |
 | **privacy notice** | | |
-| `NOTICE_VERSION` | `2026-11-draft-5` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
+| `NOTICE_VERSION` | `2026-11-v1` | Version stored with every consent record. Bump it whenever the privacy notice changes. |
+| `NOTICE_DATE` | `14 November 2026` | "Last updated" date on `/privacy` (English). Change it with the version. |
+| `NOTICE_DATE_MS` | `14 November 2026` | The same date in Malay (e.g. `1 Ogos 2027`). |
 | **email** | | |
 | `MAIL_BACKEND` | `outbox` | `outbox` (development: mail is stored and shown at `/dev/outbox`), `smtp`, or `ses` (Amazon SES v2 API; `pip install boto3`). |
 | `MAIL_FROM` | `EcoEnergy Consultancy <no-reply@ecoconsultancy.services>` | From header of every email. |
@@ -157,6 +159,7 @@ line: everything after `=` is the value.
 | `RETENTION_DAYS` | `30` | Days before a site file, its results and reports are deleted (follow-up about that site ends with it). |
 | `UNVERIFIED_PURGE_DAYS` | `7` | Days before an email address that was never confirmed is deleted. |
 | `INACTIVE_PURGE_DAYS` | `730` | Days without activity after which a confirmed account with no report left and no newsletter subscription is deleted (a one-way hash of the address is kept so it is not contacted). |
+| `CONSENT_ARCHIVE_DAYS` | `730` | Days the consent records of an erased, confirmed account are kept, keyed by sha256(email) and without IP or browser, so consent can still be proved (reg 3(5)). The notice states the period (2 years). |
 | **abuse controls** | | |
 | `RATE_LINK_PER_EMAIL_HOUR` | `3` | Magic-link requests per email address per hour. |
 | `RATE_LINK_PER_IP_HOUR` | `10` | Magic-link requests per IP address per hour. |
@@ -266,8 +269,11 @@ checklist below.
 ## Privacy (PDPA) design
 
 Built against the Personal Data Protection Act 2010 (as amended by Act A1727) and the PDP
-Regulations 2013. The privacy notice at `/privacy` is a **draft for legal review** (EN + BM,
-version `NOTICE_VERSION`).
+Regulations 2013. The privacy notice at `/privacy` (EN + BM, version `NOTICE_VERSION`) was
+finalised on 14 November 2026 with the company's details: registration number, contact
+designation (Technical Director), 2-year retention of consent records after erasure, the AWS
+contracting party, and English as the prevailing version. The points under *Still open for
+legal review* below remain.
 
 - **Unbundled consents.** The landing form asks only for the email address needed to send
   the link and report. The newsletter has its own unticked box. Staff follow-up about a
@@ -276,7 +282,11 @@ version `NOTICE_VERSION`).
   Each consent request is visually separate from the rest of the form (reg 3(2)); the
   notice is not used to collect consent.
 - **Consent ledger.** Append-only rows with the exact EN/BM wording shown, notice version,
-  time, IP and browser, so consent can be proved (reg 3(1), reg 3(5)).
+  time, IP and browser, so consent can be proved (reg 3(1), reg 3(5)). When a confirmed
+  account is erased, its rows move to `consent_archive` keyed by sha256(email), without IP or
+  browser, for `CONSENT_ARCHIVE_DAYS` (730), after which the sweep deletes them. Never-confirmed
+  addresses prove no consent and are not archived. `sudo terrain-tool consent-records EMAIL`
+  (elsewhere `python -m app.manage consent-records EMAIL`) lists both.
 - **Double opt-in** for the newsletter: it becomes active only when the link emailed with
   that opt-in is used (any other sign-in, or a tick typed in by someone else, confirms
   nothing). One-click unsubscribe (RFC 8058) is ready for newsletter mail; unsubscribe links
@@ -297,34 +307,40 @@ version `NOTICE_VERSION`).
   It stops with an error, changing nothing, if it finds no database where the settings point.
   For the newsletter alone, the `unsubscribe_url` column of the newsletter CSV does the same.
 - **Self-service rights.** `/account` shows everything held, exports it as JSON, and
-  deletes the account; erasure leaves only sha256(email) in a suppression list so the
-  person is not contacted again (a new sign-up lifts it).
+  deletes the account; erasure leaves sha256(email) in a suppression list so the person is
+  not contacted again (a new sign-up lifts it), plus the archived consent records above.
 - **Minimal sharing.** Admin exports are limited by consent: the leads CSV holds only
   screenings with follow-up granted; the newsletter CSV only confirmed subscribers.
 - **Age.** The landing page and notice say the tool is for business users aged 18 and
   above (reg 3(3) requires parental consent for under-18s).
 
-**Still needs legal review** (placeholders in `/privacy` are in [square brackets]):
+**Settled on 14 November 2026** (no [square-bracket] placeholders remain in `/privacy`):
+company registration number 202601020468 (1682563-A); contact designation Technical
+Director (reg 4: designation and phone number); publication date; consent records kept 2
+years after erasure (`CONSENT_ARCHIVE_DAYS`); English prevails over the Malay version; the AWS
+contracting party, Amazon Web Services Malaysia Sdn. Bhd. (201501028710 (1154031-W)), from
+AWS's contracting-party page for accounts located in Malaysia; the backup wording (matches the
+14 database copies and 7 Lightsail snapshots actually kept); and which providers may process
+data outside Malaysia (Google Fonts; Cloudflare Turnstile while it is on).
 
-- contact person's designation (reg 4 requires a designation and phone number), company
-  registration number, publication date, and which language version prevails;
-- the hosting and email providers are now named (Amazon Web Services: Lightsail hosting and
-  Amazon SES email, both in the AWS Asia Pacific (Malaysia) Region); still to confirm: the AWS
-  contracting entity and data processing terms, and for any provider that processes data
-  outside Malaysia (Google Fonts, Cloudflare Turnstile once it is turned on) the s.129 basis for
-  each transfer (a transfer impact assessment, contract, or contractual clauses), with the
-  records the Cross Border Personal Data Transfer guideline asks for;
-- the backup retention wording (section 10: database copies 14 days, server snapshots 7 days,
-  so deleted data can remain in backups for up to about 3 weeks);
-- how long consent records and the email address are kept after an account is erased
-  (reg 3(5) puts the burden of proving consent on the data user);
+**Still open for legal review:**
+
+- the s.129 basis for the transfers outside Malaysia that the notice names (Google Fonts,
+  Cloudflare Turnstile): a transfer impact assessment, contract, or contractual clauses, with
+  the records the Cross Border Personal Data Transfer guideline asks for. Self-hosting the fonts
+  (checklist below) removes the Google one;
 - whether staff follow-up counts as direct marketing under s.43 (the tool already treats
   it as a separate opt-in);
 - whether a Data Protection Officer must be appointed (the DPO guideline's thresholds
   include more than 20,000 data subjects, or regular and systematic monitoring) and, if so,
   publishing the DPO's business contact details in the notice;
-- not checked: registration as a data user/controller, data-access fees, and how the
-  Personal Data Protection Standard 2015 retention rules apply to a web form.
+- **registration as a data user**: the Personal Data Protection (Class of Data Users) Order
+  2013 lists companies carrying on business in engineering (with legal, audit, accountancy and
+  architecture) in the "services" class that must register with the Commissioner (s.14);
+  processing without a certificate is an offence (s.16(4)). Confirm whether EcoEnergy's
+  business falls in it and, if so, that a current certificate is held;
+- not checked: data-access fees, and how the Personal Data Protection Standard 2015 retention
+  rules apply to a web form.
 
 Do not state a response deadline for data portability requests: no period has been
 prescribed under s.43A(3) yet.
@@ -378,17 +394,15 @@ Items marked *(kit)* are done by the kit; the others are still yours.
       worker as a separate process.
 - [ ] **Monitoring**: uptime check on `/healthz`, alerts on error logs and failed jobs,
       disk space for `DATA_DIR` (`sudo terrain-tool status` shows the basics on demand).
-- [ ] **Legal review** of the privacy notice (fill every bracketed item, bump
-      `NOTICE_VERSION`), a **DPO assessment**, and a **transfer impact assessment** for any
-      provider outside Malaysia; a breach-response plan (a breach likely to cause significant
-      harm must be notified to the Commissioner within 72 hours).
-  - [ ] **AWS as processor** (notice section 7): confirm the contracting entity. AWS says that
-        from 1 October 2022 Amazon Web Services Malaysia Sdn. Bhd. (Registration No.
-        201501028710 (1154031-W)) is the reseller of AWS services for AWS accounts located in
-        Malaysia (<https://aws.amazon.com/tax-help/malaysia/>); check the name on the AWS
-        invoice. Also confirm the data-processing terms (the AWS Customer Agreement and the AWS
-        Data Processing Addendum in the AWS Service Terms), then replace the bracketed item in
-        both languages and bump `NOTICE_VERSION`.
+- [x] **Privacy notice details** filled in (14 November 2026, `NOTICE_VERSION` 2026-11-v1).
+- [ ] **Legal review** of the points under *Still open for legal review*: the s.129 basis for
+      transfers, a **DPO assessment**, **data-user registration**, and a breach-response plan
+      (a breach likely to cause significant harm must be notified to the Commissioner within
+      72 hours).
+  - [ ] **AWS as processor** (notice section 7): the notice names Amazon Web Services Malaysia
+        Sdn. Bhd. (201501028710 (1154031-W)), AWS's contracting party for accounts located in
+        Malaysia since 1 October 2022 (<https://aws.amazon.com/legal/aws-contracting-party/>).
+        Check that this name is on the AWS invoice.
 - [ ] **Fonts**: consider self-hosting the three typefaces so visitors' browsers do not
       contact Google (then remove the Google Fonts line from the notice and the CSP).
 - [ ] **Posting**: share on LinkedIn and Threads with utm tags so the admin channel table
@@ -415,7 +429,8 @@ Items marked *(kit)* are done by the kit; the others are still yours.
 - **No newsletter sending, bounce or complaint handling**: the tool records consent and
   exports confirmed subscribers for your mailing tool.
 - **No malware scanning** of uploads (KML/KMZ are parsed defensively and never executed).
-- The privacy notice is a draft; see *Still needs legal review*.
+- The privacy notice is final, but some points remain for legal review; see *Still open for
+  legal review*.
 
 ## Tests
 

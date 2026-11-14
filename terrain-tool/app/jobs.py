@@ -237,15 +237,26 @@ def delete_job_data(settings: Settings, job_id: str) -> None:
 
 def erase_subscriber(settings: Settings, subscriber_id: int) -> bool:
     """Right to erasure: files, rows (cascade) and a suppression entry for sha256(email).
-    False if the subscriber no longer exists."""
+
+    A confirmed account's consent records move to ``consent_archive`` (keyed by sha256(email),
+    without IP address or browser) for CONSENT_ARCHIVE_DAYS, so consent can still be proved
+    (PDP Regulations 2013 reg 3(5)). False if the subscriber no longer exists."""
     with tx(settings.db_path) as conn:
-        sub = conn.execute("SELECT email FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
+        sub = conn.execute("SELECT email, verified_at FROM subscribers WHERE id = ?",
+                           (subscriber_id,)).fetchone()
         if sub is None:
             return False
         job_ids = [r["id"] for r in conn.execute("SELECT id FROM jobs WHERE subscriber_id = ?",
                                                   (subscriber_id,))]
+        hashed, now = email_hash(sub["email"]), now_iso()
+        if sub["verified_at"] is not None:
+            conn.execute(
+                "INSERT INTO consent_archive (email_sha256, purpose, action, notice_version, wording, "
+                "job_id, created_at, archived_at) SELECT ?, purpose, action, notice_version, wording, "
+                "job_id, created_at, ? FROM consents WHERE subscriber_id = ? ORDER BY id",
+                (hashed, now, subscriber_id))
         conn.execute("INSERT INTO suppression (email_sha256, created_at) VALUES (?, ?) "
-                     "ON CONFLICT(email_sha256) DO NOTHING", (email_hash(sub["email"]), now_iso()))
+                     "ON CONFLICT(email_sha256) DO NOTHING", (hashed, now))
         conn.execute("DELETE FROM outbox WHERE to_addr = ?", (sub["email"],))
         conn.execute("DELETE FROM subscribers WHERE id = ?", (subscriber_id,))
     for job_id in job_ids:
@@ -299,6 +310,9 @@ def sweep(settings: Settings) -> dict[str, int]:
         counts["outbox"] = conn.execute(
             "DELETE FROM outbox WHERE created_at < ?",
             (iso(utcnow() - timedelta(days=OUTBOX_RETENTION_DAYS)),)).rowcount
+        counts["consent_archive"] = conn.execute(
+            "DELETE FROM consent_archive WHERE archived_at < ?",
+            (iso(utcnow() - timedelta(days=settings.consent_archive_days)),)).rowcount
         inactive_cutoff = iso(utcnow() - timedelta(days=settings.inactive_purge_days))
         inactive = [r["id"] for r in conn.execute(INACTIVE_SUBSCRIBERS_SQL, (inactive_cutoff,))]
     # Erased like a self-service deletion (suppression hash kept), so they are not contacted again.

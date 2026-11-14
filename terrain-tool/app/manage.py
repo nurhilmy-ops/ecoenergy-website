@@ -21,6 +21,14 @@ Check that email delivery works with the production settings (the server's
 
 It sends one short message through the configured backend and explains a failure (for
 example Amazon SES sandbox limits or wrong access keys) in plain English.
+
+Show every consent record held for an address, to prove consent (PDP Regulations 2013
+reg 3(5)) or answer an access request (``sudo terrain-tool consent-records EMAIL``):
+
+    python -m app.manage consent-records someone@example.com
+
+It lists the live ledger of an existing account and the records kept in ``consent_archive``
+after an account was erased (found by the address's sha256 hash). It only reads.
 """
 from __future__ import annotations
 
@@ -31,7 +39,7 @@ from dataclasses import fields
 from pathlib import Path
 
 from .config import Settings, _load_dotenv, get_settings
-from .db import init_db, tx
+from .db import db, init_db, tx
 
 STAFF_USER_AGENT = "staff record (python -m app.manage)"
 
@@ -62,6 +70,47 @@ def withdraw(settings: Settings, email: str, *, followup: bool, newsletter: bool
             conn.execute("UPDATE subscribers SET newsletter_status = 'unsubscribed' WHERE id = ?", (sub["id"],))
             changed["newsletter"] = True
     return changed
+
+
+def consent_records(settings: Settings, email: str) -> dict:
+    """The live consent ledger of ``email`` (if the account exists) and its archived records."""
+    from .security import email_hash
+
+    address = email.strip().lower()
+    with db(settings.db_path) as conn:
+        sub = conn.execute("SELECT id, created_at, verified_at FROM subscribers WHERE email = ?",
+                           (address,)).fetchone()
+        live = [] if sub is None else [dict(r) for r in conn.execute(
+            "SELECT purpose, action, notice_version, wording, job_id, created_at, ip, user_agent "
+            "FROM consents WHERE subscriber_id = ? ORDER BY id", (sub["id"],))]
+        archived = [dict(r) for r in conn.execute(
+            "SELECT purpose, action, notice_version, wording, job_id, created_at, archived_at "
+            "FROM consent_archive WHERE email_sha256 = ? ORDER BY id", (email_hash(address),))]
+    return {"address": address, "account": dict(sub) if sub else None, "live": live, "archived": archived}
+
+
+def print_consent_records(found: dict) -> None:
+    def show(rows: list[dict], extra) -> None:
+        for r in rows:
+            report = f", report {r['job_id']}" if r["job_id"] else ""
+            print(f"  {r['created_at']}  {r['purpose']} {r['action']}  (notice {r['notice_version']}{report}{extra(r)})")
+            for line in r["wording"].splitlines():
+                print(f"      {line}")
+
+    account = found["account"]
+    if account:
+        confirmed = account["verified_at"] or "never"
+        print(f"Account {found['address']}: signed up {account['created_at']}, confirmed {confirmed}.")
+        print(f"Live consent records ({len(found['live'])}):")
+        show(found["live"], lambda r: f", IP {r['ip']}" if r["ip"] else "")
+    else:
+        print(f"No account for {found['address']}.")
+    if found["archived"]:
+        print(f"Archived records of an erased account ({len(found['archived'])}; "
+              "kept without IP address or browser):")
+        show(found["archived"], lambda r: f", account erased {r['archived_at']}")
+    elif not account:
+        print("No archived consent records for this address either.")
 
 
 TEST_EMAIL_SUBJECT = "Test email from the EcoEnergy terrain screening tool"
@@ -133,24 +182,31 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
                    help='how the request arrived, e.g. "Email from the subscriber, 12 Oct 2026"')
     t = sub.add_parser("test-email", parents=[common], help="send a test email with the current mail settings")
     t.add_argument("address")
+    c = sub.add_parser("consent-records", parents=[common],
+                       help="show the consent records held for an address, including those kept after erasure")
+    c.add_argument("email")
     args = parser.parse_args(argv)
     if args.env_file and not Path(args.env_file).is_file():
         parser.error(f"settings file {args.env_file} not found")
     if args.command == "test-email":
         return run_test_email(args, settings)
-    if not (args.followup or args.newsletter):
-        parser.error("choose --followup, --newsletter or both")
-    if not args.note.strip():
-        parser.error("--note must describe the request")
+    if args.command == "withdraw":
+        if not (args.followup or args.newsletter):
+            parser.error("choose --followup, --newsletter or both")
+        if not args.note.strip():
+            parser.error("--note must describe the request")
 
     settings = settings or load_settings(args.env_file)
     if not settings.db_path.is_file():
         # Never create an empty database here: that would only hide a wrong DATA_DIR / --env-file.
         print(f"No database at {settings.db_path}: nothing changed. Check DATA_DIR, or pass the "
-              "server's settings with --env-file (on the server: sudo terrain-tool withdraw ...).",
+              f"server's settings with --env-file (on the server: sudo terrain-tool {args.command} ...).",
               file=sys.stderr)
         return 2
     init_db(settings.db_path)
+    if args.command == "consent-records":
+        print_consent_records(consent_records(settings, args.email))
+        return 0
     changed = withdraw(settings, args.email, followup=args.followup, newsletter=args.newsletter,
                        note=args.note)
     if changed is None:

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {# The whole privacy notice lives in this one template so legal wording can be revised in one place.
-   Source: the drafted notice for legal review, adapted to what the tool actually does.
-   Bump Settings.notice_version whenever the substance changes: it is stored with every consent record.
-   Items in [square brackets] must be confirmed by legal review before publication. #}
+   Source: the drafted notice, adapted to what the tool actually does, with the company's details
+   (registration no., contact designation, consent-record retention) confirmed in November 2026.
+   Bump Settings.notice_version and notice_date/notice_date_ms whenever the substance changes: the
+   version is stored with every consent record. #}
 {% block title %}Privacy notice / Notis privasi{% endblock %}
 {% block robots %}index, follow{% endblock %}
 {% block content %}
@@ -10,13 +11,12 @@
 {% set geotiff = settings.dem_provider == 'geotiff' %}
 {# Same test as the landing page uses to load the Cloudflare script (security.turnstile_enabled). #}
 {% set turnstile_on = settings.turnstile_site_key %}
+{% set kept = settings.consent_archive_period %}
 <article class="prose privacy">
-  <div class="draft-banner" role="note">Draft for legal review — not yet approved for publication. Items in [square brackets] must be confirmed. / Draf untuk semakan undang-undang — belum diluluskan untuk diterbitkan. Perkara dalam [kurungan siku] perlu disahkan.</div>
-
   <div lang="en" id="en">
   <p class="kicker">Desktop Terrain Screening tool</p>
   <h1>Privacy notice</h1>
-  <p class="muted small">Notice version <code>{{ settings.notice_version }}</code> · Last updated: [date — set on publication] · Personal Data Protection Act 2010, section 7</p>
+  <p class="muted small">Notice version <code>{{ settings.notice_version }}</code> · Last updated: {{ settings.notice_date }} · Personal Data Protection Act 2010, section 7</p>
   <p class="lang-jump"><a href="#bm" lang="ms">Baca notis ini dalam Bahasa Malaysia ↓</a></p>
 
   <h2>1. About this notice</h2>
@@ -24,11 +24,11 @@
 
   <h2>2. Who we are and how to reach us</h2>
   <dl class="dl contact-dl">
-    <dt>Data controller</dt><dd>EcoEnergy Consultancy Sdn. Bhd. [company registration no. — to be confirmed]</dd>
+    <dt>Data controller</dt><dd>EcoEnergy Consultancy Sdn. Bhd. (Registration No. 202601020468 (1682563-A))</dd>
     <dt>Address</dt><dd>Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur</dd>
     <dt>Phone</dt><dd><a href="tel:+60387446478">+60 3 8744 6478</a></dd>
     <dt>Email</dt><dd><a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a></dd>
-    <dt>Contact person</dt><dd>[Designation of contact person, e.g. Data Protection Officer — to be confirmed by legal review]</dd>
+    <dt>Contact person</dt><dd>Technical Director</dd>
   </dl>
 
   <h2>3. Personal data we process</h2>
@@ -59,7 +59,7 @@
 
   <h2>7. Who we disclose it to</h2>
   <ul>
-    <li><strong>Hosting and email-delivery providers</strong> that run the tool, store its files and send our emails. They act as our data processors, under our instructions. The tool, its database, your site files, reports and backups are hosted by <strong>Amazon Web Services</strong> (Amazon Lightsail) in the AWS Asia Pacific (Malaysia) Region. Our emails to you are delivered by <strong>Amazon Simple Email Service (Amazon SES)</strong> in the same region, which processes your email address and the message we send you. [AWS contracting entity and data processing terms — to be confirmed by legal review]</li>
+    <li><strong>Hosting and email-delivery providers</strong> that run the tool, store its files and send our emails. They act as our data processors, under our instructions. The tool, its database, your site files, reports and backups are hosted by <strong>Amazon Web Services</strong> (Amazon Lightsail) in the AWS Asia Pacific (Malaysia) Region. Our emails to you are delivered by <strong>Amazon Simple Email Service (Amazon SES)</strong> in the same region, which processes your email address and the message we send you. Our contract for these AWS services is with Amazon Web Services Malaysia Sdn. Bhd. (Registration No. 201501028710 (1154031-W)), under the AWS Customer Agreement and the data processing terms that form part of it.</li>
     <li><strong>Elevation data.</strong> We read public elevation tiles from the Copernicus DEM archive hosted by Amazon Web Services; only the tile name and the parts of that tile file covering your site's general area (a block of roughly 30 km) are requested — never your site's coordinates, your file or your details.{% if otd %} At the moment this installation uses the fallback provider instead, so your site's coordinates are sent to OpenTopoData to read elevations. Your email address and other details about you are not sent.{% elif geotiff %} At the moment this installation reads elevations from a file on our own server instead, so nothing about your site is sent to an elevation service.{% endif %}</li>
     {% if turnstile_on %}<li><strong>Cloudflare</strong>, to check that sign-ups come from people (bot protection).</li>{% endif %}
     <li><strong>Google Fonts:</strong> your browser loads the typefaces on these pages from Google's servers, which see your IP address. No page address is sent.</li>
@@ -68,7 +68,7 @@
   <p>We do not sell or rent your personal data.</p>
 
   <h2>8. Transfers outside Malaysia</h2>
-  <p>Some of these providers may store or process data outside Malaysia [to be confirmed]. Any such transfer is made only as permitted under section 129 of the Act.</p>
+  <p>Your account, site files, reports, backups and the emails we send you are stored and processed in the AWS Asia Pacific (Malaysia) Region. Some services run on worldwide networks, so the limited data they receive may be processed outside Malaysia: Google Fonts (your IP address and browser details){% if turnstile_on %} and Cloudflare Turnstile (your IP address and the browser signals used for the human check){% endif %}. They do not receive your email address, your site file or your report.{% if otd %} At the moment the fallback elevation provider, OpenTopoData, also receives your site's coordinates, and its servers may be outside Malaysia.{% endif %} Any such transfer is made only as permitted under section 129 of the Act.</p>
 
   <h2>9. Your choices</h2>
   <ul>
@@ -84,10 +84,10 @@
   <ul>
     <li><strong>Site files, results and reports:</strong> {{ settings.retention_days }} days after upload, or earlier on request. The Delete button deletes them from the tool immediately (for backups, see below).</li>
     <li><strong>Email addresses that are never confirmed:</strong> deleted after {{ settings.unverified_purge_days }} days.</li>
-    <li><strong>Your account and consent records:</strong> kept until you delete your account or, if you have no report left and are not subscribed to the newsletter, until {{ settings.inactive_purge_days }} days after you last used the tool, when we delete them as if you had deleted your account. [Consent-record retention after deletion to be confirmed by legal review — reg 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on the data user.]</li>
-    <li><strong>After you delete your account</strong> we keep only a one-way hash of your email address, so we can honour "do not contact". Requesting a new link later counts as a fresh sign-up.</li>
+    <li><strong>Your account and consent records:</strong> kept until you delete your account or, if you have no report left and are not subscribed to the newsletter, until {{ settings.inactive_purge_days }} days after you last used the tool, when we delete them as if you had deleted your account.</li>
+    <li><strong>After your account is deleted</strong> (by you, or after inactivity as above), we keep two things. First, a one-way hash of your email address, so we can honour "do not contact"; requesting a new link later counts as a fresh sign-up. Second, for {{ kept.en }}, your consent records: what you agreed to or withdrew, when, the wording shown and the notice version, so that we can show we had your consent (regulation 3(5) of the Personal Data Protection Regulations 2013 puts the burden of proving consent on us). These records are linked only to the hash, not to your email address (we can match them to you only if you give us your address again), and no longer include the IP address or browser. We delete them when the {{ kept.en }} end. Records for email addresses that were never confirmed are deleted with the address.</li>
     <li><strong>Short-lived data:</strong> access links expire after {{ settings.token_ttl_hours }} hours, sign-in sessions after {{ settings.session_ttl_hours }} hours, and hashed abuse counters after about 2 days.</li>
-    <li><strong>Backups:</strong> we keep nightly copies of the tool's database for 14 days and nightly snapshots of the whole server for 7 days, both in the AWS Asia Pacific (Malaysia) Region. Data that you delete, or that we delete on the schedule above, remains in these backups until they are overwritten: site files and reports for up to 7 days, and database records (such as your email address, consent records and your answers about a site) for up to about 3 weeks. We use backups only to restore the tool after a failure. [Backup retention wording to be confirmed by legal review]</li>
+    <li><strong>Backups:</strong> we keep nightly copies of the tool's database for 14 days and nightly snapshots of the whole server for 7 days, both in the AWS Asia Pacific (Malaysia) Region. Data that you delete, or that we delete on the schedule above, remains in these backups until they are overwritten: site files and reports for up to 7 days, and database records (such as your email address, consent records and your answers about a site) for up to about 3 weeks. We use backups only to restore the tool after a failure.</li>
   </ul>
 
   <h2>11. Security</h2>
@@ -101,7 +101,7 @@
     <li id="portability"><strong>Data portability</strong> (section 43A): you may ask us, by written notice given electronically, to send your personal data directly to another data controller of your choice, where this is technically feasible and the data formats are compatible. You can also download your data as a JSON file from your account page.</li>
   </ul>
   <p>To make a request, email <a href="mailto:contact@ecoconsultancy.services?subject=Personal%20data%20request">contact@ecoconsultancy.services</a> with the subject "Personal data request". We may need to verify your identity.</p>
-  <p><strong>Inquiries and complaints:</strong> [Designation of contact person — to be confirmed], EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
+  <p><strong>Inquiries and complaints:</strong> Technical Director, EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
 
   <h2>13. Age</h2>
   <p>This tool is meant for business users aged 18 and above. Please do not use it if you are under 18: the Personal Data Protection Regulations 2013 require consent for anyone under 18 to come from a parent, guardian or person with parental responsibility.</p>
@@ -111,7 +111,7 @@
 
   <h2>15. Changes</h2>
   <p>We may update this notice. The current version, with its date, will always be shown on this page, and your consent records show which version you saw.</p>
-  <p class="small">If the English and Bahasa Malaysia versions differ, [legal review: state which version prevails].</p>
+  <p class="small">If the English and Bahasa Malaysia versions differ, the English version prevails.</p>
   </div>
 
   <hr class="lang-divider">
@@ -119,7 +119,7 @@
   <div lang="ms" id="bm">
   <p class="kicker">Alat Saringan Rupa Bumi Desktop</p>
   <h1>Notis privasi</h1>
-  <p class="muted small">Versi notis <code>{{ settings.notice_version }}</code> · Kemas kini terakhir: [tarikh — ditetapkan semasa penerbitan] · Akta Perlindungan Data Peribadi 2010, seksyen 7</p>
+  <p class="muted small">Versi notis <code>{{ settings.notice_version }}</code> · Kemas kini terakhir: {{ settings.notice_date_ms }} · Akta Perlindungan Data Peribadi 2010, seksyen 7</p>
   <p class="lang-jump"><a href="#en" lang="en">Read this notice in English ↑</a></p>
 
   <h2>1. Mengenai notis ini</h2>
@@ -127,11 +127,11 @@
 
   <h2>2. Siapa kami dan cara menghubungi kami</h2>
   <dl class="dl contact-dl">
-    <dt>Pengawal data</dt><dd>EcoEnergy Consultancy Sdn. Bhd. [no. pendaftaran syarikat — akan disahkan]</dd>
+    <dt>Pengawal data</dt><dd>EcoEnergy Consultancy Sdn. Bhd. (No. Pendaftaran 202601020468 (1682563-A))</dd>
     <dt>Alamat</dt><dd>Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur</dd>
     <dt>Telefon</dt><dd><a href="tel:+60387446478">+60 3 8744 6478</a></dd>
     <dt>E-mel</dt><dd><a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a></dd>
-    <dt>Orang untuk dihubungi</dt><dd>[Jawatan orang yang boleh dihubungi, cth. Pegawai Perlindungan Data — akan disahkan melalui semakan undang-undang]</dd>
+    <dt>Orang untuk dihubungi</dt><dd>Pengarah Teknikal</dd>
   </dl>
 
   <h2>3. Data peribadi yang kami proses</h2>
@@ -162,7 +162,7 @@
 
   <h2>7. Pihak yang menerima data anda</h2>
   <ul>
-    <li><strong>Penyedia hos dan penghantaran e-mel</strong> yang menjalankan alat ini, menyimpan failnya dan menghantar e-mel kami. Mereka bertindak sebagai pemproses data kami, mengikut arahan kami. Alat ini, pangkalan datanya, fail tapak anda, laporan dan salinan sandaran dihoskan oleh <strong>Amazon Web Services</strong> (Amazon Lightsail) di Wilayah AWS Asia Pasifik (Malaysia). E-mel kami kepada anda dihantar oleh <strong>Amazon Simple Email Service (Amazon SES)</strong> di wilayah yang sama, yang memproses alamat e-mel anda dan mesej yang kami hantar kepada anda. [Entiti berkontrak AWS dan terma pemprosesan data — akan disahkan melalui semakan undang-undang]</li>
+    <li><strong>Penyedia hos dan penghantaran e-mel</strong> yang menjalankan alat ini, menyimpan failnya dan menghantar e-mel kami. Mereka bertindak sebagai pemproses data kami, mengikut arahan kami. Alat ini, pangkalan datanya, fail tapak anda, laporan dan salinan sandaran dihoskan oleh <strong>Amazon Web Services</strong> (Amazon Lightsail) di Wilayah AWS Asia Pasifik (Malaysia). E-mel kami kepada anda dihantar oleh <strong>Amazon Simple Email Service (Amazon SES)</strong> di wilayah yang sama, yang memproses alamat e-mel anda dan mesej yang kami hantar kepada anda. Kontrak kami bagi perkhidmatan AWS ini adalah dengan Amazon Web Services Malaysia Sdn. Bhd. (No. Pendaftaran 201501028710 (1154031-W)), di bawah AWS Customer Agreement dan terma pemprosesan data yang menjadi sebahagian daripadanya.</li>
     <li><strong>Data ketinggian.</strong> Kami membaca jubin data ketinggian awam daripada arkib Copernicus DEM yang dihoskan oleh Amazon Web Services; hanya nama jubin dan bahagian fail jubin itu yang meliputi kawasan umum tapak anda (blok kira-kira 30 km) yang diminta — bukan koordinat tapak anda, fail anda atau butiran anda.{% if otd %} Buat masa ini, pemasangan ini menggunakan penyedia sandaran, jadi koordinat tapak anda dihantar kepada OpenTopoData untuk membaca ketinggian. Alamat e-mel anda dan butiran lain tentang anda tidak dihantar.{% elif geotiff %} Buat masa ini, pemasangan ini membaca ketinggian daripada fail di pelayan kami sendiri, jadi tiada maklumat tentang tapak anda dihantar kepada perkhidmatan data ketinggian.{% endif %}</li>
     {% if turnstile_on %}<li><strong>Cloudflare</strong>, untuk memastikan pendaftaran dibuat oleh manusia (perlindungan bot).</li>{% endif %}
     <li><strong>Google Fonts:</strong> pelayar anda memuatkan fon pada halaman ini daripada pelayan Google, yang dapat melihat alamat IP anda. Tiada alamat halaman dihantar.</li>
@@ -171,7 +171,7 @@
   <p>Kami tidak menjual atau menyewakan data peribadi anda.</p>
 
   <h2>8. Pemindahan ke luar Malaysia</h2>
-  <p>Sebahagian penyedia ini mungkin menyimpan atau memproses data di luar Malaysia [akan disahkan]. Sebarang pemindahan sedemikian hanya dibuat sebagaimana yang dibenarkan di bawah seksyen 129 Akta.</p>
+  <p>Akaun anda, fail tapak, laporan, salinan sandaran dan e-mel yang kami hantar kepada anda disimpan dan diproses di Wilayah AWS Asia Pasifik (Malaysia). Sesetengah perkhidmatan beroperasi pada rangkaian di seluruh dunia, jadi data terhad yang diterimanya mungkin diproses di luar Malaysia: Google Fonts (alamat IP dan butiran pelayar anda){% if turnstile_on %} dan Cloudflare Turnstile (alamat IP anda dan isyarat pelayar yang digunakan untuk semakan manusia){% endif %}. Perkhidmatan ini tidak menerima alamat e-mel, fail tapak atau laporan anda.{% if otd %} Pada masa ini, penyedia data ketinggian sandaran, OpenTopoData, juga menerima koordinat tapak anda, dan pelayannya mungkin berada di luar Malaysia.{% endif %} Sebarang pemindahan sedemikian hanya dibuat sebagaimana yang dibenarkan di bawah seksyen 129 Akta.</p>
 
   <h2>9. Pilihan anda</h2>
   <ul>
@@ -187,10 +187,10 @@
   <ul>
     <li><strong>Fail tapak, hasil dan laporan:</strong> {{ settings.retention_days }} hari selepas dimuat naik, atau lebih awal atas permintaan anda. Butang Delete memadamnya daripada alat ini serta-merta (bagi salinan sandaran, lihat di bawah).</li>
     <li><strong>Alamat e-mel yang tidak pernah disahkan:</strong> dipadam selepas {{ settings.unverified_purge_days }} hari.</li>
-    <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda atau, jika anda tiada laporan lagi dan tidak melanggan surat berita, sehingga {{ settings.inactive_purge_days }} hari selepas anda kali terakhir menggunakan alat ini, apabila kami memadamnya seolah-olah anda telah memadam akaun anda. [Tempoh penyimpanan rekod persetujuan selepas pemadaman akan disahkan melalui semakan undang-undang — peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas pengguna data.]</li>
-    <li><strong>Selepas anda memadam akaun,</strong> kami hanya menyimpan cincang sehala alamat e-mel anda supaya kami dapat mematuhi permintaan "jangan hubungi". Meminta pautan baharu kemudian dikira sebagai pendaftaran baharu.</li>
+    <li><strong>Akaun dan rekod persetujuan anda:</strong> disimpan sehingga anda memadam akaun anda atau, jika anda tiada laporan lagi dan tidak melanggan surat berita, sehingga {{ settings.inactive_purge_days }} hari selepas anda kali terakhir menggunakan alat ini, apabila kami memadamnya seolah-olah anda telah memadam akaun anda.</li>
+    <li><strong>Selepas akaun anda dipadam</strong> (oleh anda, atau selepas tidak aktif seperti di atas), kami menyimpan dua perkara. Pertama, cincang sehala alamat e-mel anda, supaya kami dapat mematuhi permintaan "jangan hubungi"; meminta pautan baharu kemudian dikira sebagai pendaftaran baharu. Kedua, selama {{ kept.ms }}, rekod persetujuan anda: perkara yang anda persetujui atau tarik balik, bila, perkataan yang dipaparkan dan versi notis, supaya kami dapat menunjukkan bahawa kami telah mendapat persetujuan anda (peraturan 3(5) Peraturan-Peraturan Perlindungan Data Peribadi 2013 meletakkan beban membuktikan persetujuan ke atas kami). Rekod ini hanya dikaitkan dengan cincang tersebut, bukan dengan alamat e-mel anda (kami hanya dapat memadankannya dengan anda jika anda memberikan alamat anda semula), dan tidak lagi mengandungi alamat IP atau maklumat pelayar. Kami memadamnya apabila tempoh {{ kept.ms }} itu tamat. Rekod bagi alamat e-mel yang tidak pernah disahkan dipadam bersama alamat tersebut.</li>
     <li><strong>Data jangka pendek:</strong> pautan akses tamat selepas {{ settings.token_ttl_hours }} jam, sesi log masuk selepas {{ settings.session_ttl_hours }} jam, dan pembilang penyalahgunaan yang dicincang selepas kira-kira 2 hari.</li>
-    <li><strong>Salinan sandaran:</strong> kami menyimpan salinan harian pangkalan data alat ini selama 14 hari dan salinan harian keseluruhan pelayan (snapshot) selama 7 hari, kedua-duanya di Wilayah AWS Asia Pasifik (Malaysia). Data yang anda padam, atau yang kami padam mengikut jadual di atas, kekal dalam salinan sandaran ini sehingga ditimpa: fail tapak dan laporan sehingga 7 hari, dan rekod pangkalan data (seperti alamat e-mel anda, rekod persetujuan dan jawapan anda tentang sesuatu tapak) sehingga kira-kira 3 minggu. Kami menggunakan salinan sandaran hanya untuk memulihkan alat ini selepas berlaku kegagalan. [Perkataan tempoh penyimpanan sandaran akan disahkan melalui semakan undang-undang]</li>
+    <li><strong>Salinan sandaran:</strong> kami menyimpan salinan harian pangkalan data alat ini selama 14 hari dan salinan harian keseluruhan pelayan (snapshot) selama 7 hari, kedua-duanya di Wilayah AWS Asia Pasifik (Malaysia). Data yang anda padam, atau yang kami padam mengikut jadual di atas, kekal dalam salinan sandaran ini sehingga ditimpa: fail tapak dan laporan sehingga 7 hari, dan rekod pangkalan data (seperti alamat e-mel anda, rekod persetujuan dan jawapan anda tentang sesuatu tapak) sehingga kira-kira 3 minggu. Kami menggunakan salinan sandaran hanya untuk memulihkan alat ini selepas berlaku kegagalan.</li>
   </ul>
 
   <h2>11. Keselamatan</h2>
@@ -204,7 +204,7 @@
     <li id="portability-bm"><strong>Kemudahalihan data</strong> (seksyen 43A): anda boleh meminta kami, melalui notis bertulis yang diberikan secara elektronik, menghantar data peribadi anda terus kepada pengawal data lain pilihan anda, sekiranya ini boleh dilaksanakan secara teknikal dan format data adalah serasi. Anda juga boleh memuat turun data anda sebagai fail JSON dari halaman akaun anda.</li>
   </ul>
   <p>Untuk membuat permintaan, hantar e-mel ke <a href="mailto:contact@ecoconsultancy.services?subject=Permintaan%20data%20peribadi">contact@ecoconsultancy.services</a> dengan subjek "Permintaan data peribadi". Kami mungkin perlu mengesahkan identiti anda.</p>
-  <p><strong>Pertanyaan dan aduan:</strong> [Jawatan orang yang boleh dihubungi — akan disahkan], EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
+  <p><strong>Pertanyaan dan aduan:</strong> Pengarah Teknikal, EcoEnergy Consultancy Sdn. Bhd., Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Tel +60 3 8744 6478 · contact@ecoconsultancy.services</p>
 
   <h2>13. Had umur</h2>
   <p>Alat ini ditujukan kepada pengguna perniagaan berumur 18 tahun ke atas. Sila jangan menggunakannya jika anda berumur di bawah 18 tahun: Peraturan-Peraturan Perlindungan Data Peribadi 2013 menghendaki persetujuan bagi sesiapa yang berumur di bawah 18 tahun diberikan oleh ibu bapa, penjaga atau orang yang mempunyai tanggungjawab sebagai ibu bapa.</p>
@@ -214,7 +214,7 @@
 
   <h2>15. Perubahan</h2>
   <p>Kami mungkin mengemas kini notis ini. Versi terkini, berserta tarikhnya, akan sentiasa dipaparkan di halaman ini, dan rekod persetujuan anda menunjukkan versi yang anda lihat.</p>
-  <p class="small">Sekiranya versi Bahasa Inggeris dan Bahasa Malaysia berbeza, [semakan undang-undang: nyatakan versi yang terpakai].</p>
+  <p class="small">Sekiranya versi Bahasa Inggeris dan Bahasa Malaysia berbeza, versi Bahasa Inggeris hendaklah diguna pakai.</p>
   </div>
 </article>
 {% endblock %}

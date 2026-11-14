@@ -115,6 +115,23 @@ CREATE TABLE IF NOT EXISTS suppression (
     email_sha256 TEXT PRIMARY KEY,
     created_at   TEXT NOT NULL
 );
+
+-- Consent records of erased, confirmed accounts, kept for CONSENT_ARCHIVE_DAYS so we can still
+-- prove consent (PDP Regulations 2013 reg 3(5)). Keyed by sha256(email), never the address;
+-- the IP address and browser of the live ledger are not kept. Deleted by the retention sweep.
+CREATE TABLE IF NOT EXISTS consent_archive (
+    id             INTEGER PRIMARY KEY,
+    email_sha256   TEXT NOT NULL,
+    purpose        TEXT NOT NULL,
+    action         TEXT NOT NULL,
+    notice_version TEXT NOT NULL,
+    wording        TEXT NOT NULL,
+    job_id         TEXT,
+    created_at     TEXT NOT NULL,      -- when the consent was given or withdrawn
+    archived_at    TEXT NOT NULL       -- when the account was erased
+);
+CREATE INDEX IF NOT EXISTS consent_archive_email_idx ON consent_archive(email_sha256);
+CREATE INDEX IF NOT EXISTS consent_archive_age_idx ON consent_archive(archived_at);
 """
 
 

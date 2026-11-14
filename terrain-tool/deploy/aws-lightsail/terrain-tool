@@ -33,6 +33,8 @@ EcoEnergy terrain screening tool: server commands (run each with sudo)
   sudo terrain-tool withdraw EMAIL [--followup] [--newsletter] --note TEXT
                                            Record a withdrawal of consent received in writing
                                            (PDPA s.38 / s.43), e.g. --note "Email of 12 Oct 2026".
+  sudo terrain-tool consent-records EMAIL  Show the consent records held for an address, including
+                                           those kept for 2 years after an account was deleted.
   sudo terrain-tool backup-now             Back up the database now (it also happens every night).
   sudo terrain-tool help                   This list.
 EOF
@@ -368,6 +370,13 @@ cmd_withdraw() {
   runuser -u terrain -- "$VENV/bin/python" -m app.manage withdraw --env-file "$ENV_FILE" "$@"
 }
 
+cmd_consent_records() {
+  need_root consent-records
+  (($# == 1)) || die 'Give one address, e.g.: sudo terrain-tool consent-records someone@example.com'
+  cd "$APP_DIR"
+  runuser -u terrain -- "$VENV/bin/python" -m app.manage consent-records --env-file "$ENV_FILE" "$1"
+}
+
 cmd_backup_now() {
   need_root backup-now
   if systemctl start terrain-tool-backup.service; then
@@ -395,6 +404,7 @@ main() {
     set-turnstile-keys) cmd_set_turnstile_keys ;;
     test-email) cmd_test_email "$@" ;;
     withdraw) cmd_withdraw "$@" ;;
+    consent-records) cmd_consent_records "$@" ;;
     backup-now) cmd_backup_now ;;
     help | -h | --help) usage ;;
     *) usage >&2; die "Unknown command '$cmd'." ;;

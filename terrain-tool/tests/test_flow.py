@@ -384,8 +384,13 @@ def test_privacy_page(client, settings):
     resp = client.get("/privacy")
     assert resp.status_code == 200
     html = resp.text
-    assert "Draft for legal review" in html
-    assert settings.notice_version == "2026-11-draft-5" and settings.notice_version in html
+    # Published notice: no draft banner and no [placeholders] left in either language.
+    assert "Draft for legal review" not in html and "draft-banner" not in html
+    for leftover in ("to be confirmed", "akan disahkan", "legal review:", "semakan undang-undang:"):
+        assert leftover not in html, leftover
+    assert settings.notice_version == "2026-11-v1" and settings.notice_version in html
+    assert f"Last updated: {settings.notice_date}" in html
+    assert f"Kemas kini terakhir: {settings.notice_date_ms}" in html
     # Copernicus requests are described as they are: tile name plus byte ranges of a ~30 km block.
     assert "only the 1° map tile names are requested" not in html
     assert "a block of roughly 30 km" in html and "blok kira-kira 30 km" in html
@@ -394,13 +399,27 @@ def test_privacy_page(client, settings):
     assert f"sehingga {settings.inactive_purge_days} hari selepas anda kali terakhir" in html
     # Data controller identity and contact (PDP Regulations 2013 reg 4: designation + phone).
     for phrase in ("EcoEnergy Consultancy Sdn. Bhd.", "Level 22, Menara Merdeka 118", "50118 Kuala Lumpur",
-                   "+60 3 8744 6478", "contact@ecoconsultancy.services", "[Designation of contact person"):
+                   "+60 3 8744 6478", "contact@ecoconsultancy.services",
+                   "Sdn. Bhd. (Registration No. 202601020468 (1682563-A))",
+                   "Sdn. Bhd. (No. Pendaftaran 202601020468 (1682563-A))",
+                   "<dt>Contact person</dt><dd>Technical Director</dd>",
+                   "<dt>Orang untuk dihubungi</dt><dd>Pengarah Teknikal</dd>",
+                   "Inquiries and complaints:</strong> Technical Director,",
+                   "Pertanyaan dan aduan:</strong> Pengarah Teknikal,"):
         assert phrase in html, phrase
     # Both languages, with a jump link.
     assert 'lang="ms"' in html and 'id="bm"' in html and 'href="#bm"' in html and 'href="#en"' in html
     assert "Notis privasi" in html
     for phrase in (
-        "obligatory", "Data portability", "outside Malaysia", "section 129", "[to be confirmed]",
+        "obligatory", "Data portability", "outside Malaysia", "section 129",
+        # Transfers: everything of the tool stays in Malaysia; only the worldwide services named.
+        "stored and processed in the AWS Asia Pacific (Malaysia) Region",
+        "Google Fonts (your IP address and browser details)",
+        "do not receive your email address, your site file or your report",
+        "Google Fonts (alamat IP dan butiran pelayar anda)",
+        # AWS contracting party for Malaysian accounts (AWS Customer Agreement s.12).
+        "Amazon Web Services Malaysia Sdn. Bhd. (Registration No. 201501028710 (1154031-W))",
+        "Amazon Web Services Malaysia Sdn. Bhd. (No. Pendaftaran 201501028710 (1154031-W))",
         "Hosting", "email-delivery", "data processors",
         # Production processors (deploy/aws-lightsail): AWS hosting and SES, both in Malaysia.
         "<strong>Amazon Web Services</strong> (Amazon Lightsail) in the AWS Asia Pacific (Malaysia) Region",
@@ -412,18 +431,24 @@ def test_privacy_page(client, settings):
         "never your site's coordinates, your file or your details",
         # Retention.
         f"{settings.retention_days} days", f"after {settings.unverified_purge_days} days", "one-way hash",
-        "reg 3(5)",
+        "regulation 3(5)", "peraturan 3(5)",
+        # Consent records outlive an erased account (CONSENT_ARCHIVE_DAYS), hashed, without IP/browser.
+        f"Second, for {settings.consent_archive_period['en']}, your consent records",
+        f"Kedua, selama {settings.consent_archive_period['ms']}, rekod persetujuan anda",
+        "no longer include the IP address or browser",
+        "Records for email addresses that were never confirmed are deleted with the address",
         # Backups keep deleted data for a while (deploy/aws-lightsail: 14 daily DB copies, 7 snapshots).
         "deletes them from the tool immediately (for backups, see below)",
         "copies of the tool's database for 14 days", "snapshots of the whole server for 7 days",
         "site files and reports for up to 7 days", "for up to about 3 weeks",
-        "[Backup retention wording to be confirmed by legal review]",
         "memadamnya daripada alat ini serta-merta", "pangkalan data alat ini selama 14 hari",
         "sehingga kira-kira 3 minggu",
         # Rights.
         "21 days", "14 days", "sections 31 and 35", "section 38", "section 43)", "section 43A",
         # Age.
         "aged 18 and above", "berumur 18 tahun ke atas",
+        # Which language prevails.
+        "the English version prevails", "versi Bahasa Inggeris hendaklah diguna pakai",
     ):
         assert phrase in html, phrase
     # No deadline for portability: none has been prescribed under s.43A(3).
@@ -433,6 +458,23 @@ def test_privacy_page(client, settings):
         assert "day" not in item and "hari" not in item, item
     # With the default Copernicus provider nothing is sent to OpenTopoData.
     assert "OpenTopoData" not in html
+    # Cloudflare is named only when the human check is on (TURNSTILE_SITE_KEY set).
+    assert "Cloudflare" not in html
+
+
+def test_privacy_names_cloudflare_transfer_when_turnstile_is_on(app_factory):
+    html = app_factory("ts", turnstile_site_key="1x00000000000000000000AA",
+                       turnstile_secret_key="1x0000000000000000000000000000000AA").client.get("/privacy").text
+    assert "and Cloudflare Turnstile (your IP address and the browser signals used for the human check)" in html
+    assert "dan Cloudflare Turnstile (alamat IP anda dan isyarat pelayar yang digunakan untuk semakan manusia)" in html
+
+
+def test_consent_archive_period_in_words():
+    from app.config import Settings
+
+    assert Settings().consent_archive_period == {"en": "2 years", "ms": "2 tahun"}
+    assert Settings(consent_archive_days=365).consent_archive_period == {"en": "1 year", "ms": "1 tahun"}
+    assert Settings(consent_archive_days=400).consent_archive_period == {"en": "400 days", "ms": "400 hari"}
 
 
 def test_privacy_and_forms_mention_opentopodata_only_when_it_is_used(app_factory):
@@ -440,6 +482,7 @@ def test_privacy_and_forms_mention_opentopodata_only_when_it_is_used(app_factory
     html = otd.client.get("/privacy").text
     assert "your site's coordinates are sent to OpenTopoData" in html
     assert "koordinat tapak anda dihantar kepada OpenTopoData" in html
+    assert "OpenTopoData, also receives your site's coordinates, and its servers may be outside Malaysia" in html
     assert "coordinates are sent to the OpenTopoData service" in otd.client.get("/").text
     otd.login("otd@example.com")
     assert "coordinates are sent to the OpenTopoData service" in otd.client.get("/upload").text
@@ -796,6 +839,27 @@ def test_manage_withdraw_uses_the_server_settings_file_and_never_creates_a_datab
         manage.main(["withdraw", "server@example.com", "--followup", "--note", "x",
                      "--env-file", str(tmp_path / "missing.env")])
     assert "not found" in capsys.readouterr().err
+
+
+def test_manage_consent_records_shows_live_and_archived_records(flow, settings, capsys):
+    """Proof of consent (reg 3(5)): staff can list an address's records, before and after erasure."""
+    from app import manage
+
+    flow.login("proof@example.com", newsletter=True)
+    assert manage.main(["consent-records", "Proof@Example.com"], settings=settings) == 0
+    out = capsys.readouterr().out
+    assert "Account proof@example.com" in out and "Live consent records" in out
+    assert "newsletter confirmed" in out and f"notice {settings.notice_version}" in out and ", IP " in out
+
+    flow.client.post("/account/delete", data={"csrf": flow.csrf(), "confirm": "yes"})
+    assert manage.main(["consent-records", "proof@example.com"], settings=settings) == 0
+    out = capsys.readouterr().out
+    assert "No account for proof@example.com." in out
+    assert "Archived records of an erased account" in out and "newsletter confirmed" in out
+    assert ", IP " not in out and "account erased" in out
+
+    assert manage.main(["consent-records", "nobody@example.com"], settings=settings) == 0
+    assert "No archived consent records for this address either." in capsys.readouterr().out
 
 
 def test_worker_inline_false_is_logged_as_a_warning(app_factory, caplog):
