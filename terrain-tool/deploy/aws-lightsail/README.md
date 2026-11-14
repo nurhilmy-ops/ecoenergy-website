@@ -584,7 +584,7 @@ lists them.
 | `sudo terrain-tool set-turnstile-keys` | Enters (or replaces) the Cloudflare Turnstile keys (E8) |
 | `sudo terrain-tool test-email ADDRESS` | Sends a test email with the real settings |
 | `sudo terrain-tool consent-records EMAIL` | Lists the consent records held for an address: the live ones of an existing account and, for 2 years after an account was deleted, the archived ones. Use it to prove consent or answer an access request; it changes nothing |
-| `sudo terrain-tool withdraw EMAIL --followup --newsletter --note "Email of 12 Oct 2026"` | Records a withdrawal of consent or an objection to marketing that arrived in writing (PDPA s.38 / s.43): staff follow-up ends for all of that person's reports (`--followup`) and/or the newsletter is unsubscribed (`--newsletter`); the note goes into the consent records |
+| `sudo terrain-tool withdraw EMAIL --followup --newsletter --note "Email of 12 Oct 2026"` | Records a withdrawal of consent or an objection to marketing that arrived in writing (PDPA s.38 / s.43): staff follow-up ends for all of that person's reports (`--followup`) and/or the newsletter is unsubscribed (`--newsletter`); the note goes into the consent records, which are kept for 2 years after the account is deleted, so write only how and when the request arrived, never the person's name or address (a note with an `@` is refused) |
 | `sudo terrain-tool backup-now` | Backs up the database now |
 
 ### Updates

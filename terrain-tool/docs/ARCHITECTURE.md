@@ -283,9 +283,14 @@ the notice is not the place for blanket consent). Every row stores the exact wor
   (PDPA s.38) takes effect at once: the job drops out of the leads CSV.
 - Deleting a report, by the visitor or by retention, sets `followup_consent = 0` with the
   site fields; the ledger keeps the history (reg 3(5): the burden of proving consent is on
-  the data user). Erasing the account deletes the ledger with the subscriber (cascade) and
-  leaves sha256(email) in `suppression`. How long consent records should outlive an erased
-  account is an open legal-review item. Verified accounts with no live report, no
+  the data user). Erasing a confirmed account copies its ledger rows into `consent_archive`
+  (keyed by sha256(email), without IP or user agent), deletes the live ledger with the
+  subscriber (cascade) and leaves sha256(email) in `suppression`. The sweep deletes archive
+  rows after `CONSENT_ARCHIVE_DAYS` (730, the 2 years stated in the notice); never-confirmed
+  addresses are not archived. `python -m app.manage consent-records EMAIL` (on the server
+  `sudo terrain-tool consent-records EMAIL`) lists the live and archived rows. Only confirming
+  a new link lifts the suppression; a returning person sees the archived rows on `/account`
+  and in the export. Verified accounts with no live report, no
   newsletter subscription and no activity for `INACTIVE_PURGE_DAYS` (730) are erased the
   same way by the retention sweep.
 - Written withdrawals and s.43 objections that arrive by email are applied with

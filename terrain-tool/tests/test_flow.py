@@ -435,7 +435,11 @@ def test_privacy_page(client, settings):
         # Consent records outlive an erased account (CONSENT_ARCHIVE_DAYS), hashed, without IP/browser.
         f"Second, for {settings.consent_archive_period['en']}, your consent records",
         f"Kedua, selama {settings.consent_archive_period['ms']}, rekod persetujuan anda",
-        "no longer include the IP address or browser",
+        "stored under the hash instead of your email address, without the IP address or browser",
+        "we look them up only when we need to show your consent",
+        "We keep it until you sign up again", "Kami menyimpannya sehingga anda mendaftar semula",
+        "masanya, teks yang dipaparkan kepada anda dan versi notis",
+        "(sama ada oleh anda, atau oleh kami selepas tempoh tidak aktif seperti di atas)",
         "Records for email addresses that were never confirmed are deleted with the address",
         # Backups keep deleted data for a while (deploy/aws-lightsail: 14 daily DB copies, 7 snapshots).
         "deletes them from the tool immediately (for backups, see below)",
@@ -860,6 +864,30 @@ def test_manage_consent_records_shows_live_and_archived_records(flow, settings, 
 
     assert manage.main(["consent-records", "nobody@example.com"], settings=settings) == 0
     assert "No archived consent records for this address either." in capsys.readouterr().out
+
+
+def test_manage_matches_addresses_in_their_stored_form(flow, settings, capsys):
+    """An internationalised domain is stored as punycode; staff may type it as the person wrote it."""
+    from app import manage
+
+    flow.request_link("ali@bücher.com.my")                    # the outbox holds the stored form
+    assert flow.confirm(flow.latest_token("ali@xn--bcher-kva.com.my")).status_code == 303
+    assert manage.main(["consent-records", "Ali@Bücher.com.my"], settings=settings) == 0
+    assert "Account ali@xn--bcher-kva.com.my" in capsys.readouterr().out
+    flow.client.post("/account/delete", data={"csrf": flow.csrf(), "confirm": "yes"})
+    assert manage.main(["consent-records", "ali@bücher.com.my"], settings=settings) == 0
+    assert "Archived records of an erased account" in capsys.readouterr().out
+
+
+def test_manage_withdraw_refuses_a_note_with_an_email_address(flow, settings, capsys):
+    """The note outlives erasure in consent_archive, which holds no addresses."""
+    from app import manage
+
+    flow.login("noted@example.com", newsletter=True)
+    with pytest.raises(SystemExit):
+        manage.main(["withdraw", "noted@example.com", "--newsletter",
+                     "--note", "Email from noted@example.com, 12 Oct 2026"], settings=settings)
+    assert "must not contain an email address" in capsys.readouterr().err
 
 
 def test_worker_inline_false_is_logged_as_a_warning(app_factory, caplog):

@@ -374,8 +374,8 @@ def register_link_request(settings: Settings, email: str, newsletter: bool, utm:
     """Upsert the subscriber, append consent rows and return a fresh raw magic token."""
     version = settings.notice_version
     with tx(settings.db_path) as conn:
-        # Submitting again after erasure is a new, active sign-up: lift the suppression.
-        conn.execute("DELETE FROM suppression WHERE email_sha256 = ?", (email_hash(email),))
+        # A suppressed (erased) address keeps its suppression until a link is confirmed: anyone
+        # can type an address here, so only its owner confirming a new link is a fresh sign-up.
         conn.execute(
             "INSERT INTO subscribers (email, created_at, utm_source, utm_medium, utm_campaign, referrer) "
             "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING",
@@ -469,9 +469,11 @@ def confirm_subscriber(conn, subscriber_id: int, ip: str, user_agent: str | None
     only through the link sent with that opt-in (``newsletter_consent_id``, the ledger row it
     made), and only while no later confirmation or withdrawal supersedes that grant: a newsletter
     tick typed in by someone else, or a sign-in with the box unticked, never subscribes anyone."""
-    sub = conn.execute("SELECT verified_at FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
+    sub = conn.execute("SELECT email, verified_at FROM subscribers WHERE id = ?", (subscriber_id,)).fetchone()
     if sub["verified_at"] is None:
         conn.execute("UPDATE subscribers SET verified_at = ? WHERE id = ?", (now_iso(), subscriber_id))
+    # Confirming a link after erasure is an active, fresh sign-up: lift the suppression.
+    conn.execute("DELETE FROM suppression WHERE email_sha256 = ?", (email_hash(sub["email"]),))
     service = conn.execute(
         "SELECT * FROM consents WHERE subscriber_id = ? AND job_id IS NULL AND purpose = 'service' "
         "ORDER BY id DESC LIMIT 1", (subscriber_id,)).fetchone()
@@ -790,7 +792,11 @@ def subscriber_data(settings: Settings, subscriber_id: int) -> dict:
             "WHERE c.subscriber_id = ? ORDER BY c.id", (subscriber_id,))]
         job_rows = [dict(r) for r in conn.execute(
             "SELECT * FROM jobs WHERE subscriber_id = ? ORDER BY created_at DESC", (subscriber_id,))]
-    return {"subscriber": sub, "consents": consents, "jobs": job_rows}
+        # Consent records kept from an earlier, erased account with this address (CONSENT_ARCHIVE_DAYS).
+        archived = [dict(r) for r in conn.execute(
+            "SELECT purpose, action, notice_version, wording, created_at, archived_at FROM consent_archive "
+            "WHERE email_sha256 = ? ORDER BY id", (email_hash(sub["email"]),))]
+    return {"subscriber": sub, "consents": consents, "jobs": job_rows, "archived_consents": archived}
 
 
 @router.get("/account", response_class=HTMLResponse)

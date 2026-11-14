@@ -304,11 +304,16 @@ legal review* below remain.
   --followup --newsletter --note "Email of 12 Oct 2026"` (elsewhere: `python -m app.manage
   withdraw EMAIL … [--env-file FILE]` with the app's settings): follow-up ends for every live
   report, the newsletter is unsubscribed, and the ledger gets a `withdrawn` row with the note.
+  The note survives erasure in `consent_archive`, so it must say only how and when the request
+  arrived; a note containing `@` is refused. Addresses are matched in the stored form
+  (internationalised domains as punycode), as are those given to `consent-records`.
   It stops with an error, changing nothing, if it finds no database where the settings point.
   For the newsletter alone, the `unsubscribe_url` column of the newsletter CSV does the same.
 - **Self-service rights.** `/account` shows everything held, exports it as JSON, and
   deletes the account; erasure leaves sha256(email) in a suppression list so the person is
-  not contacted again (a new sign-up lifts it), plus the archived consent records above.
+  not contacted again, plus the archived consent records above. Only confirming a new link
+  lifts the suppression (anyone can type an address into the form), and a person who signs up
+  again sees the archived records of the earlier account on `/account` and in the export.
 - **Minimal sharing.** Admin exports are limited by consent: the leads CSV holds only
   screenings with follow-up granted; the newsletter CSV only confirmed subscribers.
 - **Age.** The landing page and notice say the tool is for business users aged 18 and
@@ -325,6 +330,9 @@ data outside Malaysia (Google Fonts; Cloudflare Turnstile while it is on).
 
 **Still open for legal review:**
 
+- how long the sha256(email) suppression entry may be kept after erasure: the notice says
+  "until you sign up again", so it has no fixed end (the PDP Standard 2015 retention rules and
+  s.10 apply);
 - the s.129 basis for the transfers outside Malaysia that the notice names (Google Fonts,
   Cloudflare Turnstile): a transfer impact assessment, contract, or contractual clauses, with
   the records the Cross Border Personal Data Transfer guideline asks for. Self-hosting the fonts
@@ -400,9 +408,14 @@ Items marked *(kit)* are done by the kit; the others are still yours.
       (a breach likely to cause significant harm must be notified to the Commissioner within
       72 hours).
   - [ ] **AWS as processor** (notice section 7): the notice names Amazon Web Services Malaysia
-        Sdn. Bhd. (201501028710 (1154031-W)), AWS's contracting party for accounts located in
-        Malaysia since 1 October 2022 (<https://aws.amazon.com/legal/aws-contracting-party/>).
-        Check that this name is on the AWS invoice.
+        Sdn. Bhd. (201501028710 (1154031-W)). AWS's contracting-party table lists it for
+        accounts located in Malaysia (<https://aws.amazon.com/legal/aws-contracting-party/>),
+        and AWS's Malaysia tax page dates the change to 1 October 2022, describing it as the
+        reseller for those accounts (<https://aws.amazon.com/tax-help/malaysia/>). Whether an
+        account counts as "located in Malaysia" follows its billing address and tax settings.
+        Check that the seller on the AWS invoice for Lightsail and SES is this company; if it
+        says Amazon Web Services, Inc., correct section 7 in both languages and bump
+        `NOTICE_VERSION`.
 - [ ] **Fonts**: consider self-hosting the three typefaces so visitors' browsers do not
       contact Google (then remove the Google Fonts line from the notice and the CSP).
 - [ ] **Posting**: share on LinkedIn and Threads with utm tags so the admin channel table

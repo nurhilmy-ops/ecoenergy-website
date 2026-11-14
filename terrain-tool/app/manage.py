@@ -44,6 +44,17 @@ from .db import db, init_db, tx
 STAFF_USER_AGENT = "staff record (python -m app.manage)"
 
 
+def stored_form(email: str) -> str:
+    """The address as the app stores it (ASCII, punycode domain, lower-cased), so an address
+    typed as the person wrote it (e.g. an internationalised domain) still matches."""
+    from .security import InvalidEmail, normalise_email
+
+    try:
+        return normalise_email(email)
+    except InvalidEmail:
+        return email.strip().lower()
+
+
 def withdraw(settings: Settings, email: str, *, followup: bool, newsletter: bool, note: str) -> dict | None:
     """Apply a written withdrawal. Returns what changed, or None if the address is unknown."""
     from .main import add_consent  # the ledger writer shared with the web routes
@@ -52,7 +63,7 @@ def withdraw(settings: Settings, email: str, *, followup: bool, newsletter: bool
     changed: dict = {"followup_jobs": [], "newsletter": False}
     with tx(settings.db_path) as conn:
         sub = conn.execute("SELECT id, newsletter_status FROM subscribers WHERE email = ?",
-                           (email.strip().lower(),)).fetchone()
+                           (stored_form(email),)).fetchone()
         if sub is None:
             return None
         if followup:
@@ -76,7 +87,7 @@ def consent_records(settings: Settings, email: str) -> dict:
     """The live consent ledger of ``email`` (if the account exists) and its archived records."""
     from .security import email_hash
 
-    address = email.strip().lower()
+    address = stored_form(email)
     with db(settings.db_path) as conn:
         sub = conn.execute("SELECT id, created_at, verified_at FROM subscribers WHERE email = ?",
                            (address,)).fetchone()
@@ -179,7 +190,9 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
     w.add_argument("--followup", action="store_true", help="stop staff follow-up for every live report")
     w.add_argument("--newsletter", action="store_true", help="unsubscribe from the newsletter")
     w.add_argument("--note", required=True,
-                   help='how the request arrived, e.g. "Email from the subscriber, 12 Oct 2026"')
+                   help='how and when the request arrived, e.g. "Email from the subscriber, 12 Oct 2026". '
+                        "No names or email addresses: the note stays in the consent records, which are "
+                        "kept for 2 years after the account is deleted, under a hash of the address")
     t = sub.add_parser("test-email", parents=[common], help="send a test email with the current mail settings")
     t.add_argument("address")
     c = sub.add_parser("consent-records", parents=[common],
@@ -195,6 +208,9 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
             parser.error("choose --followup, --newsletter or both")
         if not args.note.strip():
             parser.error("--note must describe the request")
+        if "@" in args.note:
+            parser.error('--note must not contain an email address (it is kept with the consent records '
+                         'after erasure); say how and when, e.g. "Email from the subscriber, 12 Oct 2026"')
 
     settings = settings or load_settings(args.env_file)
     if not settings.db_path.is_file():
@@ -210,7 +226,7 @@ def main(argv: list[str] | None = None, settings: Settings | None = None) -> int
     changed = withdraw(settings, args.email, followup=args.followup, newsletter=args.newsletter,
                        note=args.note)
     if changed is None:
-        print(f"No account for {args.email.strip().lower()}; nothing changed.", file=sys.stderr)
+        print(f"No account for {stored_form(args.email)}; nothing changed.", file=sys.stderr)
         return 1
     if args.followup:
         print(f"Staff follow-up withdrawn for {len(changed['followup_jobs'])} report(s).")

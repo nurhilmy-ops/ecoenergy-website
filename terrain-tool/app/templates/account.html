@@ -88,6 +88,22 @@
       </tbody>
     </table>
   </div>
+  {% if archived_consents %}
+  <h3 class="h4" id="archived-consent-title">Records kept from an earlier, deleted account</h3>
+  <p class="muted small">You deleted an account with this address before (or we deleted it after inactivity). We keep its consent records for {{ settings.consent_archive_period.en }} after deletion, stored under a one-way hash of the address, as proof of what was agreed (<a href="/privacy#en">privacy notice</a>, section 10).</p>
+  <div class="table-wrap">
+    <table aria-labelledby="archived-consent-title">
+      <thead><tr><th scope="col">When</th><th scope="col">Purpose</th><th scope="col">Action</th><th scope="col">Notice version</th><th scope="col">Wording</th><th scope="col">Account deleted</th></tr></thead>
+      <tbody>
+      {% for c in archived_consents %}
+        <tr><td class="nowrap">{{ c.created_at|dt }}</td><td>{{ c.purpose }}</td><td>{{ c.action }}</td>
+          <td class="nowrap"><code>{{ c.notice_version }}</code></td><td class="wrap-text small">{{ c.wording }}</td>
+          <td class="nowrap">{{ c.archived_at|dt(False) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 </section>
 
 <div class="grid-2 section">
@@ -100,7 +116,7 @@
   <section class="card" aria-labelledby="erase-title">
     <h2 id="erase-title" class="h3">Delete everything</h2>
     {% if delete_error %}<div class="alert alert-error" role="alert">{{ delete_error }}</div>{% endif %}
-    <p class="muted small">Deletes your email address, site files and reports now. We keep a one-way fingerprint (hash) of your address so we never email you again unless you sign up afresh, and, for {{ settings.consent_archive_period.en }}, your consent records, linked only to that fingerprint, as proof of what you agreed to (<a href="/privacy#en">privacy notice</a>, section 10).</p>
+    <p class="muted small">Deletes your email address, site files and reports now. We keep a one-way fingerprint (hash) of your address so we never email you again unless you sign up afresh, and, for {{ settings.consent_archive_period.en }}, your consent records, stored under that fingerprint instead of your address, as proof of what you agreed to (<a href="/privacy#en">privacy notice</a>, section 10).</p>
     <form method="post" action="/account/delete">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <div class="field">

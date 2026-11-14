@@ -33,6 +33,7 @@ EcoEnergy terrain screening tool: server commands (run each with sudo)
   sudo terrain-tool withdraw EMAIL [--followup] [--newsletter] --note TEXT
                                            Record a withdrawal of consent received in writing
                                            (PDPA s.38 / s.43), e.g. --note "Email of 12 Oct 2026".
+                                           Say how and when only: no names or addresses in the note.
   sudo terrain-tool consent-records EMAIL  Show the consent records held for an address, including
                                            those kept for 2 years after an account was deleted.
   sudo terrain-tool backup-now             Back up the database now (it also happens every night).

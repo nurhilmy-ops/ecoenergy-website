@@ -180,15 +180,45 @@ def test_ipv6_addresses_share_their_64_for_rate_limits(app_factory):
     assert resp.status_code == 200 and len(flow.mails()) == 3
 
 
-def test_resignup_after_erasure_lifts_suppression(flow, query):
+def test_resignup_after_erasure_lifts_suppression_only_when_confirmed(flow, query, settings):
+    """Anyone can type an erased person's address into the form; only the owner confirming
+    the new link is a fresh sign-up. An unconfirmed request, purged after 7 days, leaves the
+    suppression in place."""
     flow.request_link("back@example.com")
     with db(flow.settings.db_path) as conn:
         conn.execute("DELETE FROM subscribers")
         conn.execute("INSERT INTO suppression (email_sha256, created_at) VALUES (?, '2026-01-01T00:00:00+00:00')",
                      (sha256_hex("back@example.com"),))
     flow.request_link("back@example.com")
-    assert query("SELECT * FROM suppression") == []
+    assert len(query("SELECT * FROM suppression")) == 1               # a request alone lifts nothing
     assert len(query("SELECT * FROM subscribers")) == 1
+    with db(settings.db_path) as conn:
+        conn.execute("UPDATE subscribers SET created_at = '2026-01-01T00:00:00+00:00'")
+    jobs.sweep(settings)                                                # never confirmed: purged
+    assert query("SELECT * FROM subscribers") == [] and len(query("SELECT * FROM suppression")) == 1
+
+    flow.login("back@example.com")                                      # the owner confirms
+    assert query("SELECT * FROM suppression") == []
+
+
+def test_returning_person_sees_archived_consents_of_the_erased_account(flow, query):
+    """PDPA s.30 / notice section 12: the account page and export show everything held,
+    including consent records kept from an earlier, deleted account with the same address."""
+    flow.login("again@example.com", newsletter=True)
+    flow.client.post("/account/delete", data={"csrf": flow.csrf(), "confirm": "yes"})
+    assert len(query("SELECT * FROM consent_archive")) >= 3
+
+    flow.login("again@example.com")
+    page = flow.client.get("/account").text
+    assert "Records kept from an earlier, deleted account" in page
+    export = flow.client.get("/account/export.json").json()
+    archived = export["archived_consents"]
+    assert {(r["purpose"], r["action"]) for r in archived} >= {("newsletter", "confirmed"), ("service", "confirmed")}
+    assert all("ip" not in r and "email_sha256" not in r for r in archived)
+
+    flow.client.post("/account/delete", data={"csrf": flow.csrf(), "confirm": "yes"})
+    flow.login("fresh@example.com")
+    assert "Records kept from an earlier, deleted account" not in flow.client.get("/account").text
 
 
 def test_turnstile_enforced_when_configured(app_factory, monkeypatch):
