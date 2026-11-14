@@ -11,6 +11,18 @@ from app import jobs
 from app.db import db
 
 
+def test_landing_share_preview_tags(client):
+    # Social link cards: absolute URLs from BASE_URL, canonical without the UTM query.
+    html = client.get("/?utm_source=threads&utm_medium=social&utm_campaign=terrain_tool").text
+    assert '<link rel="canonical" href="http://testserver/">' in html
+    assert '<meta property="og:url" content="http://testserver/">' in html
+    assert '<meta property="og:image" content="http://testserver/static/og-image.png">' in html
+    assert '<meta name="twitter:card" content="summary_large_image">' in html
+    assert "utm_source=threads" not in html.split("</head>", 1)[0].split("og:url", 1)[1].split(">", 1)[0]
+    image = client.get("/static/og-image.png")
+    assert image.status_code == 200 and image.headers["content-type"] == "image/png"
+
+
 def test_landing_defaults_and_attribution(client, settings):
     resp = client.get("/?utm_source=linkedin&utm_medium=social&utm_campaign=lss6<script>",
                       headers={"Referer": "https://www.linkedin.com/feed/update/urn:li:activity:123?x=y"})
