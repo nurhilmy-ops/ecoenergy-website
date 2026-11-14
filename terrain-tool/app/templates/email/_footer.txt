@@ -4,3 +4,4 @@ Desktop screening — not a survey.
 Privacy notice: {{ privacy_url }}
 Your account and data: {{ account_url }}
 Questions? Reply to this email or write to {{ reply_to }}.
+EcoEnergy Consultancy Sdn. Bhd. (202601020468 (1682563-A)), Level 22, Menara Merdeka 118, 50118 Kuala Lumpur, Malaysia

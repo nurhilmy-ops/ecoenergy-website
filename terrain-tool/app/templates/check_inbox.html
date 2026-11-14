@@ -7,7 +7,7 @@
   <p class="lede">If <strong>{{ email }}</strong> can receive email, a link to start your terrain screening is on its way.</p>
   <ul class="list-check">
     <li>The link is valid for {{ settings.token_ttl_hours }} hours and can be used up to {{ settings.token_max_uses }} times.</li>
-    <li>Nothing yet? Check your spam or promotions folder, then try again in a few minutes.</li>
+    <li>Nothing yet? Check your <strong>spam, junk or promotions</strong> folder. If it's there, mark it as <em>Not spam</em> or <em>Not junk</em>, so your report notice reaches your inbox.</li>
     <li>Wrong address? <a href="/">Go back and request a new link</a>.</li>
   </ul>
   {% if dev_outbox %}

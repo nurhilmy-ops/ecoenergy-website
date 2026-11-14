@@ -132,3 +132,14 @@ def test_manage_test_email_explains_ses_errors(tmp_path, monkeypatch, capsys):
         err = capsys.readouterr().err
         assert rc == 1 and err.startswith("FAILED: ") and expected in err, err
         assert "Traceback" not in err
+
+
+def test_emails_identify_the_company_in_both_parts(settings):
+    """A legal name, registration number and postal address in every email (trust signal for
+    mailbox providers such as iCloud, and a contact point for the recipient)."""
+    from app.mailer import render_email
+
+    line = "EcoEnergy Consultancy Sdn. Bhd. (202601020468 (1682563-A))"
+    text, html = render_email(settings, "magic_link", link="https://example.test/start?t=x", newsletter=False)
+    assert line in text and "Menara Merdeka 118, 50118 Kuala Lumpur" in text
+    assert line in html and "Menara Merdeka 118, 50118 Kuala Lumpur" in html
