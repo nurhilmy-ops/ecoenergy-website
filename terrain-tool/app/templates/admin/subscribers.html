@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Admin · Subscribers{% endblock %}
+{% block content %}
+<p class="kicker">Admin</p>
+<h1>Subscribers</h1>
+{% include "admin/_nav.html" %}
+{% include "admin/_channels.html" %}
+<section class="section" aria-labelledby="subs-title">
+  <h2 id="subs-title" class="h3">All subscribers ({{ rows|length }})</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Email</th><th scope="col">Created</th><th scope="col">Verified</th><th scope="col">Newsletter</th><th scope="col">Source</th><th scope="col">Medium</th><th scope="col">Campaign</th><th scope="col">Referrer</th><th scope="col" class="num">Jobs</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.email }}</td><td>{{ r.created_at|dt }}</td><td>{{ r.verified_at|dt }}</td><td><span class="status">{{ r.newsletter_status }}</span></td>
+          <td>{{ r.utm_source or '—' }}</td><td>{{ r.utm_medium or '—' }}</td><td>{{ r.utm_campaign or '—' }}</td><td>{{ r.referrer or '—' }}</td><td class="num">{{ r.jobs_count }}</td></tr>
+      {% else %}
+        <tr><td colspan="9" class="muted">No subscribers yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

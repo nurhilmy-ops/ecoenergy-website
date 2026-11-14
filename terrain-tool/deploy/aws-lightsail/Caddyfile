@@ -1,0 +1,29 @@
+# Caddy web server for the EcoEnergy terrain screening tool.
+# Template kept in terrain-tool/deploy/aws-lightsail/; setup.sh writes it to /etc/caddy/Caddyfile
+# with @TOOL_DOMAIN@ replaced by the tool's address (edits there are replaced on the next update).
+# Caddy gets and renews the free HTTPS certificate (Let's Encrypt) by itself and redirects
+# http:// to https://. The app sets its own security headers (CSP, frame and referrer
+# policies, and HSTS on https), so they are not repeated here.
+{
+	email contact@ecoconsultancy.services
+	# Caddy's admin API on a Unix socket in Caddy's own home folder instead of the default
+	# localhost:2019, which any program on the server (including the app's user) could reach
+	# to replace this configuration. Only Caddy itself (and root) can use the socket.
+	admin unix//var/lib/caddy/admin.sock
+}
+
+@TOOL_DOMAIN@ {
+	encode gzip
+	request_body {
+		# The app accepts uploads up to 5 MB (MAX_UPLOAD_MB); refuse anything much bigger here.
+		max_size 6MB
+	}
+	header {
+		# HSTS on Caddy's own responses too (e.g. while the app restarts); "?" keeps the app's value.
+		?Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# Caddy replaces any X-Forwarded-For sent by the visitor with the address it sees, so the
+	# app (TRUST_PROXY_HEADERS=true, TRUSTED_PROXY_HOPS=1) gets the real visitor address.
+	reverse_proxy 127.0.0.1:8000
+}

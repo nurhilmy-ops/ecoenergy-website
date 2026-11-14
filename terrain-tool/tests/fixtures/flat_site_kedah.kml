@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Kedah paddy LSS candidate.kml</name>
+	<Style id="site">
+		<LineStyle><color>ff42270f</color><width>2</width></LineStyle>
+		<PolyStyle><color>4d3aa2d4</color></PolyStyle>
+	</Style>
+	<Style id="cable">
+		<LineStyle><color>ff3aa2d4</color><width>3</width></LineStyle>
+	</Style>
+	<Folder>
+		<name>Test fixture: flat paddy land near Alor Setar (approximate, not a real project)</name>
+		<Placemark>
+			<name>Lot A paddy</name>
+			<description>Approx. 40 ha of paddy land, synthetic test boundary.</description>
+			<styleUrl>#site</styleUrl>
+			<Polygon>
+				<tessellate>1</tessellate>
+				<outerBoundaryIs>
+					<LinearRing>
+						<coordinates>
+							100.3519,6.0399,0 100.3588,6.0397,0 100.3592,6.0430,0 100.3586,6.0446,0 100.3541,6.0448,0 100.3517,6.0440,0 100.3519,6.0399,0
+						</coordinates>
+					</LinearRing>
+				</outerBoundaryIs>
+			</Polygon>
+		</Placemark>
+		<Placemark>
+			<name>33 kV cable route</name>
+			<styleUrl>#cable</styleUrl>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>
+					100.3594,6.0425,0 100.3648,6.0438,0 100.3702,6.0497,0 100.3738,6.0529,0
+				</coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>PMU</name>
+			<Point>
+				<coordinates>100.3738,6.0529,0</coordinates>
+			</Point>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>

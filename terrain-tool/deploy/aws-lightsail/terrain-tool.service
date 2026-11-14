@@ -1,0 +1,49 @@
+# systemd unit for the EcoEnergy terrain screening tool.
+# Template kept in terrain-tool/deploy/aws-lightsail/; setup.sh installs it as
+# /etc/systemd/system/terrain-tool.service (edits there are replaced on the next update).
+[Unit]
+Description=EcoEnergy terrain screening tool (web app and job worker)
+Documentation=https://github.com/nurhilmy-ops/ecoenergy-website/tree/main/terrain-tool/deploy/aws-lightsail
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=terrain
+Group=terrain
+# APP_ENV, BASE_URL, SECRET_KEY, ADMIN_PASSWORD, MAIL_*, SES_REGION, AWS keys, HOST and PORT.
+EnvironmentFile=/etc/terrain-tool/terrain-tool.env
+Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+WorkingDirectory=/opt/terrain-tool/src/terrain-tool
+ExecStart=/opt/terrain-tool/venv/bin/python -m app
+Restart=always
+RestartSec=5
+# The worker gives a running screening up to 30 s to finish on shutdown.
+TimeoutStopSec=45
+UMask=0027
+
+# Hardening: the app can write only to its data folder.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/terrain-tool
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+# 2 GB server: leave room for Caddy and the system; swap absorbs short peaks.
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target

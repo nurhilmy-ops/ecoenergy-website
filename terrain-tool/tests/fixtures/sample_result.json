@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "report_id": "q3VtYp7c2LmX9aRw0kZf1A",
+    "generated_at": "2026-10-13T08:00:00+00:00",
+    "site_label": "Kuala Langat LSS candidates",
+    "scheme": "lss",
+    "stage": "exploring",
+    "input_filename": "kuala_langat_candidates.kmz",
+    "input_sha256": "9f2c4e1a7b3d5f60812ac4e9d7b0f3a21c5e8d9f04b6a7c3e1f2d8b9a0c4e6f7"
+  },
+  "dem": {
+    "provider": "copernicus",
+    "name": "Copernicus DEM GLO-30",
+    "model_type": "DSM (surface model: includes tree canopy and buildings)",
+    "epoch": "December 2010 – January 2015 (TanDEM-X acquisitions)",
+    "vertical_datum": "EGM2008",
+    "nominal_resolution_m": 30,
+    "grid_spacing_m": 30.7,
+    "cells_analysed": 18432,
+    "nodata_pct": 0.0,
+    "attribution": "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+    "disclaimer": "The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30.",
+    "sends_coordinates_to_third_party": false
+  },
+  "location": {
+    "centroid_lon": 101.457214,
+    "centroid_lat": 2.862631,
+    "state": "Selangor",
+    "district": "Kuala Langat",
+    "utm_epsg": "EPSG:32647",
+    "boundary_attribution": "State and district boundaries: Department of Statistics Malaysia (DOSM) open data (github.com/dosm-malaysia/data-open), used under the DOSM Open Data Licence. No endorsement by DOSM is implied."
+  },
+  "totals": {
+    "polygon_count": 2,
+    "line_count": 1,
+    "point_count": 1,
+    "total_area_ha": 60.97,
+    "total_line_km": 2.84,
+    "steeper_than_grade_pct": {
+      "10": 24.6,
+      "15": 17.0
+    }
+  },
+  "sites": [
+    {
+      "name": "Lot 4521 (oil palm, north)",
+      "area_ha": 42.35,
+      "perimeter_m": 2905.0,
+      "centroid": [
+        101.452311,
+        2.861045
+      ],
+      "elev_min_m": 8.0,
+      "elev_max_m": 19.0,
+      "elev_mean_m": 12.4,
+      "relief_m": 11.0,
+      "slope_mean_deg": 1.8,
+      "slope_p90_deg": 3.9,
+      "slope_max_deg": 11.2,
+      "kpkt_pct": {
+        "I": 100.0,
+        "II": 0.0,
+        "III": 0.0,
+        "IV": 0.0
+      },
+      "slope_bins_pct": {
+        "0-2": 58.3,
+        "2-5": 33.1,
+        "5-10": 7.9,
+        "10-15": 0.7,
+        "15-25": 0.0,
+        "25-35": 0.0,
+        ">35": 0.0
+      },
+      "steeper_than_grade_pct": {
+        "10": 6.2,
+        "15": 2.3
+      },
+      "cells": 449
+    },
+    {
+      "name": "Parcel B (east hill)",
+      "area_ha": 18.62,
+      "perimeter_m": 1980.5,
+      "centroid": [
+        101.468902,
+        2.86631
+      ],
+      "elev_min_m": 21.0,
+      "elev_max_m": 74.0,
+      "elev_mean_m": 43.7,
+      "relief_m": 53.0,
+      "slope_mean_deg": 9.6,
+      "slope_p90_deg": 18.4,
+      "slope_max_deg": 36.2,
+      "kpkt_pct": {
+        "I": 80.9,
+        "II": 15.6,
+        "III": 2.9,
+        "IV": 0.6
+      },
+      "slope_bins_pct": {
+        "0-2": 9.1,
+        "2-5": 18.6,
+        "5-10": 29.4,
+        "10-15": 23.8,
+        "15-25": 15.6,
+        "25-35": 2.9,
+        ">35": 0.6
+      },
+      "steeper_than_grade_pct": {
+        "10": 66.4,
+        "15": 50.3
+      },
+      "cells": 198
+    }
+  ],
+  "kpkt_overall_pct": {
+    "I": 94.17,
+    "II": 4.76,
+    "III": 0.89,
+    "IV": 0.18
+  },
+  "routes": [
+    {
+      "name": "33 kV cable route to PMU",
+      "length_km": 2.84,
+      "elev_min_m": 6.0,
+      "elev_max_m": 24.0,
+      "total_ascent_m": 31.5,
+      "max_grade_pct": 7.8,
+      "max_slope_deg": 6.1,
+      "length_on_35deg_m": 0.0
+    }
+  ],
+  "points": [
+    {
+      "name": "Proposed PMU tie-in",
+      "lon": 101.4361,
+      "lat": 2.85412,
+      "elev_m": 6.0
+    }
+  ],
+  "contour_interval_m": 5.0,
+  "flags": [
+    {
+      "level": "warning",
+      "code": "kpkt_class_iii",
+      "title": "Slopes of 25–35° inside the site (slope-based KPKT Class III)",
+      "detail": "Share of site area at 25° to under 35° on the DEM — “Parcel B (east hill)”: 2.9% of its area. Jadual 1 rates Class III as high geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. Below 300 m the guideline lists a narrower set of urban uses, at lower intensity, that may be considered on Class III ground; a solar farm is not among the uses it lists for any class. For Class III the guideline asks for an EIA report for all development projects. Leave this ground out of early layouts until a survey and a geotechnical assessment say otherwise.",
+      "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
+    },
+    {
+      "level": "warning",
+      "code": "kpkt_class_iv",
+      "title": "Slopes of 35° or more inside the site (slope-based KPKT Class IV)",
+      "detail": "Share of site area at 35° or steeper on the DEM — “Parcel B (east hill)”: 0.6% of its area (under 10%). Jadual 1 rates Class IV as extreme geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. At every elevation the guideline allows no development on Class IV ground except low-intensity infrastructure of national importance (roads, tunnels, bridges, telecommunications and electricity); the guideline does not say whether a solar farm could qualify. Where Class IV is less than 10% of a site with mixed classes, the developer must apply for an exemption, which may be granted with stricter engineering works. The guideline asks for a detailed EIA for Class IV. A 30 m DEM understates steep ground, so confirm the Class IV share by survey, and leave it out of usable-area and capacity estimates.",
+      "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
+    },
+    {
+      "level": "warning",
+      "code": "eia_slope_item13",
+      "title": "EIA Order 2015 slope item: ground at 25–35°",
+      "detail": "Share of site area at 25° to under 35° on the DEM — “Parcel B (east hill)”: 2.9% of its area (under 50%, which points to First Schedule item 13). The EIA Order 2015 lists “development or land clearing less than 50 per cent of an area with slope greater than or equal to 25° but less than 35°” in the First Schedule (item 13), and “development or land clearing of 50 per cent or more” of such an area in the Second Schedule (item 13(a)), which also requires public display and public comment. The item sets no minimum area. A 30 m DEM understates slopes, so the true share at 25–35° may be higher. Have a DOE-registered EIA consultant confirm how the item applies to the planned layout.",
+      "source": "Environmental Quality (Prescribed Activities) (Environmental Impact Assessment) Order 2015, P.U. (A) 195/2015, First Schedule item 13 and Second Schedule item 13(a)"
+    },
+    {
+      "level": "caution",
+      "code": "kpkt_class_ii",
+      "title": "Slopes of 15–25° inside the site (slope-based KPKT Class II)",
+      "detail": "Share of site area at 15° to under 25° on the DEM — “Parcel B (east hill)”: 15.6% of its area. Jadual 1 rates Class II as moderate geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. Below 300 m the guideline lists urban uses that may be considered on Class II ground, with intensity limits; a solar farm is not among the uses it lists for any class, so ask the local planning authority how it will treat one here.",
+      "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
+    },
+    {
+      "level": "caution",
+      "code": "sdba_geotech",
+      "title": "Act 133 geotechnical report for slopes over 25° and 10 m high",
+      "detail": "On the DEM — “Parcel B (east hill)”: 3.5% of its area steeper than 25°, 53 m of relief. Section 70(2)(c) of the Street, Drainage and Building Act 1974 (Act 133), inserted by Act A1588 (2019), requires a geotechnical report, verified by an Accredited Checker, for “erection involving slope with a gradient more than twenty-five degrees and total vertical height more than ten metres”. The 25° and 10 m tests apply to an individual slope; site relief only shows that slopes of that height may exist. Check with the local authority whether the provision applies and is in force for this area.",
+      "source": "Street, Drainage and Building Act 1974 (Act 133), s.70(2)(c), inserted by Act A1588 (2019)"
+    },
+    {
+      "level": "caution",
+      "code": "steep_for_ground_pv",
+      "title": "More than 10% of a site is steeper than about 8.5° (15% grade)",
+      "detail": "Share of site area steeper than about 8.5° (a 15% grade) and steeper than about 5.7° (a 10% grade) on the DEM — “Parcel B (east hill)”: 50% and 66%. IFC's 2015 solar developer guide (s.6.3.4) says a site should ideally be flat or on a slight south-facing slope (northern hemisphere) and that mounting structures can be designed for most locations at extra cost and complexity; it gives no numeric limit. For context, published product figures include a standard north–south slope tolerance of 15% for two single-axis trackers (Array Technologies DuraTrack HZ v3, with 26% as an option; TrinaTracker Vanguard 1P, also 15% east–west) and standard conditions up to 10% for one fixed-tilt structure (TrinaTracker FixOrigin); NREL's 2024 US supply-curve study excludes slopes over 10% in its Reference scenario (5% in its Limited scenario). These figures do not show whether any product suits this site: tolerances depend on the slope direction relative to the rows and must come from the chosen supplier. This ground may need grading, terracing or special piling, adding earthworks and erosion-control cost.",
+      "source": "IFC (2015) Utility-Scale Solar Photovoltaic Power Plants: A Project Developer's Guide, s.6.3.4; Array Technologies DuraTrack HZ v3 and TrinaTracker Vanguard 1P datasheets; TrinaTracker FixOrigin brochure; NREL/TP-6A20-91900 (2024)"
+    },
+    {
+      "level": "info",
+      "code": "guideline_reports",
+      "title": "Technical reports asked for under the hill and highland guideline",
+      "detail": "Listed because part of the site is at 15° or steeper on the DEM. Where the 2009 hill and highland guideline applies, it asks for five technical reports for every slope class: (1) a geotechnical investigation and slope stability analysis by a geotechnical engineer; (2) geological and geomorphological mapping by a geologist registered with the Board of Geologists; (3) a drainage report under MSMA by a hydrology engineer registered with JPS; (4) an EIA report by a DOE-registered EIA consultant (the Class I and II pages add “for development over 50 hectares”; for Class III the guideline asks for an EIA for all development projects and for Class IV a detailed EIA); and (5) an earthworks plan by an engineer registered with BEM.",
+      "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1 (technical reports for every class)"
+    },
+    {
+      "level": "info",
+      "code": "indicative_capacity",
+      "title": "Indicative gross capacity from site area",
+      "detail": "Using IFC (2015) Table 7, about 0.8–1.2 ha per MWp for crystalline-silicon ground-mounted PV in Thailand and Indonesia (the closest climates listed): the total polygon area of 60.97 ha gives about 51–76 MWp; the 50.6 ha flatter than about 8.5° (15% grade) on the DEM gives about 42–63 MWp. These are gross figures, before setbacks, access roads, drainage reserves, shading, steep or unsuitable ground and grid limits; the exact area per MWp varies with the tilt angle and row spacing (pitch).",
+      "source": "IFC (2015) Utility-Scale Solar Photovoltaic Power Plants: A Project Developer's Guide, Table 7"
+    },
+    {
+      "level": "info",
+      "code": "high_relief",
+      "title": "More than 30 m of elevation change within a site",
+      "detail": "Elevation range (highest minus lowest point) — “Parcel B (east hill)”: 53 m. Plan for an earthworks balance and for stormwater and erosion control designed to MSMA 2nd Edition (DID/JPS 2012) at design stage, and allow for them in early cost estimates.",
+      "source": "Urban Stormwater Management Manual for Malaysia (MSMA), 2nd Edition (DID/JPS 2012)"
+    },
+    {
+      "level": "info",
+      "code": "route_grade",
+      "title": "Route gradients",
+      "detail": "Steepest gradient along each route, measured over at least 90 m — “33 kV cable route to PMU”: max grade 7.8% over 2.84 km (total climb 32 m). Short pitches at drains, embankments and road crossings can be steeper than a 30 m DEM shows, and a route that crosses a slope at an angle has a lower grade than the slope itself.",
+      "source": null
+    },
+    {
+      "level": "info",
+      "code": "eia_area_items",
+      "title": "EIA Order 2015: area-based items to check",
+      "detail": "Solar PV is not listed among the power-generation items of the EIA Order 2015 at any capacity. Area-based items may still apply, depending on the land cover and what is cleared, converted or drained: First Schedule 5(a), conversion of forest at 300 m or more above mean sea level to other land use, 20 ha to under 100 ha (Second Schedule 5(a): 100 ha or more); First Schedule 5(d), conversion of mangrove, peat swamp or freshwater swamp forest for industrial, housing or agricultural use, 20 ha to under 50 ha (Second Schedule 5(f): 50 ha or more); Second Schedule 3(b), drainage of wetland, wildlife habitat or dry inland forest covering 20 ha or more; First Schedule 17, development of an industrial estate of 20 ha or more — whether DOE treats a solar farm as an industrial estate is not settled. The total polygon area is 60.97 ha; the thresholds apply to the area actually cleared, converted or drained. Second Schedule activities also require public display and public comment. Have a DOE-registered EIA consultant confirm which items apply.",
+      "source": "Environmental Quality (Prescribed Activities) (Environmental Impact Assessment) Order 2015, P.U. (A) 195/2015, First Schedule items 5(a), 5(d) and 17; Second Schedule items 3(b), 5(a) and 5(f); item 11 (power generation)"
+    }
+  ],
+  "followups": [
+    {
+      "title": "Licensed topographic survey",
+      "detail": "Before layout, earthworks or drainage design, commission a topographic survey by a licensed land surveyor (Licensed Land Surveyors Act 1958, Act 458), or LiDAR / drone photogrammetry tied to surveyed ground control points."
+    },
+    {
+      "title": "Geological map review (JMG)",
+      "detail": "Review the Jabatan Mineral dan Geosains (JMG) geological map sheet for the site: formation, lithology and any karst or ex-mining ground that affects piling, anchoring or foundations."
+    },
+    {
+      "title": "Rainfall and climate data (MET Malaysia)",
+      "detail": "Obtain climate normals and rainfall records from the nearest MET Malaysia station; rainfall intensity feeds stormwater design to MSMA 2nd Edition."
+    },
+    {
+      "title": "Surrounding land-use scan (1 / 5 / 10 km)",
+      "detail": "Map settlements, schools, rivers and water intakes, forest reserves, industry and mining within 1 km, 5 km and 10 km of the site as context for EIA and SIA scoping."
+    },
+    {
+      "title": "Land title, zoning and local authority requirements",
+      "detail": "Confirm the land title, category of land use and any express conditions, the zoning in the local plan (Rancangan Tempatan), and the requirements of the local authority (PBT) for this type of development."
+    },
+    {
+      "title": "Geotechnical investigation and slope stability analysis",
+      "detail": "Commission a geotechnical investigation and slope stability analysis by a geotechnical engineer before any layout or earthworks decision; the hill and highland guideline asks for it for every slope class. Where Act 133 s.70(2)(c) applies (a slope steeper than 25° and more than 10 m high), the geotechnical report must be verified by an Accredited Checker."
+    },
+    {
+      "title": "Geological and geomorphological mapping",
+      "detail": "Commission geological and geomorphological mapping by a geologist registered with the Board of Geologists, as the guideline asks; it also identifies colluvium, ex-mining ground and other conditions that can put ground in a higher KPKT class than its slope suggests."
+    },
+    {
+      "title": "Drainage report to MSMA",
+      "detail": "Have a hydrology engineer registered with JPS prepare the drainage and stormwater report to MSMA 2nd Edition (DID/JPS 2012), including erosion and sediment control during earthworks."
+    },
+    {
+      "title": "Earthworks plan",
+      "detail": "Have an engineer registered with BEM prepare the earthworks plan. The guideline keeps hill cutting to a minimum and does not allow cutting hills to level a whole development site."
+    },
+    {
+      "title": "Confirm EIA applicability with a DOE-registered EIA consultant",
+      "detail": "Have a DOE-registered EIA consultant check the layout, land cover and areas to be cleared against the First and Second Schedules of the EIA Order 2015 (in Sabah and Sarawak, against the state's requirements) before committing to the site."
+    },
+    {
+      "title": "Route wayleave and crossings",
+      "detail": "Confirm land access and wayleaves along the cable or access route and identify road, river and railway crossings and TNB technical requirements; none of these show on an elevation model."
+    }
+  ],
+  "caveats": [
+    "Screening grade only: this is a desktop terrain screening from an open global elevation model. It is not a survey under the Licensed Land Surveyors Act 1958 (Act 458), not engineering design, and not for planning applications or any other authority submission.",
+    "The Copernicus DEM GLO-30 is a digital surface model (DSM): vegetation and buildings were not removed, so plantations, forest and built-up areas read higher than the ground beneath them, and slopes at their edges can be exaggerated. Water bodies were flattened during editing, so over water it shows a level surface and nothing about depth.",
+    "Accuracy: the Copernicus DEM specification is an absolute vertical accuracy better than 4 m and a relative vertical accuracy better than 2 m on slopes up to 20% (4 m on steeper slopes), both as 90% linear error (LE90). Independent checks are weaker under forest: in a global study against ICESat-2 ground heights where canopy cover exceeded 50%, 90% of errors were within 26.55 m and the mean error was +12.09 m, so the model read high (Hawker et al. 2022, Environ. Res. Lett. 17 024016). Against 38 GNSS benchmarks in Perlis, Malaysia, its RMSE was 2.45 m (Sibaruddin et al. 2026).",
+    "Elevations show the surface as it was in December 2010 – January 2015 (TanDEM-X acquisitions). Ponds, cuttings, platforms and buildings made since then are not represented.",
+    "Slopes are computed on a grid of about 31 m (nominal 30 m resolution). Each slope value averages over neighbouring cells, so short steep features such as bund faces, drain banks, stream banks and cuttings are smoothed out, and the shares of ground steeper than 15°, 25° and 35° are likely to be understated.",
+    "Contours are drawn every 5 m. The ASPRS Positional Accuracy Standards (2014, repeated in 2023) relate a contour interval to digital elevation data as twice the 90% vertical error (LE90) against true ground; with the specified absolute LE90 of under 4 m that corresponds to about 8 m, and far coarser under forest canopy. Contours are drawn for context only and are not to a mapping standard.",
+    "Slope direction (aspect) is not assessed. At Malaysian latitudes (about 1–7°N) it is secondary to earthworks, drainage and geotechnics: the Global Solar Atlas gives optimum fixed tilts of only 2–8° at four sample points across Malaysia, gaining under 1% over horizontal. IFC (2015, s.6.3.4) says a site should ideally be flat or on a slight south-facing slope in the northern hemisphere.",
+    "State and district come from DOSM boundaries at the centroid of the uploaded features and are for orientation; the state-specific notes depend on that lookup. Local authority areas, Special Management Areas, forest reserves and land titles are not checked.",
+    "Regulatory notes summarise published instruments and, where marked, news reports. They are a screening aid, not legal advice; requirements change and are applied by the relevant authorities, so confirm them before relying on them.",
+    "Site geometry is used exactly as supplied in the uploaded KML/KMZ file; it has not been checked against title plans or survey boundaries."
+  ],
+  "figures": [
+    {
+      "file": "1_site_layout.png",
+      "title": "Site layout",
+      "caption": "Site boundaries, routes and points as supplied in the KML, with areas in hectares, on a local UTM grid (EPSG:32647)."
+    },
+    {
+      "file": "2_elevation.png",
+      "title": "Elevation and contours",
+      "caption": "Shaded Copernicus DEM GLO-30 elevation with contours every 5 m; tree canopy and buildings are included in the surface."
+    },
+    {
+      "file": "3_slope_classes.png",
+      "title": "Slope classes",
+      "caption": "Slope from the elevation model in seven bands, with the KPKT slope-class boundaries at 15°, 25° and 35°; by slope alone, 94.2% of the site area is Class I (below 15°)."
+    },
+    {
+      "file": "4_profiles.png",
+      "title": "Terrain profiles",
+      "caption": "West–east and south–north sections through “Lot 4521 (oil palm, north)”, plus the elevation profile along 1 route; the vertical scale is exaggerated and not to scale."
+    }
+  ]
+}

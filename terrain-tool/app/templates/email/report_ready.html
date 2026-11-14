@@ -1,0 +1,10 @@
+{% extends "_layout.html" %}
+{% set subject = "Your terrain screening report is ready" %}
+{% block body %}
+<h1 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;margin:0 0 14px;color:#12233A;">Your report is ready</h1>
+<p style="margin:0 0 18px;">Your desktop terrain screening{% if site_label %} for <strong>{{ site_label }}</strong>{% endif %} is ready: maps, slope classes, flags and PDF/Word downloads.</p>
+<p style="margin:0 0 22px;"><a href="{{ link }}" style="display:inline-block;background:#D4A23A;color:#081527;text-decoration:none;font-family:Menlo,Consolas,monospace;font-size:14px;letter-spacing:1px;padding:13px 26px;border-radius:999px;">Open my report</a></p>
+<p style="margin:0 0 14px;font-size:14px;color:#48586C;">The link is valid for {{ ttl_hours }} hours, up to {{ max_uses }} uses. Your site file and results are deleted automatically after the retention period, or straight away if you press Delete on the report.</p>
+<p style="margin:0 0 14px;font-size:13px;color:#48586C;word-break:break-all;">If the button doesn't work, copy this address into your browser:<br><a href="{{ link }}" style="color:#B8841F;">{{ link }}</a></p>
+<p style="margin:0;font-size:14px;color:#48586C;">If you didn't request this, ignore this email.</p>
+{% endblock %}

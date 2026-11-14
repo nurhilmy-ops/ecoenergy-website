@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Unsubscribe{% endblock %}
+{% block content %}
+<section class="narrow card accent" aria-labelledby="title">
+  {% if done %}
+  <p class="kicker">Unsubscribed</p>
+  <h1 id="title">You're unsubscribed</h1>
+  <p class="lede">You won't receive EcoEnergy insights emails any more. Emails about reports you request (such as access links) are not affected.</p>
+  {% elif valid %}
+  <p class="kicker">Insights emails</p>
+  <h1 id="title">Unsubscribe from EcoEnergy insights?</h1>
+  <form method="post" action="/unsubscribe">
+    <input type="hidden" name="u" value="{{ u }}">
+    <button class="btn" type="submit">{{ CONSENT.newsletter_off_link[0] }}</button>
+    <p class="notice" lang="ms">{{ CONSENT.newsletter_off_link[1] }}</p>
+  </form>
+  {% else %}
+  <p class="kicker">Link not valid</p>
+  <h1 id="title">This unsubscribe link isn't valid</h1>
+  <p class="lede">Please use the link in the latest email, or email <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a> and we'll unsubscribe you.</p>
+  {% endif %}
+</section>
+{% endblock %}

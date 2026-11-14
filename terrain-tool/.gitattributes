@@ -1,0 +1,7 @@
+# Windows launchers must keep CRLF line endings (cmd.exe misreads LF-only batch files).
+*.bat -text
+# Shell launchers must keep LF line endings.
+*.sh text eol=lf
+*.command text eol=lf
+# The Lightsail server kit is used on Linux as it is (the admin helper has no extension).
+deploy/aws-lightsail/* text eol=lf

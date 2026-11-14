@@ -112,6 +112,8 @@ header{
 .logo-mark b{font-weight:600;color:var(--gold)}
 .logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
 nav.links{display:flex;gap:34px}
+nav.links a{white-space:nowrap}
+@media(max-width:1360px){nav.links{gap:20px}}
 nav.links a{
   color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
   letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
@@ -150,7 +152,7 @@ nav.links a:hover::after{width:100%}
   0%,72%{transform:translateX(-160%) skewX(-18deg)}
   88%,100%{transform:translateX(340%) skewX(-18deg)}
 }
-@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:1180px){nav.links{display:none}}
 @media(max-width:520px){.nav-cta{display:none}}
 
 /* ---------- hero ---------- */
@@ -442,6 +444,9 @@ nav.links a:hover::after{width:100%}
 .offer h3{font-family:var(--serif);font-weight:500;font-size:clamp(26px,3.2vw,40px);letter-spacing:-.01em;line-height:1.15;max-width:22ch}
 .offer h3 em{font-style:italic}
 .offer p{font-size:15px;font-weight:500;max-width:46ch;margin-top:10px;color:#3A2E10}
+.offer .offer-alt{margin-top:14px;font-size:14px}
+.offer .offer-alt a{color:var(--navy-deep);font-weight:600;text-underline-offset:3px}
+.offer .offer-alt a:hover{color:#000}
 .btn-navy{
   font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-decoration:none;
   background:var(--navy-deep);color:var(--paper);padding:17px 34px;white-space:nowrap;
@@ -611,6 +616,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
       <a href="#approach">Approach</a>
       <a href="#models">Engagement</a>
       <a href="insights/index.html">Insights</a>
+      <a href="https://tools.ecoconsultancy.services/?utm_source=website&amp;utm_campaign=terrain_tool&amp;utm_medium=nav">Terrain check</a>
       <a href="#faq">FAQ</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -836,6 +842,7 @@ footer p{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var
     <div>
       <h3>The first step is <em>free:</em> a 30&#8209;minute scheme&#8209;fit consult.</h3>
       <p>Send the KML before the call and we'll table a one-page pre-screen — scheme options, obvious red flags, and whether a study is worth your money. No fee, no obligation.</p>
+      <p class="offer-alt">Want to look at the ground first? <a href="https://tools.ecoconsultancy.services/?utm_source=website&amp;utm_campaign=terrain_tool&amp;utm_medium=offer">Run a free desktop terrain screening on your KML →</a></p>
     </div>
     <a class="btn-navy" href="mailto:contact@ecoconsultancy.services?subject=Scheme-fit%20consult">Claim the consult →</a>
   </div>

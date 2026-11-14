@@ -1,0 +1,415 @@
+#!/usr/bin/env bash
+# terrain-tool: everyday commands for the EcoEnergy terrain screening tool server.
+# Installed by setup.sh as /usr/local/sbin/terrain-tool. Run with sudo, e.g.:
+#   sudo terrain-tool status
+# `sudo terrain-tool help` lists every command.
+
+set -Eeuo pipefail
+
+readonly ENV_FILE=/etc/terrain-tool/terrain-tool.env
+readonly REF_FILE=/etc/terrain-tool/ref
+readonly SRC=/opt/terrain-tool/src
+readonly APP_DIR=$SRC/terrain-tool
+readonly KIT_DIR=$APP_DIR/deploy/aws-lightsail
+readonly VENV=/opt/terrain-tool/venv
+readonly BACKUP_DIR=/var/lib/terrain-tool/backups
+readonly HEALTH_URL=http://127.0.0.1:8000/healthz
+readonly RAW_URL=https://raw.githubusercontent.com/nurhilmy-ops/ecoenergy-website
+
+usage() {
+  cat <<'EOF'
+EcoEnergy terrain screening tool: server commands (run each with sudo)
+
+  sudo terrain-tool status                 Is everything running? Version, disk, memory, last
+                                           backup, web address (DNS + HTTPS) and email settings.
+  sudo terrain-tool logs [-f]              The last 200 log lines (-f: keep following; Ctrl+C stops).
+  sudo terrain-tool restart                Restart the tool and the web server.
+  sudo terrain-tool update [--ref NAME]    Download the newest version and install it. --ref switches
+                                           to another branch or tag, e.g. --ref main after the merge.
+  sudo terrain-tool admin-password         Show the user name and password for the /admin pages.
+  sudo terrain-tool set-aws-keys           Enter the access keys of the IAM user terrain-tool-ses.
+  sudo terrain-tool set-turnstile-keys     Enter the Cloudflare Turnstile keys (the human check).
+  sudo terrain-tool test-email ADDRESS     Send a test email with the real settings.
+  sudo terrain-tool withdraw EMAIL [--followup] [--newsletter] --note TEXT
+                                           Record a withdrawal of consent received in writing
+                                           (PDPA s.38 / s.43), e.g. --note "Email of 12 Oct 2026".
+                                           Say how and when only: no names or addresses in the note.
+  sudo terrain-tool consent-records EMAIL  Show the consent records held for an address, including
+                                           those kept for 2 years after an account was deleted.
+  sudo terrain-tool backup-now             Back up the database now (it also happens every night).
+  sudo terrain-tool help                   This list.
+EOF
+}
+
+die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+
+need_root() {
+  [[ $EUID -eq 0 ]] || die "Run it with sudo, like this: sudo terrain-tool ${1:-help}"
+  [[ -f $ENV_FILE ]] || die "The tool is not installed on this server yet (no $ENV_FILE). Run the setup command first (README Part D)."
+}
+
+env_value() {   # value of KEY in the settings file (last line wins, quotes removed)
+  awk -v k="$1" 'index($0, k "=") == 1 { v = substr($0, length(k) + 2) }
+    END { if (v ~ /^".*"$/ || v ~ /^\047.*\047$/) v = substr(v, 2, length(v) - 2); print v }' "$ENV_FILE"
+}
+
+set_env_value() {   # set KEY=VALUE in the settings file: replaces "KEY=" or "# KEY=", else appends
+  local tmp
+  tmp=$(mktemp /etc/terrain-tool/.env.XXXXXX)
+  K="$1" V="$2" awk '
+    BEGIN { k = ENVIRON["K"]; v = ENVIRON["V"]; done = 0 }
+    index($0, k "=") == 1 || $0 ~ ("^#[ \t]*" k "=") {
+      if (!done) { print k "=" v; done = 1 }
+      next
+    }
+    { print }
+    END { if (!done) print k "=" v }' "$ENV_FILE" >"$tmp"
+  chown root:terrain "$tmp"
+  chmod 0640 "$tmp"
+  mv -f "$tmp" "$ENV_FILE"
+}
+
+domain() {
+  local url
+  url=$(env_value BASE_URL)
+  url=${url#https://}; url=${url#http://}
+  printf '%s' "${url%%/*}"
+}
+
+line() { printf '  %-17s %s\n' "$1" "$2"; }
+
+wait_healthy() {
+  local _
+  for _ in $(seq 1 60); do
+    curl -fsS --max-time 2 "$HEALTH_URL" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  return 1
+}
+
+web_check() {
+  local host public_ip dns_ips code
+  host=$(domain)
+  public_ip=$(curl -fsS --max-time 5 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]' || true)
+  command -v resolvectl >/dev/null 2>&1 && resolvectl flush-caches >/dev/null 2>&1 || true
+  dns_ips=$(getent ahostsv4 "$host" 2>/dev/null | awk '{ print $1 }' | sort -u | tr '\n' ' ' || true)
+  dns_ips=${dns_ips% }
+  line "This server:" "public IP ${public_ip:-unknown (no internet?)}"
+  if [[ -z $dns_ips ]]; then
+    line "DNS:" "NOT SET: $host has no address yet. Add the A record in Namecheap (README Part C)."
+  elif [[ -n $public_ip && " $dns_ips " == *" $public_ip "* ]]; then
+    line "DNS:" "OK: $host points to this server"
+  else
+    line "DNS:" "WRONG: $host points to $dns_ips, not to this server (${public_ip:-?}). Fix the A record (README Part C)."
+  fi
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 --resolve "$host:443:127.0.0.1" "https://$host/healthz" || true)
+  if [[ $code != 200 ]]; then
+    line "HTTPS:" "NOT YET: no certificate. Caddy gets one by itself a few minutes after DNS is OK and"
+    line "" "ports 80 and 443 are open in the Lightsail firewall; then run: sudo terrain-tool restart"
+    return 0
+  fi
+  if [[ -n $public_ip ]]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 --resolve "$host:443:$public_ip" "https://$host/healthz" || true)
+  fi
+  if [[ $code == 200 ]]; then
+    line "HTTPS:" "OK: https://$host works (certificate valid)"
+  else
+    line "HTTPS:" "Certificate OK on the server, but https://$host did not answer through the public"
+    line "" "address: check that HTTPS (443) is open in the Lightsail IPv4 firewall (README Part B)."
+  fi
+}
+
+cmd_status() {
+  need_root status
+  local ref commit state unit newest age key_id
+  ref=$(head -n 1 "$REF_FILE" 2>/dev/null || echo unknown)
+  commit=$(git -C "$SRC" log -1 --format='%h, %cd' --date=short 2>/dev/null || echo unknown)
+  printf 'EcoEnergy terrain screening tool on %s\n\n' "$(hostname)"
+  line "Address:" "https://$(domain)   (admin: https://$(domain)/admin)"
+  line "Version:" "$ref (commit $commit)"
+  if [[ $ref != main && ! $ref =~ ^v[0-9] ]]; then
+    line "" "WARNING: this server follows the branch '$ref', not main: anything pushed to that"
+    line "" "branch is installed by the next update. Once it is merged: sudo terrain-tool update --ref main"
+  fi
+  for unit in terrain-tool caddy terrain-tool-backup.timer; do
+    state=$(systemctl is-active "$unit" 2>/dev/null || true)
+    case $unit in
+      terrain-tool) line "Tool:" "${state:-unknown}$(curl -fsS --max-time 3 "$HEALTH_URL" >/dev/null 2>&1 && echo ', answering' || echo ', NOT answering: sudo terrain-tool logs')" ;;
+      caddy) line "Web server:" "${state:-unknown} (Caddy)" ;;
+      *) line "Nightly backup:" "${state:-unknown}" ;;
+    esac
+  done
+  line "Disk:" "$(df -h --output=used,size,pcent / | awk 'NR == 2 { print $1 " used of " $2 " (" $3 ")" }')"
+  line "Memory:" "$(free -m | awk '/^Mem:/ { printf "%d MB used of %d MB", $3, $2 } /^Swap:/ { printf "; swap %d MB of %d MB", $3, $2 }')"
+  local backups=()
+  shopt -s nullglob
+  backups=("$BACKUP_DIR"/app-*.db)         # app-YYYYMMDD.db: sorted oldest to newest
+  shopt -u nullglob
+  if ((${#backups[@]})); then
+    newest=${backups[-1]}
+    age=$(( ($(date +%s) - $(stat -c %Y "$newest")) / 3600 ))
+    line "Last backup:" "$(basename "$newest"), ${age} hours ago, $(du -h "$newest" | cut -f1); ${#backups[@]} kept"
+    ((age <= 48)) || line "" "WARNING: older than 2 days. Try: sudo terrain-tool backup-now"
+  else
+    line "Last backup:" "none yet (the first runs tonight at 02:30; or: sudo terrain-tool backup-now)"
+  fi
+  web_check
+  key_id=$(env_value AWS_ACCESS_KEY_ID)
+  if [[ $(env_value MAIL_BACKEND) == ses ]]; then
+    if [[ -n $key_id && -n $(env_value AWS_SECRET_ACCESS_KEY) ]]; then
+      line "Email:" "Amazon SES ($(env_value SES_REGION)), key ${key_id:0:4}...${key_id: -4}, from $(env_value MAIL_FROM)"
+      line "" "Check delivery with: sudo terrain-tool test-email you@example.com"
+    else
+      line "Email:" "NOT READY: no AWS access keys yet, so sign-in emails cannot be sent."
+      line "" "Do README Part E, then: sudo terrain-tool set-aws-keys"
+    fi
+  else
+    line "Email:" "$(env_value MAIL_BACKEND) (from $(env_value MAIL_FROM))"
+  fi
+  if [[ -n $(env_value TURNSTILE_SITE_KEY) && -n $(env_value TURNSTILE_SECRET_KEY) ]]; then
+    line "Human check:" "on (Cloudflare Turnstile)"
+  else
+    line "Human check:" "OFF: turn it on before asking AWS for production access (README Part E8):"
+    line "" "sudo terrain-tool set-turnstile-keys"
+  fi
+  [[ -f /var/run/reboot-required ]] && line "Restart:" "an update asks for a restart; it happens at 04:00 Malaysia time (or now: sudo reboot)"
+  return 0
+}
+
+cmd_logs() {
+  need_root logs
+  if [[ ${1:-} == -f ]]; then
+    exec journalctl -u terrain-tool -u caddy -u terrain-tool-backup -n 50 -f
+  fi
+  journalctl -u terrain-tool -u caddy -u terrain-tool-backup -n 200 --no-pager
+}
+
+cmd_restart() {
+  need_root restart
+  systemctl restart terrain-tool caddy
+  if wait_healthy; then
+    echo "Restarted: the tool answers again."
+  else
+    die "The tool did not come back. See: sudo terrain-tool logs"
+  fi
+}
+
+cmd_update() {
+  need_root update
+  local ref
+  ref=$(head -n 1 "$REF_FILE" 2>/dev/null || true)
+  ref=${ref:-main}
+  local stored=$ref
+  while (($#)); do
+    case $1 in
+      --ref) [[ -n ${2:-} ]] || die "--ref needs a branch or tag name, e.g. --ref main"; ref=$2; shift 2 ;;
+      --ref=*) ref=${1#--ref=}; shift ;;
+      *) die "Unknown option '$1'. Use: sudo terrain-tool update [--ref NAME]" ;;
+    esac
+  done
+  [[ -f $KIT_DIR/setup.sh ]] || die "The setup script is missing ($KIT_DIR/setup.sh). Run the setup command again:
+  curl -fsSL $RAW_URL/$ref/terrain-tool/deploy/aws-lightsail/setup.sh | sudo TOOL_REF=$ref bash"
+  if [[ $ref == "$stored" && $ref == claude/* ]]; then
+    echo "Note: '$ref' is the pull request's working branch. Once it is merged into main, use:"
+    echo "  sudo terrain-tool update --ref main"
+  fi
+  echo "Updating to '$ref' ..."
+  TOOL_REF=$ref bash "$KIT_DIR/setup.sh" </dev/null
+}
+
+cmd_admin_password() {
+  need_root admin-password
+  line "Admin pages:" "https://$(domain)/admin"
+  line "User:" "$(env_value ADMIN_USER)"
+  line "Password:" "$(env_value ADMIN_PASSWORD)"
+}
+
+readonly PASTE_HELP='How to paste: click the copy icon next to the value, then click the orange
+"Paste into terminal" button at the bottom right of this window, then press Enter.
+Nothing is shown while you paste, for either answer. The clipboard holds one value at a
+time, so copy again between the two questions.'
+
+# Read a pasted key without showing it on screen: keys are secrets, and with two of them it is
+# easy to paste the wrong one. Usage: ask_key PROMPT CHECK [ARG...]. CHECK is called as
+# CHECK VALUE [ARG...] (spaces removed) and returns 0 if the value is right, or prints why it is
+# wrong (never the value itself) and returns 1. Three wrong answers stop the command; an empty
+# answer (Enter alone, e.g. after a paste that already ended the line) just asks again.
+# Sets ANSWER.
+ask_key() {
+  local prompt=$1 check=$2 value problem tries=0
+  shift 2
+  while :; do
+    value=""
+    # read fails at the end of input; a last line without a new line still counts.
+    read -r -s -p "$prompt" value || [[ -n $value ]] || { echo; die "No answer was read. Nothing was changed."; }
+    echo
+    value=${value//[[:space:]]/}
+    if problem=$("$check" "$value" "$@"); then
+      ANSWER=$value
+      return 0
+    fi
+    printf '  %s\n' "$problem" >&2
+    [[ -z $value ]] && continue
+    tries=$((tries + 1))
+    ((tries < 3)) || die "Three wrong answers. Nothing was changed. Run the command again when you are ready."
+    printf '  Try again (%d of 3).\n' $((tries + 1)) >&2
+  done
+}
+
+shown_end() { printf '%s...%s' "${1:0:4}" "${1: -4}"; }   # the start and end of a key, for checking
+
+# shellcheck disable=SC2329  # called through ask_key
+check_access_key_id() {
+  [[ $1 =~ ^AKIA[A-Z0-9]{16}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In AWS, click the copy icon next to the Access key (it starts with AKIA)."
+  elif [[ ${#1} -eq 40 && ${1:0:20} == "${1:20}" && ${1:0:20} =~ ^AKIA[A-Z0-9]{16}$ ]]; then
+    echo "The access key ID was pasted twice. Paste it once, then press Enter."
+  elif [[ $1 =~ ^[A-Za-z0-9/+=]{40}$ ]]; then
+    echo "That is the SECRET access key (it was not shown). It belongs in the second question."
+    echo "  First copy the Access key: it starts with AKIA and is shown next to the secret in AWS."
+  else
+    echo "That does not look like an access key ID: got ${#1} characters, expected 20 starting with AKIA."
+  fi
+  return 1
+}
+
+# shellcheck disable=SC2329  # called through ask_key
+check_secret_access_key() {   # VALUE KEY_ID
+  [[ $1 =~ ^[A-Za-z0-9/+=]{40}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In AWS, click the copy icon next to the Secret access key."
+  elif [[ $1 == "$2" || $1 =~ ^AKIA[A-Z0-9]{16}$ ]]; then
+    echo "That is the access key ID again. In AWS, click the copy icon next to the Secret access key"
+    echo "  (or click Show and copy it), then paste."
+  elif [[ ${#1} -eq 80 && ${1:0:40} == "${1:40}" ]]; then
+    echo "The secret access key was pasted twice. Paste it once, then press Enter."
+  else
+    echo "That does not look like a secret access key: got ${#1} characters, expected 40."
+  fi
+  return 1
+}
+
+# shellcheck disable=SC2329  # called through ask_key
+check_turnstile_key() {   # VALUE NAME [SITE_KEY]
+  if [[ -n ${3:-} && $1 == "$3" ]]; then
+    echo "That is the site key again. In Cloudflare, copy the Secret key, then paste."
+    return 1
+  fi
+  [[ $1 =~ ^[0-9]x[A-Za-z0-9_-]{16,80}$ ]] && return 0
+  if [[ -z $1 ]]; then
+    echo "Nothing was pasted. In Cloudflare, click the copy icon next to the $2."
+  else
+    echo "That does not look like a Turnstile $2: got ${#1} characters, expected 0x followed by letters and digits."
+  fi
+  return 1
+}
+
+cmd_set_aws_keys() {
+  need_root set-aws-keys
+  local key_id secret
+  cat <<EOF
+Enter the access key of the IAM user terrain-tool-ses (AWS console > IAM > Users >
+terrain-tool-ses > Security credentials > Create access key; README Part E5 and E6).
+$PASTE_HELP
+EOF
+  ask_key "Access key ID (starts with AKIA; hidden while you paste): " check_access_key_id
+  key_id=$ANSWER
+  echo "  Access key ID: $(shown_end "$key_id")  OK"
+  echo "Now copy the Secret access key in AWS (the copy icon next to it) and paste it here."
+  ask_key "Secret access key (40 characters; hidden while you paste): " check_secret_access_key "$key_id"
+  secret=$ANSWER
+  echo "  Secret access key: received (40 characters)  OK"
+  set_env_value AWS_ACCESS_KEY_ID "$key_id"
+  set_env_value AWS_SECRET_ACCESS_KEY "$secret"
+  echo "Saved in $ENV_FILE (readable only by the tool). Restarting the tool ..."
+  systemctl restart terrain-tool
+  wait_healthy || die "The tool did not come back. See: sudo terrain-tool logs"
+  echo "Done. Now send yourself a test email: sudo terrain-tool test-email you@example.com"
+}
+
+cmd_set_turnstile_keys() {
+  need_root set-turnstile-keys
+  local site secret
+  cat <<EOF
+Enter the two keys of your Cloudflare Turnstile widget (Cloudflare dashboard > Turnstile >
+your widget for tools.ecoconsultancy.services; README Part E8). Both usually start with 0x.
+$PASTE_HELP
+EOF
+  ask_key "Site key (hidden while you paste): " check_turnstile_key "site key"
+  site=$ANSWER
+  echo "  Site key: $(shown_end "$site")  OK"
+  echo "Now copy the Secret key in Cloudflare and paste it here."
+  ask_key "Secret key (hidden while you paste): " check_turnstile_key "secret key" "$site"
+  secret=$ANSWER
+  echo "  Secret key: received  OK"
+  set_env_value TURNSTILE_SITE_KEY "$site"
+  set_env_value TURNSTILE_SECRET_KEY "$secret"
+  echo "Saved in $ENV_FILE (readable only by the tool). Restarting the tool ..."
+  systemctl restart terrain-tool
+  wait_healthy || die "The tool did not come back. See: sudo terrain-tool logs"
+  echo "Done. Open https://$(domain) in a private browser window: the sign-up form now shows the"
+  echo "Cloudflare check. Ask for a sign-in link once to be sure it still works."
+}
+
+cmd_test_email() {
+  need_root test-email
+  local address=${1:-}
+  [[ $address =~ ^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$ ]] \
+    || die "Give the address to send to, e.g.: sudo terrain-tool test-email you@example.com"
+  cd "$APP_DIR"
+  # As the app user, with the same settings file the service uses.
+  runuser -u terrain -- "$VENV/bin/python" -m app.manage test-email --env-file "$ENV_FILE" "$address"
+}
+
+cmd_withdraw() {
+  need_root withdraw
+  (($#)) || die 'Give the address and what to stop, e.g.:
+  sudo terrain-tool withdraw someone@example.com --followup --newsletter --note "Email of 12 Oct 2026"'
+  cd "$APP_DIR"
+  # As the app user, against the server's own database (the settings file says where it is).
+  runuser -u terrain -- "$VENV/bin/python" -m app.manage withdraw --env-file "$ENV_FILE" "$@"
+}
+
+cmd_consent_records() {
+  need_root consent-records
+  (($# == 1)) || die 'Give one address, e.g.: sudo terrain-tool consent-records someone@example.com'
+  cd "$APP_DIR"
+  runuser -u terrain -- "$VENV/bin/python" -m app.manage consent-records --env-file "$ENV_FILE" "$1"
+}
+
+cmd_backup_now() {
+  need_root backup-now
+  if systemctl start terrain-tool-backup.service; then
+    journalctl -u terrain-tool-backup.service -n 20 --no-pager -o cat | grep -E '^(Backed up|No database)' | tail -n 1 || true
+    local file
+    for file in "$BACKUP_DIR"/app-*.db; do
+      if [[ -f $file ]]; then printf '  %s  %s\n' "$(basename "$file")" "$(du -h "$file" | cut -f1)"; fi
+    done
+  else
+    journalctl -u terrain-tool-backup.service -n 20 --no-pager >&2 || true
+    die "The backup failed (details above)."
+  fi
+}
+
+main() {
+  local cmd=${1:-help}
+  (($#)) && shift
+  case $cmd in
+    status) cmd_status ;;
+    logs) cmd_logs "$@" ;;
+    restart) cmd_restart ;;
+    update) cmd_update "$@" ;;
+    admin-password) cmd_admin_password ;;
+    set-aws-keys) cmd_set_aws_keys ;;
+    set-turnstile-keys) cmd_set_turnstile_keys ;;
+    test-email) cmd_test_email "$@" ;;
+    withdraw) cmd_withdraw "$@" ;;
+    consent-records) cmd_consent_records "$@" ;;
+    backup-now) cmd_backup_now ;;
+    help | -h | --help) usage ;;
+    *) usage >&2; die "Unknown command '$cmd'." ;;
+  esac
+}
+
+main "$@"; exit $?

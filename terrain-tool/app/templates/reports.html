@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}My reports{% endblock %}
+{% block content %}
+<p class="kicker">Your screenings</p>
+<h1>My reports</h1>
+{% if jobs %}
+<div class="table-wrap">
+  <table>
+    <caption>Reports are deleted automatically {{ settings.retention_days }} days after upload.</caption>
+    <thead><tr><th scope="col">Site</th><th scope="col">Uploaded</th><th scope="col">Status</th><th scope="col" class="num">Area</th><th scope="col">Open</th></tr></thead>
+    <tbody>
+    {% for job in jobs %}
+      <tr>
+        <td class="wrap-text">{{ job.site_label or job.input_filename or 'Untitled site' }}</td>
+        <td>{{ job.created_at|dt }}</td>
+        <td><span class="status status-{{ job.status }}">{{ job.status }}</span></td>
+        <td class="num">{{ job.total_area_ha|num(1, 'ha') }}</td>
+        <td>
+          <div class="actions">
+            <a class="btn-ghost btn-sm" href="/reports/{{ job.id }}">View<span class="sr-only"> report for {{ job.site_label or job.input_filename }}</span></a>
+            {% if job.status == 'done' %}
+            <a class="btn-ghost btn-sm" href="/reports/{{ job.id }}/download.pdf">PDF</a>
+            <a class="btn-ghost btn-sm" href="/reports/{{ job.id }}/download.docx">Word</a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">You have no reports yet.</p></div>
+{% endif %}
+<div class="actions mt-lg"><a class="btn" href="/upload">Screen a new site</a></div>
+{% endblock %}

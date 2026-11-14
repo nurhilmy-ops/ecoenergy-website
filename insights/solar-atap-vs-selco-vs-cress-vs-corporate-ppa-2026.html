@@ -122,6 +122,8 @@ header{
 .logo-mark b{font-weight:600;color:var(--gold)}
 .logo-sub{font-family:var(--mono);font-size:9px;letter-spacing:.32em;color:var(--cloud-dim);text-transform:uppercase}
 nav.links{display:flex;gap:34px}
+nav.links a{white-space:nowrap}
+@media(max-width:1360px){nav.links{gap:20px}}
 nav.links a{
   color:var(--cloud);text-decoration:none;font-size:14.5px;font-weight:500;
   letter-spacing:.02em;transition:color .25s var(--ease);position:relative;
@@ -140,7 +142,7 @@ nav.links a.active::after{width:100%}
   transition:background .25s var(--ease),transform .25s var(--ease);
 }
 .nav-cta:hover{background:var(--paper);transform:translateY(-1px)}
-@media(max-width:1080px){nav.links{display:none}}
+@media(max-width:1180px){nav.links{display:none}}
 @media(max-width:520px){.nav-cta{display:none}}
 
 /* ---------- article hero ---------- */
@@ -276,6 +278,7 @@ footer a:hover{color:var(--gold)}
       <a href="../index.html#approach">Approach</a>
       <a href="../index.html#models">Engagement</a>
       <a href="index.html" class="active">Insights</a>
+      <a href="https://tools.ecoconsultancy.services/?utm_source=website&amp;utm_campaign=terrain_tool&amp;utm_medium=nav">Terrain check</a>
       <a href="../index.html#contact">Contact</a>
     </nav>
     <a class="nav-cta" href="../index.html#contact">Start an engagement</a>
