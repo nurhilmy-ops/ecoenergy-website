@@ -510,8 +510,11 @@ Add one more record: **Type:** `TXT Record`, **Host:** `_dmarc`, **TTL:** `Autom
 **Value:**
 
 ```
-v=DMARC1; p=none; rua=mailto:contact@ecoconsultancy.services; fo=1
+v=DMARC1; p=none; rua=mailto:contact@ecoconsultancy.services
 ```
+
+(There is no `fo=` tag: it only changes per-message failure reports, which this record does not
+ask for, so it would do nothing.)
 
 `p=none` only reports, it blocks nothing: Google, Microsoft and others then email daily
 summaries (XML attachments) to `contact@ecoconsultancy.services`. After 2–4 weeks in which those
