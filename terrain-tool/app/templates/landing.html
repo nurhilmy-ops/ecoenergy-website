@@ -1,7 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Free terrain screening for your site{% endblock %}
 {% block robots %}index, follow{% endblock %}
-{% block head %}{% if turnstile %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
+{% block head %}
+{%- set public_url = settings.base_url.rstrip('/') ~ '/' %}
+<link rel="canonical" href="{{ public_url }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EcoEnergy Consultancy">
+<meta property="og:title" content="Free terrain screening for your site">
+<meta property="og:description" content="Upload a KML or KMZ and get elevation, KPKT slope classes I–IV, cross-sections and a PDF/Word report in minutes. Desktop screening for Malaysian solar and land sites.">
+<meta property="og:url" content="{{ public_url }}">
+<meta property="og:image" content="{{ public_url }}static/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Know your site's terrain before you commit. Slope classes I to IV, free desktop tool by EcoEnergy Consultancy.">
+<meta property="og:locale" content="en_MY">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free terrain screening for your site">
+<meta name="twitter:description" content="Upload a KML or KMZ and get elevation, KPKT slope classes I–IV, cross-sections and a PDF/Word report in minutes.">
+<meta name="twitter:image" content="{{ public_url }}static/og-image.png">
+{% if turnstile %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
 {% block content %}
 {# Three grid areas: on narrow screens the form follows the intro instead of sitting
    below the feature lists, so the call to action is on the first screen. #}
