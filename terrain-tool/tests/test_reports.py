@@ -438,4 +438,5 @@ def test_disclaimer_rules_out_geological_report_and_jmg_endorsement(sample):
         flat = " ".join(text.split())
         assert "not a geological report or study under the Geologists Act 2008 (Act 689)" in flat
         assert "not prepared or reviewed by a registered geologist" in flat
-        assert "not reviewed or endorsed by the Department of Mineral and Geoscience Malaysia (JMG)" in flat
+        assert "has not been reviewed or endorsed by the Department of Mineral and Geoscience Malaysia (JMG)" in flat
+        assert "Licensed Land Surveyors Act 1958, Act 458) is required for design" in flat

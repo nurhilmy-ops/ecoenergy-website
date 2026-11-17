@@ -254,18 +254,24 @@ the ground-mount flags (`steep_for_ground_pv`, `all_class_i`) are not raised; th
 PLANMalaysia's 2025 solar-farm planning guideline is addressed to Peninsular Malaysia's state
 and local planning authorities (s.1.0). Where the state is known and inside that scope (not
 Sabah, Sarawak or W.P. Labuan; Pahang has its own stricter `pahang_solar_10deg`),
-`solar_gpp_10deg` (caution) is raised when more than the tolerance of a ground-mounted site
-is steeper than 10° (s.6.2.3: "kurang 10 darjah adalah sesuai"). The follow-up "Soil
-investigation report (LST)" (Jadual 1(d): prepared to JMG and PBT requirements) is listed for
-every scheme but rooftop unless the state is outside that scope; with an unknown state it says
-the guideline is Peninsular. Geology is wording only: the tool reads no geological data. The
-follow-up "Ground conditions review by a registered geologist" (or, where the hill guideline is
-triggered, its "Geological and geomorphological mapping") points to JMG's published maps and
-MyGEMS as a starting point; no flag or follow-up title names JMG (Trade Descriptions Act 2011
+`solar_gpp_10deg` is raised when more than the tolerance of a ground-mounted site is steeper
+than 10° (s.6.2.3: "kurang 10 darjah adalah sesuai"): a caution once a site's share reaches
+`STEEP_PV_AREA_PCT`, information below that. The follow-up "Soil investigation report (LST)"
+(s.7.1.2, Jadual 1, Laporan Sokongan item d: prepared to JMG and PBT requirements) is listed
+for every scheme but rooftop unless the state is outside that scope; with an unknown state it
+says the guideline is Peninsular, and when the hill guideline is triggered it asks for one
+ground investigation with the geotechnical one. For any scheme other than `lss`, both say the
+guideline focuses on LSS and can be referred to for similar schemes such as CRESS (s.1.2).
+Geology is wording only: the tool reads no geological data. The follow-up "Ground conditions
+review by a Professional Geologist" (or, where the hill guideline is triggered, its "Geological
+and geomorphological mapping") names a P.Geol. registered with the Board of Geologists, adds
+the 2009 guideline's Class III rule for limestone, swamp, peat and ex-mining land outside
+Sabah and Sarawak, and points to JMG's published maps on MyGEMS as the geologist's start; no flag or follow-up title names JMG (Trade Descriptions Act 2011
 s.16), and the caveats and disclaimer say the report is not a geological report or study under
 the Geologists Act 2008 and is not reviewed or endorsed by JMG. `GROUND_CONDITIONS` holds the
-hill guideline's ground criteria (instability, colluvium, limestone, swamp, peat, ex-mining
-land, mud-flood threat) for every flag that cites them.
+hill guideline's ground criteria for gentle ground (instability, colluvium, hilltops or ridges,
+flood threat, limestone, swamp, peat, ex-mining land, mud-flood threat) for every flag that
+cites them.
 
 `location.state` / `location.district` come from DOSM's district layer, which carries both
 names (DOSM spelling). A point outside every polygon (offshore, or in a simplification gap)

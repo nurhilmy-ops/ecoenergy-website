@@ -612,12 +612,12 @@ def _disclaimer() -> list[Block]:
         Paragraph(
             "This report is a desktop screening produced automatically from open global elevation "
             "data, for early-stage site comparison only. It is not a topographic survey, not "
-            "engineering design and not for submission to any authority. It is not a geological "
-            "report or study under the Geologists Act 2008 (Act 689): it reads no geological maps "
-            "and was not prepared or reviewed by a registered geologist. It is not reviewed or "
-            "endorsed by the Department of Mineral and Geoscience Malaysia (JMG) or any other "
-            "government agency. A topographic survey by "
-            "a licensed land surveyor (Licensed Land Surveyors Act 1958) is required for design. "
+            "engineering design and not for submission to any authority; a topographic survey by "
+            "a licensed land surveyor (Licensed Land Surveyors Act 1958, Act 458) is required for "
+            "design. It is not a geological report or study under the Geologists Act 2008 "
+            "(Act 689): it reads no geological maps and was not prepared or reviewed by a "
+            "registered geologist. It has not been reviewed or endorsed by the Department of "
+            "Mineral and Geoscience Malaysia (JMG) or any other government agency. "
             f"{BRAND} accepts no liability for decisions made solely on the basis of this "
             "screening."),
     ]
