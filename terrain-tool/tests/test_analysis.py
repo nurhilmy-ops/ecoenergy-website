@@ -452,7 +452,8 @@ def test_kpkt_class_flags_are_slope_based(tmp_path, slope_deg, code, level, cons
     result, _ = screen(tmp_path, polygon_pm("P", rect(LON, LAT, 300, 300)), plane_fetcher(slope_deg))
     f = flag(result, code)
     assert f["level"] == level and "slope-based" in f["title"]
-    assert "slope-based indication" in f["detail"] and "geotechnical condition" in f["detail"]
+    assert "slope-based indication" in f["detail"] and "higher class by its condition" in f["detail"]
+    assert "limestone, swamp, peat or ex-mining land" in f["detail"]
     assert f"{constraint} geotechnical constraint" in f["detail"]
     assert "solar farm is not among the uses" in f["detail"] or code == "kpkt_class_iv"
     assert f["source"] == flags.SRC_GPP_CLASSES and "Jadual 1" in f["source"]
@@ -479,7 +480,7 @@ def test_all_class_i_wording_and_schemes():
     flat = [site_result()]
     f = next(f for f in flags.build_flags(result_with(flat)) if f["code"] == "all_class_i")
     assert f["level"] == "info" and "slope-based indication" in f["detail"]
-    assert "ex-mining" in f["detail"] and "flood threat" in f["detail"]
+    assert "limestone, swamp, peat or ex-mining land" in f["detail"] and "mud floods (banjir lumpur)" in f["detail"]
     assert "all_class_i" not in [f["code"] for f in flags.build_flags(result_with(flat, scheme="fpv"))]
     assert "all_class_i" in [f["code"] for f in flags.build_flags(result_with(flat, scheme="rooftop"))]
 
@@ -895,16 +896,20 @@ def test_every_flag_cites_an_instrument_where_it_states_a_rule():
 
 def test_followups_align_with_flags():
     plain = {f["title"] for f in flags.build_followups(built(result_with([site_result()])))}
-    assert {"Licensed topographic survey", "Geological map review (JMG)",
+    assert {"Licensed topographic survey", "Ground conditions review by a registered geologist",
             "Rainfall and climate data (MET Malaysia)", "Surrounding land-use scan (1 / 5 / 10 km)",
-            "Land title, zoning and local authority requirements",
+            "Land title, zoning and local authority requirements", "Soil investigation report (LST)",
             "Confirm EIA applicability with a DOE-registered EIA consultant"} <= plain
     assert "Geotechnical investigation and slope stability analysis" not in plain
+    assert "Geological and geomorphological mapping" not in plain
     steep = built(result_with([site_result(bins=bins(b15_25=20, b25_35=10), relief=40)]))
     fu = {f["title"]: f["detail"] for f in steep["followups"]}
     for title in ("Geotechnical investigation and slope stability analysis",
                   "Geological and geomorphological mapping", "Drainage report to MSMA", "Earthworks plan"):
         assert title in fu, title
+    # One geology item, never two: the guideline's mapping replaces the general review.
+    assert "Ground conditions review by a registered geologist" not in fu
+    assert "limestone, swamp, peat" in fu["Geological and geomorphological mapping"]
     assert "Accredited Checker" in fu["Geotechnical investigation and slope stability analysis"]
     assert "Board of Geologists" in fu["Geological and geomorphological mapping"]
     assert "Act 458" in fu["Licensed topographic survey"]
@@ -1519,3 +1524,64 @@ def test_figure_footer_does_not_overlap_axis_labels(provider):
     renderer = fig.canvas.get_renderer()
     footer_top = max(t.get_window_extent(renderer).y1 for t in fig.texts)
     assert ax.xaxis.label.get_window_extent(renderer).y0 > footer_top + 5      # pixels
+
+
+
+# --- geology and soil investigation (phase 1: wording and rules, no geological data) -----
+def test_ground_conditions_followup_points_to_a_registered_geologist_and_the_maps():
+    fu = {f["title"]: f["detail"] for f in built(result_with([site_result()]))["followups"]}
+    detail = fu["Ground conditions review by a registered geologist"]
+    assert "registered with the Board of Geologists" in detail
+    assert "mygems.jmg.gov.my" in detail and "this screening does not read geological maps" in detail
+    for ground in ("Limestone", "peat", "swamp", "ex-mining"):
+        assert ground in detail, ground
+
+
+@pytest.mark.parametrize("state, scheme, expected", [
+    ("Selangor", "lss", True), ("Johor", "cress", True), ("W.P. Kuala Lumpur", "other", True),
+    ("Perak", "fpv", True),          # the 2025 guideline covers solar farms on water too
+    ("Selangor", "rooftop", False),  # not a solar farm
+    ("Sabah", "lss", False), ("Sarawak", "lss", False), ("W.P. Labuan", "lss", False),
+    (None, "lss", True),
+])
+def test_soil_investigation_followup_follows_the_2025_guideline_scope(state, scheme, expected):
+    fu = {f["title"]: f["detail"] for f in built(result_with([site_result()], state=state, scheme=scheme))["followups"]}
+    assert ("Soil investigation report (LST)" in fu) is expected
+    if expected:
+        detail = fu["Soil investigation report (LST)"]
+        assert "Laporan Siasatan Tanah" in detail and "Jadual 1(d)" in detail and "JMG" in detail
+        assert ("written for Peninsular Malaysia" in detail) is (state is None)
+
+
+def test_solar_guideline_10_degree_flag():
+    steep = [site_result("Lot A", bins=bins(b10_15=8))]
+    out = {f["code"]: f for f in flags.build_flags(result_with(steep, state="Selangor"))}
+    f = out["solar_gpp_10deg"]
+    assert f["level"] == "caution" and "Lot A" in f["detail"] and "8" in f["detail"]
+    assert "berkecerunan kurang 10 darjah" in f["detail"] and "does not say that steeper ground is excluded" in f["detail"]
+    assert f["source"].endswith("Garis Panduan Perancangan Pembangunan Ladang Solar (2025), s.6.2.3")
+    # Not where the guideline does not reach, not for rooftop or floating schemes, not in Pahang
+    # (its own stricter rule applies), and not below the tolerance.
+    for state in ("Sabah", "Sarawak", "W.P. Labuan", None):
+        assert "solar_gpp_10deg" not in codes({"flags": flags.build_flags(result_with(steep, state=state))})
+    for scheme in ("rooftop", "fpv"):
+        assert "solar_gpp_10deg" not in codes({"flags": flags.build_flags(result_with(steep, scheme=scheme))})
+    pahang = codes({"flags": flags.build_flags(result_with(steep, state="Pahang"))})
+    assert "pahang_solar_10deg" in pahang and "solar_gpp_10deg" not in pahang
+    tiny = [site_result(bins=bins(b10_15=0.4))]
+    assert "solar_gpp_10deg" not in codes({"flags": flags.build_flags(result_with(tiny))})
+
+
+def test_geotech_note_lists_the_guidelines_ground_conditions():
+    assert "limestone, swamp, peat or ex-mining land" in flags.GEOTECH_NOTE
+    assert "mud floods (banjir lumpur)" in flags.GEOTECH_NOTE
+
+
+def test_no_flag_or_followup_title_implies_jmg_did_the_work():
+    """Trade Descriptions Act 2011 s.16: nothing may suggest JMG supplied or approved the screening."""
+    sites = [site_result("Hill", elev_min=200, elev_max=1100, bins=bins(b10_15=20, b15_25=20, b25_35=20, gt35=5))]
+    for state in ("Selangor", "Pahang", "Sabah", None):
+        r = built(result_with(sites, state=state))
+        for item in r["flags"] + r["followups"]:
+            assert "JMG" not in item["title"], item["title"]
+    assert any("not a geological report or study" in c for c in built(result_with(sites))["caveats"])

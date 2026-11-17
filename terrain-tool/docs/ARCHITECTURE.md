@@ -251,6 +251,22 @@ resolution, `coarse_grid` (caution) is raised and `all_class_i` is not. With `sc
 the ground-mount flags (`steep_for_ground_pv`, `all_class_i`) are not raised; the FPV flags
 (`fpv_dem_epoch`, `fpv_land_inside`) and FPV follow-ups are.
 
+PLANMalaysia's 2025 solar-farm planning guideline is addressed to Peninsular Malaysia's state
+and local planning authorities (s.1.0). Where the state is known and inside that scope (not
+Sabah, Sarawak or W.P. Labuan; Pahang has its own stricter `pahang_solar_10deg`),
+`solar_gpp_10deg` (caution) is raised when more than the tolerance of a ground-mounted site
+is steeper than 10° (s.6.2.3: "kurang 10 darjah adalah sesuai"). The follow-up "Soil
+investigation report (LST)" (Jadual 1(d): prepared to JMG and PBT requirements) is listed for
+every scheme but rooftop unless the state is outside that scope; with an unknown state it says
+the guideline is Peninsular. Geology is wording only: the tool reads no geological data. The
+follow-up "Ground conditions review by a registered geologist" (or, where the hill guideline is
+triggered, its "Geological and geomorphological mapping") points to JMG's published maps and
+MyGEMS as a starting point; no flag or follow-up title names JMG (Trade Descriptions Act 2011
+s.16), and the caveats and disclaimer say the report is not a geological report or study under
+the Geologists Act 2008 and is not reviewed or endorsed by JMG. `GROUND_CONDITIONS` holds the
+hill guideline's ground criteria (instability, colluvium, limestone, swamp, peat, ex-mining
+land, mud-flood threat) for every flag that cites them.
+
 `location.state` / `location.district` come from DOSM's district layer, which carries both
 names (DOSM spelling). A point outside every polygon (offshore, or in a simplification gap)
 falls back to the nearest district within 5 km, otherwise both are `null`.

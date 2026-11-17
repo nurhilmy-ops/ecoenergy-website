@@ -97,6 +97,12 @@ PENANG_SLOPE_DEG = 25.0
 # the state KSAS Technical Committee (JTKSAS).
 PAHANG_STATE = "Pahang"
 PAHANG_SOLAR_MAX_DEG = 10.0
+# PLANMalaysia's 2025 solar-farm planning guideline (s.1.0) is addressed to the state and local
+# planning authorities of Peninsular Malaysia, for solar farms on land and on water. W.P. Labuan
+# lies off Sabah, so it is outside it (unlike Act 133, which extends to Labuan).
+SOLAR_GPP_MAX_DEG = 10.0
+NOT_SOLAR_GPP_STATES = ("Sabah", "Sarawak", "W.P. Labuan")
+MYGEMS = "JMG's MyGEMS map portal (mygems.jmg.gov.my)"
 PAHANG_JTKSAS_ELEV_M = 300.0
 PAHANG_JTKSAS_SLOPE_DEG = 25.0
 
@@ -179,6 +185,10 @@ SRC_SDBA = ("Street, Drainage and Building Act 1974 (Act 133), s.70(2)(c), inser
             "Act A1588 (2019)")
 SRC_PENANG = ("News reports (New Straits Times and RTM, 10 Dec 2025) on the Penang "
               "Structure Plan 2030 (RSNPP 2030, gazetted 24 Oct 2019) and the draft RSNPP 2040")
+_SOLAR_GPP = ("PLANMalaysia (KPKT), Garis Panduan Perancangan Pembangunan Ladang Solar "
+              "(2025)")
+SRC_SOLAR_GPP_SLOPE = f"{_SOLAR_GPP}, s.6.2.3"
+SRC_SOLAR_GPP_LST = f"{_SOLAR_GPP}, Jadual 1(d)"
 SRC_PAHANG_SOLAR = ("PLANMalaysia@Pahang, Garis Panduan Perancangan Pembangunan Tenaga "
                     "Solar Negeri Pahang (GPP PHG 03, 2022)")
 SRC_PAHANG_HILL = ("Kaedah-Kaedah Kawalan Perancangan (Pemajuan Tanah Bukit, Tanah Tinggi "
@@ -205,11 +215,16 @@ STAMP_TEMPLATE = "Desktop screening — not a survey · DEM: {name} ({epoch}) ·
 STAMP_CREDITS = {"copernicus": COPERNICUS_STAMP_CREDIT}
 
 # --- shared sentences ------------------------------------------------------------
+# The 2009 guideline's ground-condition criteria, as one phrase for every flag that cites them
+# (Jadual 1: "tanda-tanda ketidakstabilan cerun", "koluvium", "batu kapur, paya, tanah gambut dan
+# bekas lombong", "ancaman banjir lumpur").
+GROUND_CONDITIONS = (
+    "signs of erosion or slope instability, colluvium or other sensitive geological material, "
+    "limestone, swamp, peat or ex-mining land, or a threat of mud floods (banjir lumpur)")
 GEOTECH_NOTE = (
-    "The class shown is a slope-based indication only: the guideline also assigns classes by "
-    "geotechnical condition (signs of erosion or instability, colluvium or other sensitive "
-    "geological material, ex-mining land), so a geotechnical assessment can place ground "
-    "in a higher class.")
+    "The class shown is a slope-based indication only: the guideline also places ground in a "
+    f"higher class by its condition ({GROUND_CONDITIONS}), so a geological and geotechnical "
+    "assessment can place ground in a higher class.")
 SMA_NOTE = (
     "The guideline does not apply in the Special Management Areas of Cameron "
     "Highlands–Kinta Lojing, Genting Highlands–Bukit Tinggi–Janda Baik and Bukit Fraser, "
@@ -425,8 +440,7 @@ def all_class_i_flag(sites: list[dict], state: str | None = None) -> dict | None
         "Below 300 m the guideline lets all types of development be considered on Class I "
         "ground, subject to the local or development plan. This is a slope-based indication "
         "only: the guideline also places gentle ground in a higher class where it shows "
-        "erosion or instability, lies on colluvium or other sensitive geological material, "
-        "is limestone, swamp, peat or ex-mining land, or is under flood threat. A 30 m "
+        f"{GROUND_CONDITIONS}. A 30 m "
         "elevation model also smooths out short steep features such as bund faces, drain "
         f"banks and cuttings.{_peninsular_note(state)}",
         SRC_GPP_CLASSES)
@@ -753,6 +767,28 @@ def pahang_solar_flag(sites: list[dict], state: str | None) -> dict | None:
                  "Pahang solar guideline: terrain steeper than 10° is not suitable", detail, source)
 
 
+def solar_gpp_slope_flag(sites: list[dict], state: str | None) -> dict | None:
+    """PLANMalaysia's 2025 solar-farm guideline, s.6.2.3: under 10° is suitable. Peninsular
+    Malaysia only; Pahang has its own, stricter wording (pahang_solar_10deg)."""
+    if state is None or state in NOT_SOLAR_GPP_STATES or state == PAHANG_STATE:
+        return None
+    hits = [f"{_q(s['name'])}: {_fmt(pct)}%" for s in sites
+            if (pct := share_steeper(s, SOLAR_GPP_MAX_DEG)) is not None and pct > KPKT_FLAG_MIN_PCT]
+    if not hits:
+        return None
+    return _flag(
+        "caution", "solar_gpp_10deg",
+        "Solar-farm planning guideline: slopes under 10° are the suitable range",
+        f"Share of site area steeper than {SOLAR_GPP_MAX_DEG:g}° on the DEM — {_join(hits)}. "
+        "PLANMalaysia's 2025 planning guideline for solar farms, written for the state and local "
+        "planning authorities of Peninsular Malaysia, says solar farms suit flat and gently "
+        "sloping sites and that terrain under 10 degrees is suitable (“Keadaan topografi yang "
+        "berkecerunan kurang 10 darjah adalah sesuai untuk pembangunan ini”). It does not say "
+        "that steeper ground is excluded; ask the local authority (PBT) how it applies the "
+        "criterion.",
+        SRC_SOLAR_GPP_SLOPE)
+
+
 # ---------------------------------------------------------------------------
 # ground-mounted PV: slope context and indicative capacity
 # ---------------------------------------------------------------------------
@@ -962,6 +998,7 @@ def build_flags(result: dict) -> list[dict]:
         hill_land_band_flag(sites, dem, state),
         penang_hill_flag(sites, dem, state),
         pahang_solar_flag(sites, state),
+        solar_gpp_slope_flag(sites, state) if scheme not in PV_FLAG_EXEMPT_SCHEMES else None,
         eia_slope_flag(sites, state),
         eia_route_flag(routes, state),
         sdba_geotech_flag(sites, state),
@@ -981,18 +1018,43 @@ def build_flags(result: dict) -> list[dict]:
     return sorted(flags, key=lambda f: LEVEL_ORDER[f["level"]])   # stable within a level
 
 
+GEOLOGY_MAPS = (f"JMG's published geological maps, including {MYGEMS}, are the usual starting "
+                "point; this screening does not read geological maps.")
+
+
+def _lst_followup(state: str | None) -> dict:
+    detail = (
+        "PLANMalaysia's 2025 planning guideline for solar farms lists a soil investigation report "
+        "(Laporan Siasatan Tanah, LST), prepared to the requirements of JMG and the local "
+        "authority (PBT), among the supporting reports for a solar-farm planning application "
+        f"({SRC_SOLAR_GPP_LST}). Ask the PBT what it requires and who must sign the report, and "
+        "commission the investigation before foundation design: boreholes and probes are what "
+        "show peat, soft clay, limestone cavities or old mining ground beneath the surface.")
+    if state is None:
+        detail += " The guideline is written for Peninsular Malaysia."
+    return {"title": "Soil investigation report (LST)", "detail": detail}
+
+
 def build_followups(result: dict) -> list[dict]:
     scheme = (result.get("meta") or {}).get("scheme")
+    state = _state(result)
     codes = {f["code"] for f in (result.get("flags") or build_flags(result))}
+    guideline = "guideline_reports" in codes
     out = [
         {"title": "Licensed topographic survey",
          "detail": "Before layout, earthworks or drainage design, commission a topographic survey "
                    "by a licensed land surveyor (Licensed Land Surveyors Act 1958, Act 458), or "
                    "LiDAR / drone photogrammetry tied to surveyed ground control points."},
-        {"title": "Geological map review (JMG)",
-         "detail": "Review the Jabatan Mineral dan Geosains (JMG) geological map sheet for the "
-                   "site: formation, lithology and any karst or ex-mining ground that affects "
-                   "piling, anchoring or foundations."},
+    ]
+    if not guideline:   # otherwise the guideline's geological mapping (below) covers it
+        out.append(
+            {"title": "Ground conditions review by a registered geologist",
+             "detail": "Have a geologist registered with the Board of Geologists check the ground "
+                       "before layout and foundation design. Limestone (cavities and sinkholes), "
+                       "peat or soft clay, swamp and ex-mining land change piling, anchoring and "
+                       "earthworks, and the 2009 hill and highland guideline puts such ground in a "
+                       f"higher class than its slope suggests. {GEOLOGY_MAPS}"})
+    out += [
         {"title": "Rainfall and climate data (MET Malaysia)",
          "detail": "Obtain climate normals and rainfall records from the nearest MET Malaysia "
                    "station; rainfall intensity feeds stormwater design to MSMA 2nd Edition."},
@@ -1005,7 +1067,8 @@ def build_followups(result: dict) -> list[dict]:
                    "zoning in the local plan (Rancangan Tempatan), and the requirements of the "
                    "local authority (PBT) for this type of development."},
     ]
-    guideline = "guideline_reports" in codes
+    if scheme != "rooftop" and state not in NOT_SOLAR_GPP_STATES:
+        out.append(_lst_followup(state))
     if guideline:
         geotech = ("Commission a geotechnical investigation and slope stability analysis by a "
                    "geotechnical engineer before any layout or earthworks decision; the hill and "
@@ -1019,8 +1082,9 @@ def build_followups(result: dict) -> list[dict]:
             {"title": "Geological and geomorphological mapping",
              "detail": "Commission geological and geomorphological mapping by a geologist "
                        "registered with the Board of Geologists, as the guideline asks; it also "
-                       "identifies colluvium, ex-mining ground and other conditions that can put "
-                       "ground in a higher KPKT class than its slope suggests."},
+                       "identifies colluvium, limestone, swamp, peat, ex-mining ground and other "
+                       "conditions that can put ground in a higher KPKT class than its slope "
+                       f"suggests. {GEOLOGY_MAPS}"},
         ]
     if guideline or "high_relief" in codes:
         out.append({"title": "Drainage report to MSMA",
@@ -1065,8 +1129,9 @@ def build_caveats(result: dict, repaired: list[str] | None = None) -> list[str]:
     spacing = _fmt(dem.get("grid_spacing_m"), 0)
     out = [
         "Screening grade only: this is a desktop terrain screening from an open global elevation "
-        f"model. It is not a survey under the {SRC_SURVEY}, not engineering design, and not for "
-        "planning applications or any other authority submission.",
+        f"model. It is not a survey under the {SRC_SURVEY}, not engineering design, not a "
+        "geological report or study, and not for planning applications or any other authority "
+        "submission.",
     ]
     if provider == "copernicus":
         out += [
