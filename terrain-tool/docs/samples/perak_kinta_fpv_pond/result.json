@@ -111,8 +111,8 @@
       "detail": "Before layout, earthworks or drainage design, commission a topographic survey by a licensed land surveyor (Licensed Land Surveyors Act 1958, Act 458), or LiDAR / drone photogrammetry tied to surveyed ground control points."
     },
     {
-      "title": "Geological map review (JMG)",
-      "detail": "Review the Jabatan Mineral dan Geosains (JMG) geological map sheet for the site: formation, lithology and any karst or ex-mining ground that affects piling, anchoring or foundations."
+      "title": "Ground conditions review by a Professional Geologist",
+      "detail": "Have a Professional Geologist (P.Geol.) registered with the Board of Geologists check the ground before layout and foundation design. Limestone (cavities and sinkholes), peat, soft clay, swamp and ex-mining land change piling, anchoring and earthworks. In Peninsular Malaysia, the 2009 hill and highland guideline also places limestone, swamp, peat and ex-mining land in Class III even where the slope is gentle. The geologist will usually start from JMG's published geological maps (viewable on its MyGEMS portal, mygems.jmg.gov.my); this screening does not read geological maps."
     },
     {
       "title": "Rainfall and climate data (MET Malaysia)",
@@ -125,6 +125,10 @@
     {
       "title": "Land title, zoning and local authority requirements",
       "detail": "Confirm the land title, category of land use and any express conditions, the zoning in the local plan (Rancangan Tempatan), and the requirements of the local authority (PBT) for this type of development."
+    },
+    {
+      "title": "Soil investigation report (LST)",
+      "detail": "PLANMalaysia's 2025 planning guideline for solar farms (Jadual 1, supporting reports) lists a soil investigation report (Laporan Siasatan Tanah, LST), prepared to the requirements of JMG and the local authority (PBT), among the documents for a solar-farm planning application. Ask the PBT what it requires and who must sign the report. Commission the investigation before foundation design: boreholes and probes are what show peat, soft clay, limestone cavities or old mining ground beneath the surface. The guideline focuses on projects under the Energy Commission's LSS programme and says it can be referred to for solar farms of similar design, such as CRESS (s.1.2); ask the PBT whether it applies it to this project."
     },
     {
       "title": "Confirm EIA applicability with a DOE-registered EIA consultant",
@@ -144,7 +148,7 @@
     }
   ],
   "caveats": [
-    "Screening grade only: this is a desktop terrain screening from an open global elevation model. It is not a survey under the Licensed Land Surveyors Act 1958 (Act 458), not engineering design, and not for planning applications or any other authority submission.",
+    "Screening grade only: this is a desktop terrain screening from an open global elevation model. It is not a survey under the Licensed Land Surveyors Act 1958 (Act 458), not engineering design, not a geological report or study, and not for planning applications or any other authority submission.",
     "The Copernicus DEM GLO-30 is a digital surface model (DSM): vegetation and buildings were not removed, so plantations, forest and built-up areas read higher than the ground beneath them, and slopes at their edges can be exaggerated. Water bodies were flattened during editing, so over water it shows a level surface and nothing about depth.",
     "Accuracy: the Copernicus DEM specification is an absolute vertical accuracy better than 4 m and a relative vertical accuracy better than 2 m on slopes up to 20% (4 m on steeper slopes), both as 90% linear error (LE90). Independent checks are weaker under forest: in a global study against ICESat-2 ground heights where canopy cover exceeded 50%, 90% of errors were within 26.55 m and the mean error was +12.09 m, so the model read high (Hawker et al. 2022, Environ. Res. Lett. 17 024016). Against 38 GNSS benchmarks in Perlis, Malaysia, its RMSE was 2.45 m (Sibaruddin et al. 2026).",
     "Elevations show the surface as it was in December 2010 – January 2015 (TanDEM-X acquisitions). Ponds, cuttings, platforms and buildings made since then are not represented.",

@@ -138,7 +138,9 @@ def _hex(colour: colors.Color) -> str:
 # ---------------------------------------------------------------------------
 def _styles() -> dict[str, ParagraphStyle]:
     def ps(name, **kw) -> ParagraphStyle:
-        base = dict(fontName=FONT, fontSize=9.5, leading=13.6, textColor=INK)
+        # No single line of a paragraph left alone at the foot (orphan) or head (widow) of a page.
+        base = dict(fontName=FONT, fontSize=9.5, leading=13.6, textColor=INK, allowWidows=0,
+                    allowOrphans=0)
         base.update(kw)
         return ParagraphStyle(name, **base)
 

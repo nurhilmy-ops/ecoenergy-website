@@ -148,14 +148,14 @@
       "level": "warning",
       "code": "kpkt_class_iii",
       "title": "Slopes of 25–35° inside the site (slope-based KPKT Class III)",
-      "detail": "Share of site area at 25° to under 35° on the DEM — “Parcel B (east hill)”: 2.9% of its area. Jadual 1 rates Class III as high geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. Below 300 m the guideline lists a narrower set of urban uses, at lower intensity, that may be considered on Class III ground; a solar farm is not among the uses it lists for any class. For Class III the guideline asks for an EIA report for all development projects. Leave this ground out of early layouts until a survey and a geotechnical assessment say otherwise.",
+      "detail": "Share of site area at 25° to under 35° on the DEM — “Parcel B (east hill)”: 2.9% of its area. Jadual 1 rates Class III as high geotechnical constraint. The class shown is based on slope alone. The guideline also classes ground by its condition (signs of erosion or slope instability, colluvium or other sensitive geological material, hilltops or ridges, a threat of floods, limestone, swamp, peat or ex-mining land, or a threat of mud floods (banjir lumpur)), so a geological and geotechnical assessment can put parts of the site in this class or a higher one than their slope suggests. Below 300 m the guideline lists a narrower set of urban uses, at lower intensity, that may be considered on Class III ground; a solar farm is not among the uses it lists for any class. For Class III the guideline asks for an EIA report for all development projects. Leave this ground out of early layouts until a survey and a geotechnical assessment say otherwise.",
       "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
     },
     {
       "level": "warning",
       "code": "kpkt_class_iv",
       "title": "Slopes of 35° or more inside the site (slope-based KPKT Class IV)",
-      "detail": "Share of site area at 35° or steeper on the DEM — “Parcel B (east hill)”: 0.6% of its area (under 10%). Jadual 1 rates Class IV as extreme geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. At every elevation the guideline allows no development on Class IV ground except low-intensity infrastructure of national importance (roads, tunnels, bridges, telecommunications and electricity); the guideline does not say whether a solar farm could qualify. Where Class IV is less than 10% of a site with mixed classes, the developer must apply for an exemption, which may be granted with stricter engineering works. The guideline asks for a detailed EIA for Class IV. A 30 m DEM understates steep ground, so confirm the Class IV share by survey, and leave it out of usable-area and capacity estimates.",
+      "detail": "Share of site area at 35° or steeper on the DEM — “Parcel B (east hill)”: 0.6% of its area (under 10%). Jadual 1 rates Class IV as extreme geotechnical constraint. The class shown is based on slope alone. The guideline also classes ground by its condition (signs of erosion or slope instability, colluvium or other sensitive geological material, hilltops or ridges, a threat of floods, limestone, swamp, peat or ex-mining land, or a threat of mud floods (banjir lumpur)), so a geological and geotechnical assessment can put parts of the site in this class or a higher one than their slope suggests. At every elevation the guideline allows no development on Class IV ground except low-intensity infrastructure of national importance (roads, tunnels, bridges, telecommunications and electricity); the guideline does not say whether a solar farm could qualify. Where Class IV is less than 10% of a site with mixed classes, the developer must apply for an exemption, which may be granted with stricter engineering works. The guideline asks for a detailed EIA for Class IV. A 30 m DEM understates steep ground, so confirm the Class IV share by survey, and leave it out of usable-area and capacity estimates.",
       "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
     },
     {
@@ -169,8 +169,15 @@
       "level": "caution",
       "code": "kpkt_class_ii",
       "title": "Slopes of 15–25° inside the site (slope-based KPKT Class II)",
-      "detail": "Share of site area at 15° to under 25° on the DEM — “Parcel B (east hill)”: 15.6% of its area. Jadual 1 rates Class II as moderate geotechnical constraint. The class shown is a slope-based indication only: the guideline also assigns classes by geotechnical condition (signs of erosion or instability, colluvium or other sensitive geological material, ex-mining land), so a geotechnical assessment can place ground in a higher class. Below 300 m the guideline lists urban uses that may be considered on Class II ground, with intensity limits; a solar farm is not among the uses it lists for any class, so ask the local planning authority how it will treat one here.",
+      "detail": "Share of site area at 15° to under 25° on the DEM — “Parcel B (east hill)”: 15.6% of its area. Jadual 1 rates Class II as moderate geotechnical constraint. The class shown is based on slope alone. The guideline also classes ground by its condition (signs of erosion or slope instability, colluvium or other sensitive geological material, hilltops or ridges, a threat of floods, limestone, swamp, peat or ex-mining land, or a threat of mud floods (banjir lumpur)), so a geological and geotechnical assessment can put parts of the site in this class or a higher one than their slope suggests. Below 300 m the guideline lists urban uses that may be considered on Class II ground, with intensity limits; a solar farm is not among the uses it lists for any class, so ask the local planning authority how it will treat one here.",
       "source": "PLANMalaysia (then JPBD Semenanjung Malaysia, KPKT), Garis Panduan Perancangan Pembangunan di Kawasan Bukit dan Tanah Tinggi (2009), Jadual 1"
+    },
+    {
+      "level": "caution",
+      "code": "solar_gpp_10deg",
+      "title": "Solar-farm planning guideline: terrain under 10° is described as suitable",
+      "detail": "Share of site area steeper than 10° (about an 18% grade) on the DEM — “Lot 4521 (oil palm, north)”: 0.7%; “Parcel B (east hill)”: 42.9%. PLANMalaysia's 2025 planning guideline for solar farms, written for the state and local planning authorities of Peninsular Malaysia, says solar farms suit flat and gently sloping sites and that terrain under 10 degrees is suitable (“Keadaan topografi yang berkecerunan kurang 10 darjah adalah sesuai untuk pembangunan ini”). It does not say that steeper ground is excluded; ask the local authority (PBT) how it applies the criterion.",
+      "source": "PLANMalaysia (KPKT), Garis Panduan Perancangan Pembangunan Ladang Solar (2025), s.6.2.3"
     },
     {
       "level": "caution",
@@ -228,10 +235,6 @@
       "detail": "Before layout, earthworks or drainage design, commission a topographic survey by a licensed land surveyor (Licensed Land Surveyors Act 1958, Act 458), or LiDAR / drone photogrammetry tied to surveyed ground control points."
     },
     {
-      "title": "Geological map review (JMG)",
-      "detail": "Review the Jabatan Mineral dan Geosains (JMG) geological map sheet for the site: formation, lithology and any karst or ex-mining ground that affects piling, anchoring or foundations."
-    },
-    {
       "title": "Rainfall and climate data (MET Malaysia)",
       "detail": "Obtain climate normals and rainfall records from the nearest MET Malaysia station; rainfall intensity feeds stormwater design to MSMA 2nd Edition."
     },
@@ -244,12 +247,16 @@
       "detail": "Confirm the land title, category of land use and any express conditions, the zoning in the local plan (Rancangan Tempatan), and the requirements of the local authority (PBT) for this type of development."
     },
     {
+      "title": "Soil investigation report (LST)",
+      "detail": "PLANMalaysia's 2025 planning guideline for solar farms (Jadual 1, supporting reports) lists a soil investigation report (Laporan Siasatan Tanah, LST), prepared to the requirements of JMG and the local authority (PBT), among the documents for a solar-farm planning application. Ask the PBT what it requires and who must sign the report. Commission the investigation before foundation design: boreholes and probes are what show peat, soft clay, limestone cavities or old mining ground beneath the surface. Scope it together with the geotechnical investigation below, so one ground investigation serves both."
+    },
+    {
       "title": "Geotechnical investigation and slope stability analysis",
       "detail": "Commission a geotechnical investigation and slope stability analysis by a geotechnical engineer before any layout or earthworks decision; the hill and highland guideline asks for it for every slope class. Where Act 133 s.70(2)(c) applies (a slope steeper than 25° and more than 10 m high), the geotechnical report must be verified by an Accredited Checker."
     },
     {
       "title": "Geological and geomorphological mapping",
-      "detail": "Commission geological and geomorphological mapping by a geologist registered with the Board of Geologists, as the guideline asks; it also identifies colluvium, ex-mining ground and other conditions that can put ground in a higher KPKT class than its slope suggests."
+      "detail": "Commission geological and geomorphological mapping by a Professional Geologist (P.Geol.) registered with the Board of Geologists, as the guideline asks for a registered geologist; it also identifies colluvium, limestone, swamp, peat, ex-mining ground and other conditions that can put ground in a higher KPKT class than its slope suggests. The geologist will usually start from JMG's published geological maps (viewable on its MyGEMS portal, mygems.jmg.gov.my); this screening does not read geological maps."
     },
     {
       "title": "Drainage report to MSMA",
@@ -269,7 +276,7 @@
     }
   ],
   "caveats": [
-    "Screening grade only: this is a desktop terrain screening from an open global elevation model. It is not a survey under the Licensed Land Surveyors Act 1958 (Act 458), not engineering design, and not for planning applications or any other authority submission.",
+    "Screening grade only: this is a desktop terrain screening from an open global elevation model. It is not a survey under the Licensed Land Surveyors Act 1958 (Act 458), not engineering design, not a geological report or study, and not for planning applications or any other authority submission.",
     "The Copernicus DEM GLO-30 is a digital surface model (DSM): vegetation and buildings were not removed, so plantations, forest and built-up areas read higher than the ground beneath them, and slopes at their edges can be exaggerated. Water bodies were flattened during editing, so over water it shows a level surface and nothing about depth.",
     "Accuracy: the Copernicus DEM specification is an absolute vertical accuracy better than 4 m and a relative vertical accuracy better than 2 m on slopes up to 20% (4 m on steeper slopes), both as 90% linear error (LE90). Independent checks are weaker under forest: in a global study against ICESat-2 ground heights where canopy cover exceeded 50%, 90% of errors were within 26.55 m and the mean error was +12.09 m, so the model read high (Hawker et al. 2022, Environ. Res. Lett. 17 024016). Against 38 GNSS benchmarks in Perlis, Malaysia, its RMSE was 2.45 m (Sibaruddin et al. 2026).",
     "Elevations show the surface as it was in December 2010 – January 2015 (TanDEM-X acquisitions). Ponds, cuttings, platforms and buildings made since then are not represented.",

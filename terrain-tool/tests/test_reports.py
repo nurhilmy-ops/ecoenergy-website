@@ -325,7 +325,7 @@ def test_content_order_and_cta(tmp_path):
     assert [b.text for b in blocks if isinstance(b, c.Heading) and b.level == 1] == H1_ORDER
     expected_levels = [f["level"] for f in load_sample()["flags"]]
     assert [b.level for b in blocks if isinstance(b, c.Callout)] == expected_levels
-    assert expected_levels == ["warning"] * 3 + ["caution"] * 3 + ["info"] * 5
+    assert expected_levels == ["warning"] * 3 + ["caution"] * 4 + ["info"] * 5
     figures = [b for b in blocks if isinstance(b, c.Figure)]
     assert [f.path.name for f in figures] == list(FIGURE_SIZES)
     assert all(f.size_px and f.size_px[0] > 0 for f in figures)
@@ -430,3 +430,13 @@ def test_sample_fixture_uses_the_engine_wording():
     assert result["followups"] == flags.build_followups(result)
     assert result["caveats"] == flags.build_caveats(result)
     assert result["figures"] == flags.figure_entries(result)
+
+
+def test_disclaimer_rules_out_geological_report_and_jmg_endorsement(sample):
+    """Geologists Act 2008 s.27 and Trade Descriptions Act 2011 s.16: say what the report is not."""
+    for text in (sample["pdf_text"], docx_text(sample["docx"])):
+        flat = " ".join(text.split())
+        assert "not a geological report or study under the Geologists Act 2008 (Act 689)" in flat
+        assert "not prepared or reviewed by a registered geologist" in flat
+        assert "has not been reviewed or endorsed by the Department of Mineral and Geoscience Malaysia (JMG)" in flat
+        assert "Licensed Land Surveyors Act 1958, Act 458) is required for design" in flat

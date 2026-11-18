@@ -3,6 +3,8 @@
 Produced on 13 Oct 2026 by the real engine and report renderers (`app.terrain.run_screening`
 then `app.reports.build_reports`, Copernicus DEM GLO-30 tiles read over HTTPS) from the three
 test fixtures in `tests/fixtures/`. These are test sites, not client sites.
+On 17 Nov 2026 the flags, follow-ups, caveats, `summary.md` and the PDF/Word reports were
+re-rendered from each `result.json` with the current wording (same elevation data and maps).
 
 | Folder | Fixture | Scheme | Contents |
 |---|---|---|---|
