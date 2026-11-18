@@ -6,6 +6,8 @@
    version is stored with every consent record. #}
 {% block title %}Privacy notice / Notis privasi{% endblock %}
 {% block robots %}index, follow{% endblock %}
+{% block description %}How EcoEnergy Consultancy handles personal data in its free terrain screening tool: the PDPA 2010 section 7 notice, in English and Bahasa Malaysia.{% endblock %}
+{% block head %}<link rel="canonical" href="{{ settings.base_url.rstrip('/') }}/privacy">{% endblock %}
 {% block content %}
 {% set otd = settings.dem_provider == 'opentopodata' %}
 {% set geotiff = settings.dem_provider == 'geotiff' %}
