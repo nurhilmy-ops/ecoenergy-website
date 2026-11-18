@@ -41,7 +41,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "description": "What lenders underwrite in a Malaysian CRESS deal: offtaker credit, merchant tail, firm vs non-firm supply, and how the System Marginal Price (SMP) works.",
   "image": "https://www.ecoconsultancy.services/assets/og-image.png",
   "datePublished": "2026-08-22",
-  "dateModified": "2026-08-22",
+  "dateModified": "2026-11-18",
   "inLanguage": "en",
   "mainEntityOfPage": { "@type": "WebPage", "@id": "https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html" },
   "author": { "@type": "Organization", "@id": "https://www.ecoconsultancy.services/#organization", "name": "EcoEnergy Consultancy", "url": "https://www.ecoconsultancy.services/" },
@@ -229,7 +229,7 @@ tbody td strong{color:var(--paper);font-weight:600}
   background:linear-gradient(120deg,var(--gold-deep),var(--gold) 55%);
   color:var(--navy-deep);
 }
-.art-cta .wrap{padding:56px 0}
+.art-cta .wrap{padding-top:56px;padding-bottom:56px}
 .art-cta .inner{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
 .art-cta h3{font-family:var(--serif);font-weight:500;font-size:clamp(24px,3vw,34px);letter-spacing:-.01em;line-height:1.18;max-width:20ch}
 .art-cta h3 em{font-style:italic}
@@ -242,6 +242,13 @@ tbody td strong{color:var(--paper);font-weight:600}
 .btn-navy:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(8,21,39,.65)}
 
 .disclaimer{max-width:760px;margin:44px auto 0;padding-top:26px;border-top:1px solid rgba(212,162,58,.16)}
+/* ---------- related insights ---------- */
+.related{max-width:760px;margin:56px auto 0;padding-top:28px;border-top:1px solid rgba(212,162,58,.16)}
+.related .related-k{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.related ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.related li span{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cloud-dim);margin-bottom:4px}
+.related a{font-family:var(--serif);font-size:19px;line-height:1.35;color:var(--paper);text-decoration:none;border-bottom:1px solid rgba(212,162,58,.35);transition:color .25s var(--ease),border-color .25s var(--ease)}
+.related a:hover,.related a:focus-visible{color:var(--gold);border-bottom-color:var(--gold)}
 .disclaimer p{font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--cloud-dim);letter-spacing:.01em}
 
 /* ---------- footer ---------- */
@@ -309,7 +316,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="tag">Independent Advisory</span>
       <span class="who">By EcoEnergy Consultancy Sdn Bhd</span>
       <span>Published 22 August 2026</span>
-      <span>~9 min read</span>
+      <span>Updated 18 November 2026</span>
+      <span>~10 min read</span>
     </div>
   </div>
 </section>
@@ -318,9 +326,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="wrap">
     <div class="prose">
 
-      <p>CRESS has crossed the line from policy experiment to commercial option. The scheme has been live since September 2024, the System Access Charge was cut in July 2025 and is now <strong>fixed for the rest of the current regulatory period</strong>, and corporate demand for green supply — driven by data centres and export-facing manufacturers — keeps growing. The commercial logic increasingly works.</p>
+      <p>CRESS has crossed the line from policy experiment to commercial option. The scheme has been live since September 2024. The standard System Access Charge was cut to 20 sen/kWh firm and 40 sen/kWh non-firm (announced by PETRA on 29 August 2025, aligned with the tariff schedule for the fourth regulatory period, RP4, from 1 July 2025) and is <strong>fixed until RP4 ends in December 2027</strong>. From 18 November 2026, the new CRESS Acceleration Package goes further for firm projects that reach their commercial operation date (COD) by 31 December 2028: a developer SAC of 14 sen/kWh fixed for 10 years from COD, with a separate charge on the green consumer. Corporate demand for green supply — driven by data centres and export-facing manufacturers — keeps growing. The commercial logic increasingly works.</p>
 
       <p>Which moves the real question one seat down the table: <strong>will a lender finance it?</strong> A CRESS project is a merchant-adjacent structure wearing a PPA's clothes, and banks price the difference. This article walks through what project-finance lenders actually underwrite in a CRESS deal — and takes a proper detour into the <strong>System Marginal Price</strong>, the number that quietly sits underneath every open position in the structure.</p>
+
+      <div class="callout">
+        <p><strong>Updated 18 November 2026.</strong> The Energy Commission's revised CRESS Guidelines (GP/ST/No.40/2024 (Pin.1/2026), dated 17 November 2026) bring in the CRESS Acceleration Package from 18 November 2026. For firm supply only, the developer pays an SAC fixed for 10 years from COD, which the Energy Commission has published as 14 sen/kWh, provided COD is reached by 31 December 2028 (no extensions) and the contract with the green consumer runs at least 10 years. The green consumer pays a separate charge, put by the Energy Commission at 4 sen/kWh for RP4 and reviewed each regulatory period. For lenders, the reset risk moves rather than disappears — to that consumer charge, and to whatever SAC applies after year 10. We have also corrected what "firm" means: for a solar plant it requires directly connected storage, not oversizing or portfolio balancing.</p>
+      </div>
 
       <hr>
 
@@ -329,9 +341,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p>The Corporate Renewable Energy Supply Scheme lets a renewable generator sell directly to a corporate consumer, using the grid as a delivery road. The price between generator and offtaker is <strong>freely negotiated</strong> — no auction, no quota queue. The road toll is the <strong>System Access Charge (SAC)</strong>, paid for using the network:</p>
 
       <ul>
-        <li><strong>Firm supply — SAC of 20 sen/kWh.</strong> The generator guarantees a delivery profile, managing its own intermittency (in practice: storage or portfolio balancing). Reduced from 25 sen in July 2025.</li>
-        <li><strong>Non-firm supply — SAC of 40 sen/kWh.</strong> The generator delivers as the resource produces, and the grid absorbs the variability. Reduced from 45 sen.</li>
-        <li>Both rates are <strong>locked until the end of RP4</strong> — the current incentive-based-regulation period running through December 2027. Remember that date; it returns below.</li>
+        <li><strong>Firm supply — standard SAC of 20 sen/kWh for RP4,</strong> down from 25 sen. "Firm" means dispatchable output: for a solar plant, the CRESS Guidelines require a directly connected energy storage system of at least 50% of registered capacity (or tested capacity, if lower) for four consecutive hours, dispatchable by the Grid System Operator. A plant that cannot meet the firm-output requirement pays a higher SAC, and a firm plant pays the non-firm SAC while its storage is out of service.</li>
+        <li><strong>Non-firm supply — standard SAC of 40 sen/kWh for RP4,</strong> down from 45 sen. The generator exports as the resource produces, and the grid absorbs the variability. The category is declared at application and cannot later be switched from non-firm to firm.</li>
+        <li><strong>CRESS Acceleration Package — 14 sen/kWh developer SAC, fixed for 10 years from COD.</strong> In effect from 18 November 2026 for firm supply only, it requires COD by 31 December 2028 (no extensions: a project that misses the date loses CAP eligibility and pays the SAC then in force) and a contract of at least 10 years; existing registered projects can opt in by request to the Single Buyer. The green consumer pays a separate charge on its electricity consumption, which the Energy Commission put at 4 sen/kWh for RP4 and which is reviewed each regulatory period.</li>
+        <li>Standard rates are <strong>fixed for each three-year regulatory period</strong> (CRESS Guidelines, cl. 11.3), and a revision at the start of a new period can move them by no more than 15% — so 20/40 sen holds until RP4 ends in December 2027, and on the current clause RP5 could bring at most 23/46 sen. PETRA has, however, said it will revise the SAC-setting principles from RP5. Acceleration Package projects run on a different clock, set out above. Remember December 2027; it returns below.</li>
       </ul>
 
       <p>For which offtakers and schemes CRESS beats the alternatives commercially, see our <a href="solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html">scheme comparison</a>. From here, we assume CRESS has won on paper — and ask what the bank says.</p>
@@ -366,10 +379,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p>The same logic runs in reverse for <strong>non-firm structures</strong>: when your plant under-delivers, the offtaker tops up from the grid at its retail tariff — which now moves monthly with fuel-cost pass-through under the RP4 tariff framework. The spread between your PPA price and that fluctuating grid price is the offtaker's realised saving. A PPA priced attractively against last year's grid tariff can look mediocre against next year's — and an offtaker whose savings evaporated is an offtaker looking for the exit clause. Price the deal against a <em>range</em> of grid-tariff outcomes, not a snapshot.</p>
 
       <h2>4. Firm vs non-firm: a 20-sen question with a capex answer</h2>
-      <p>The SAC structure prices the choice explicitly: firmness saves 20 sen/kWh in access charges but obliges you to deliver a committed profile — in practice, batteries, oversizing, or portfolio backup, all of which are capex and operating cost. Whether the 20-sen saving pays for the firming depends on storage costs, your resource profile and the offtaker's load shape. This is a solvable optimisation, but it must be solved <em>before</em> the PPA is priced — retrofitting firmness into a signed non-firm deal is buying insurance after the flood.</p>
+      <p>In standard CRESS the SAC prices the choice explicitly: firmness saves 20 sen/kWh in access charges (20 against 40 sen/kWh in RP4). For a solar plant, though, firmness means directly connected storage of at least 50% of registered capacity for four hours, dispatchable by the Grid System Operator — the guidelines recognise no other route, such as oversizing or portfolio balancing — and that storage is capex and operating cost. Whether the 20-sen saving pays for it depends on storage costs, your resource profile and the offtaker's load shape.</p>
+      <p>Firmness is now also the entry ticket to the Acceleration Package, where the developer pays 14 sen/kWh fixed for 10 years and the green consumer pays a separate charge on its own consumption, which the Energy Commission put at 4 sen/kWh for RP4. The Edge and The Star have combined the two into an "effective" 18 sen/kWh; the Minister, Fadillah Yusof, told the Dewan Rakyat on 27 October 2026, as reported by Bernama, that they are separate charges, and that the government is prepared to re-engage industry on the fee structure. However it is framed, the consumer charge can be revised each regulatory period. The firm-or-non-firm choice is a solvable optimisation, but it must be solved <em>before</em> the PPA is priced: a project registered as non-firm cannot switch to firm later, so you cannot buy the insurance after the flood.</p>
 
       <h2>5. The 2027 reset</h2>
-      <p>The SAC is fixed <strong>until the end of RP4 — December 2027</strong>. Your PPA runs a decade beyond that. Every regulatory period, the charge is reviewed; it fell at the last review, and nothing guarantees the direction of the next one. Lenders will ask one precise question: <em>who absorbs an SAC increase in 2028?</em> A bankable PPA answers it in writing — a pass-through clause, a price reopener, or an explicit allocation — rather than leaving it to a future negotiation between a generator that can't absorb it and an offtaker that won't.</p>
+      <p>Outside the Acceleration Package, the SAC is fixed only <strong>until the end of RP4 — December 2027</strong>, and your PPA runs a decade beyond that. Every regulatory period, the charge is reviewed; the guidelines cap any change at 15%, and it fell at the last review — but PETRA has said it will revise the SAC-setting principles from RP5, so nothing guarantees the direction of the next one. Lenders will ask one precise question: <em>who absorbs an SAC increase in 2028?</em></p>
+      <p>Inside the package, the developer's 14 sen/kWh is fixed for 10 years from COD, but the reset risk does not disappear — it moves to two places: the green consumer's separate charge, billed by TNB Retail and reviewed at the start of every regulatory period, and whatever SAC applies after year 10. A bankable PPA answers both in writing — a pass-through clause, a price reopener, or an explicit allocation — rather than leaving them to a future negotiation between a generator that can't absorb them and an offtaker that won't.</p>
 
       <h2>The bankability checklist</h2>
 
@@ -384,15 +399,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <tr><td>Volume risk</td><td>What happens when consumption drops?</td><td>Take-or-pay floor or shortfall mechanism, in the PPA text</td></tr>
             <tr><td>Excess energy</td><td>What is surplus generation worth?</td><td>SMP-linked value as sensitivity only — never base case</td></tr>
             <tr><td>Grid-price basis</td><td>Do the offtaker's savings survive tariff swings?</td><td>Deal priced against a grid-tariff range, not a snapshot</td></tr>
-            <tr><td>Firm vs non-firm</td><td>Does the 20-sen SAC saving fund the firming cost?</td><td>Storage/oversizing optimisation run before PPA pricing</td></tr>
-            <tr><td>SAC reset 2028</td><td>Who absorbs a post-RP4 charge increase?</td><td>Pass-through or reopener clause, drafted now</td></tr>
+            <tr><td>Firm vs non-firm</td><td>Do the 20-sen SAC saving and Acceleration Package eligibility pay for the required storage?</td><td>Storage sizing (at least 50% of registered capacity for 4 hours) run before PPA pricing; the category is fixed at application</td></tr>
+            <tr><td>SAC and consumer-charge resets</td><td>Who absorbs an increase — in 2028 (standard CRESS), each regulatory period (Acceleration Package consumer charge) or from year 11 (Acceleration Package developer)?</td><td>Pass-through or reopener clause, drafted now</td></tr>
           </tbody>
         </table>
       </div>
 
-      <p>None of this argues against CRESS — the opposite. The scheme's flexibility is exactly what makes it powerful, and the cut, locked-in SAC has genuinely improved the arithmetic. But flexibility means the risk allocation isn't decided by the regulator; it's decided by your PPA. In LSS, bankability is largely inherited from the framework — as a decade of financed projects <a href="lss1-to-lss6-large-scale-solar-comparison.html">shows</a>. In CRESS, bankability is <em>drafted</em>. The projects that reach financial close will be the ones that answered the lender's questions in the term sheet, not in the Q&amp;A after.</p>
+      <p>None of this argues against CRESS — the opposite. The scheme's flexibility is exactly what makes it powerful, and the lower SAC (fixed to December 2027, or for 10 years from COD under the Acceleration Package) has genuinely improved the arithmetic. But flexibility means the risk allocation isn't decided by the regulator; it's decided by your PPA. In LSS, bankability is largely inherited from the framework — as a decade of financed projects <a href="lss1-to-lss6-large-scale-solar-comparison.html">shows</a>. In CRESS, bankability is <em>drafted</em>. The projects that reach financial close will be the ones that answered the lender's questions in the term sheet, not in the Q&amp;A after.</p>
+
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://www.st.gov.my/sites/default/files/2026-11/GUIDELINES-FOR-CORPORATE-RENEWABLE-ENERGY-SUPPLY-SCHEME-%28CRESS%29-%28FINAL%29_PUBLISHED_17.11.2026.pdf">Energy Commission (Suruhanjaya Tenaga) — Guidelines for Corporate Renewable Energy Supply Scheme (CRESS), GP/ST/No.40/2024 (Pin.1/2026), incl. Appendix 3: CRESS Acceleration Package</a> (17 November 2026)</li>
+        <li><a href="https://www.st.gov.my/sites/default/files/2026-10/ST-Statement---ST-Held-Briefing-on-CRESS-Acceleration-Package-(CAP).pdf">Energy Commission — Statement: ST held briefing on the CRESS Acceleration Package (CAP)</a> (15 October 2026)</li>
+        <li><a href="https://www.st.gov.my/what-fixed-sac-rate-offered-red-under-cress-acceleration-package">Energy Commission — FAQ: What fixed SAC rate is offered for RED under the CRESS Acceleration Package?</a> (accessed 18 November 2026)</li>
+        <li><a href="https://www.st.gov.my/will-fixed-sac-rate-red-be-reviewed-during-10-year-period">Energy Commission — FAQ: Will the fixed SAC rate for RED be reviewed during the 10-year period?</a> (accessed 18 November 2026)</li>
+        <li><a href="https://www.st.gov.my/can-existing-registered-cress-project-opt-cress-acceleration-package">Energy Commission — FAQ: Can an existing registered CRESS project opt into the CRESS Acceleration Package?</a> (accessed 18 November 2026)</li>
+        <li><a href="https://www.st.gov.my/switching-non-firm-firm-over-time-allowed">Energy Commission — FAQ: Is switching from non-firm to firm over time allowed?</a> (accessed 18 November 2026)</li>
+        <li><a href="https://www.petra.gov.my/uploads/content-downloads/file_20260918161406.pdf">PETRA — Press statement on the CRESS Acceleration Package</a> (18 September 2026)</li>
+        <li><a href="https://www.st.gov.my/sites/default/files/2026-03/siaran_mediaeng_2.pdf">PETRA — Press release on SAC and CAC rates for the Fourth Regulatory Period (hosted by the Energy Commission)</a> (29 August 2025)</li>
+        <li><a href="https://bernama.com/en/region/news.php?id=2626493">Bernama — Minister's Dewan Rakyat statement on CRESS charges</a> (statement of 27 October 2026)</li>
+        <li><a href="https://theedgemalaysia.com/node/821755">The Edge Malaysia — report on the CRESS Acceleration Package briefing</a> (14 October 2026)</li>
+        <li><a href="https://www.thestar.com.my/business/business-news/2026/10/15/cress-viability-intact">The Star (StarBiz) — CRESS viability intact</a> (15 October 2026)</li>
+      </ul>
 
     </div>
+  </div>
+
+  <div class="wrap">
+    <nav class="related" aria-label="Related insights">
+      <p class="related-k">Related insights</p>
+      <ul>
+        <li><span>Scheme History</span><a href="lss1-to-lss6-large-scale-solar-comparison.html">LSS1 to LSS6: what a decade of Large Scale Solar teaches bidders</a></li>
+        <li><span>Tax &amp; Incentives</span><a href="gita-solar-tax-allowance-timing-traps-2026.html">GITA for solar: the timing traps that sink tax claims</a></li>
+        <li><span>Scheme Strategy</span><a href="solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html">Solar ATAP vs SELCO vs CRESS vs corporate PPA: which route fits your factory</a></li>
+      </ul>
+    </nav>
   </div>
 
   <div class="art-cta">
@@ -409,7 +450,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <div class="wrap">
     <div class="disclaimer">
-      <p>EcoEnergy Consultancy Sdn Bhd advises on solar PV, battery energy storage, hydropower, and waste-to-energy across Malaysia's regulatory landscape. SAC rates and scheme parameters are as published by PETRA and the Energy Commission (effective 1 July 2025) and may be revised at future regulatory reviews; SMP settlement specifics depend on the prevailing Single Buyer rules and your executed agreements. This article is general information, not financial or legal advice — verify current terms with the administering agencies and your advisers before committing capital.</p>
+      <p>EcoEnergy Consultancy Sdn Bhd advises on solar PV, battery energy storage, hydropower, and waste-to-energy across Malaysia's regulatory landscape. Standard CRESS SAC rates (20/40 sen/kWh for RP4) are as announced by PETRA on 29 August 2025 and published by the Energy Commission; CRESS Acceleration Package terms follow the CRESS Guidelines GP/ST/No.40/2024 (Pin.1/2026), dated 17 November 2026 (package effective 18 November 2026), and the Energy Commission's statement of 15 October 2026. All charges, including the green consumer's separate charge, may be revised at future regulatory reviews or after further government engagement with industry; SMP settlement specifics depend on the prevailing Single Buyer rules and your executed agreements. This article is general information, not financial or legal advice — verify current terms with the administering agencies and your advisers before committing capital.</p>
     </div>
   </div>
 </article>

@@ -547,6 +547,31 @@ nav.links a:hover::after{width:100%}
 .g-item p{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
 @media(max-width:900px){.g-grid{grid-template-columns:1fr}}
 
+/* ---------- latest insights ---------- */
+.reading{background:var(--navy);padding:clamp(80px,11vh,130px) 0}
+.reading-head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;margin-bottom:44px;flex-wrap:wrap}
+.reading-head h2{max-width:18ch;margin-top:22px}
+.reading-head p{max-width:38ch;color:var(--cloud);font-weight:300}
+.reading-head p a{color:var(--gold);font-weight:500;text-underline-offset:3px;white-space:nowrap}
+.reading-head p a:hover{color:var(--paper)}
+.read-list{border-top:1px solid rgba(212,162,58,.18)}
+.read{
+  display:grid;grid-template-columns:190px 1fr auto;gap:8px 36px;align-items:baseline;
+  padding:28px 0;border-bottom:1px solid rgba(212,162,58,.18);color:inherit;text-decoration:none;
+}
+.read .r-meta{display:flex;flex-direction:column;gap:6px}
+.read .r-type{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);line-height:1.5}
+.read .r-date{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cloud-dim);line-height:1.5}
+.read h3{font-family:var(--serif);font-weight:500;font-size:clamp(19px,2vw,23px);line-height:1.3;transition:color .3s var(--ease)}
+.read p{font-size:14.5px;color:var(--cloud);font-weight:300;line-height:1.65;margin-top:6px;max-width:66ch}
+.read .arrow{font-family:var(--mono);font-size:15px;color:var(--gold);transition:transform .3s var(--ease)}
+.read:hover h3,.read:focus-visible h3{color:var(--gold)}
+.read:hover .arrow,.read:focus-visible .arrow{transform:translateX(5px)}
+@media(max-width:760px){
+  .read{grid-template-columns:1fr auto;padding:24px 0}
+  .read .r-meta{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:4px 14px}
+}
+
 /* ---------- faq ---------- */
 .faq{background:var(--navy-deep);padding:clamp(90px,12vh,150px) 0}
 .faq .wrap{display:grid;grid-template-columns:5fr 7fr;gap:clamp(40px,6vw,90px);align-items:start}
@@ -980,6 +1005,52 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h4>Unknowns flagged, never filled</h4>
         <p>Where data or jurisdictional certainty is missing, the report says so — and names the licensed professional (PE/Ir., tax agent, counsel) who should confirm it.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="reading" id="insights">
+  <div class="wrap">
+    <div class="reading-head reveal">
+      <div>
+        <p class="kicker">Latest insights</p>
+        <h2>Read before you <em>commit.</em></h2>
+      </div>
+      <p>Independent notes on Malaysia's solar schemes, tax rules and site risk, written to inform decisions. <a href="insights/">All insights →</a></p>
+    </div>
+    <div class="read-list">
+      <a class="read reveal" href="insights/kpkt-slope-classes-solar-malaysia.html">
+        <span class="r-meta"><span class="r-type">Land &amp; Site</span><span class="r-date">17 Nov 2026</span></span>
+        <div>
+          <h3>Slope classes for solar: what Class III land means for your project</h3>
+          <p>Peninsular Malaysia's four hillside slope classes, the ground conditions that push land into a higher class, and the specialist reports you will need.</p>
+        </div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="read reveal" href="insights/cress-bankability-smp-malaysia.html">
+        <span class="r-meta"><span class="r-type">Project Finance</span><span class="r-date">22 Aug 2026</span></span>
+        <div>
+          <h3>CRESS bankability: the questions your lender will ask</h3>
+          <p>Offtaker credit, merchant tails and the System Marginal Price: what a bank tests before it funds a CRESS deal.</p>
+        </div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="read reveal" href="insights/gita-solar-tax-allowance-timing-traps-2026.html">
+        <span class="r-meta"><span class="r-type">Tax &amp; Incentives</span><span class="r-date">13 Aug 2026</span></span>
+        <div>
+          <h3>GITA for solar: the timing traps that sink tax claims</h3>
+          <p>Wrong agency, late paperwork, non-MyHIJAU equipment, tax capacity and the PPA paradox: the traps we keep seeing, and the fix for each.</p>
+        </div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="read reveal" href="insights/lss1-to-lss6-large-scale-solar-comparison.html">
+        <span class="r-meta"><span class="r-type">Scheme History</span><span class="r-date">13 Aug 2026</span></span>
+        <div>
+          <h3>LSS1 to LSS6: what a decade of Large Scale Solar teaches bidders</h3>
+          <p>Round sizes up more than seven-fold, tariffs down four-fold, and battery storage now required in the main packages: the lessons that survive every round.</p>
+        </div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
     </div>
   </div>
 </section>
