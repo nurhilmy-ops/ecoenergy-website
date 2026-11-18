@@ -11,7 +11,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EcoEnergy Consultancy — Renewable Energy Advisory, Malaysia</title>
-<meta name="description" content="Independent Malaysian renewable-energy advisory — scheme selection, site studies, engineering, project finance and legal packaging for solar PV, BESS, hydropower and waste-to-energy.">
+<meta name="description" content="Independent renewable-energy advisory in Malaysia for solar PV, BESS, hydropower and waste-to-energy: scheme selection, site studies and project finance.">
 <link rel="canonical" href="https://www.ecoconsultancy.services/">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#081527">
@@ -32,24 +32,70 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  "@id": "https://www.ecoconsultancy.services/#organization",
-  "name": "EcoEnergy Consultancy Sdn. Bhd.",
-  "description": "Independent renewable-energy advisory for developers, landowners and financiers across Malaysia — scheme selection, site and land studies, engineering design, project finance and legal packaging for solar PV, battery storage, hydropower and waste-to-energy.",
-  "url": "https://www.ecoconsultancy.services/",
-  "logo": "https://www.ecoconsultancy.services/assets/ecoenergy_leaf_primary.svg",
-  "image": "https://www.ecoconsultancy.services/assets/og-image.png",
-  "email": "contact@ecoconsultancy.services",
-  "telephone": "+60387446478",
-  "areaServed": "MY",
-  "knowsAbout": ["Solar PV", "Battery Energy Storage", "Hydropower", "Waste-to-Energy", "Project Finance", "SELCO", "Solar ATAP", "CRESS", "Corporate PPA"],
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "Level 22, Menara Merdeka 118, Presint Merdeka 118",
-    "addressLocality": "Kuala Lumpur",
-    "postalCode": "50118",
-    "addressCountry": "MY"
-  }
+  "@graph": [
+    {
+      "@type": "ProfessionalService",
+      "@id": "https://www.ecoconsultancy.services/#organization",
+      "name": "EcoEnergy Consultancy",
+      "legalName": "EcoEnergy Consultancy Sdn. Bhd.",
+      "identifier": { "@type": "PropertyValue", "propertyID": "SSM registration number", "value": "202601020468 (1682563-A)" },
+      "description": "Independent renewable-energy advisory for developers, landowners and financiers across the full lifecycle of Malaysian renewable-energy projects: solar PV, battery storage, hydropower and waste-to-energy.",
+      "url": "https://www.ecoconsultancy.services/",
+      "logo": "https://www.ecoconsultancy.services/assets/ecoenergy_leaf_primary.svg",
+      "image": "https://www.ecoconsultancy.services/assets/og-image.png",
+      "email": "contact@ecoconsultancy.services",
+      "telephone": "+60387446478",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Level 22, Menara Merdeka 118, Presint Merdeka 118",
+        "addressLocality": "Kuala Lumpur",
+        "postalCode": "50118",
+        "addressCountry": "MY"
+      },
+      "areaServed": { "@type": "Country", "name": "Malaysia" },
+      "knowsAbout": ["Solar PV", "Battery Energy Storage", "Hydropower", "Waste-to-Energy", "Project Finance", "Solar ATAP", "SELCO", "Large Scale Solar (LSS)", "CRESS", "Corporate PPA"],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Engagement models",
+        "itemListElement": [
+          { "@type": "Offer", "@id": "https://www.ecoconsultancy.services/#scheme-fit-consult", "price": "0", "priceCurrency": "MYR",
+            "itemOffered": { "@type": "Service", "name": "Scheme-Fit Consult",
+              "description": "A free 30-minute consult. Send the KML before the call and receive a one-page pre-screen: scheme options, obvious red flags, and whether a study is worth paying for." } },
+          { "@type": "Offer", "description": "Fixed fee, scope by proposal",
+            "itemOffered": { "@type": "Service", "name": "Site Screening",
+              "description": "Stage 01. A go/no-go answer in weeks, not months: terrain and KML desktop review, grid-proximity assessment, a scheme-fit matrix (Solar ATAP to CRESS) and a red-flag register." } },
+          { "@type": "Offer", "description": "Fixed fee, staged milestones",
+            "itemOffered": { "@type": "Service", "name": "Full Feasibility",
+              "description": "Stage 02. Everything in Site Screening, plus yield modelling and concept design, a financial model (DSCR, IRR, tariff), a regulatory pathway and licensing map, and EIA/SIA scoping at 1, 5 and 10 km." } },
+          { "@type": "Offer", "description": "Retainer or milestone, by proposal",
+            "itemOffered": { "@type": "Service", "name": "Transaction Advisory",
+              "description": "Stage 03. Through financing to financial close: model audit and lender Q&A defence, PPA and EPC review support, sukuk and Islamic structuring support, E&S and SIA defence to financiers, and CP tracking to financial close." } }
+        ]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.ecoconsultancy.services/#website",
+      "name": "EcoEnergy Consultancy",
+      "url": "https://www.ecoconsultancy.services/",
+      "inLanguage": "en",
+      "publisher": { "@id": "https://www.ecoconsultancy.services/#organization" }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://www.ecoconsultancy.services/#faq",
+      "mainEntity": [
+        { "@type": "Question", "name": "Our EPC contractor offers a \"free\" feasibility study. Why pay for one?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Because an EPC's study exists to justify an EPC contract. Lenders know this and discount it accordingly. An independent study is built to survive the lender's technical advisor — and it's equally willing to conclude the project shouldn't proceed, which is exactly what makes its \"yes\" worth something." } },
+        { "@type": "Question", "name": "How long does a full feasibility take?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Screening typically lands inside a few weeks of receiving the KML and title details. A full feasibility usually runs several weeks to a few months depending on scope, data availability and authority response times — we table the timeline with the proposal and flag the dependencies that could move it." } },
+        { "@type": "Question", "name": "What happens if the site turns out to be unviable?",
+          "acceptedAnswer": { "@type": "Answer", "text": "You find out at the screening stage for a screening-stage fee — that's the point of staging. A no-go report with reasons and alternatives is a cheap outcome compared to discovering the same thing after land is committed." } },
+        { "@type": "Question", "name": "Will you work under NDA, and who owns the deliverables?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes — NDAs are standard for us, and engagement terms state clearly that reports and models are yours on payment. We stay available to defend them in front of your board, offtaker or financier." } }
+      ]
+    }
+  ]
 }
 </script>
 <script>document.documentElement.className+=' js'</script>
@@ -651,7 +697,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <a href="#contact">Contact</a>
     </nav>
     <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span></span></button>
-    <a class="nav-cta" href="#contact">Start an engagement</a>
+    <a class="nav-cta" href="consult/">Start an engagement</a>
   </div>
 </header>
 
@@ -678,7 +724,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h1 class="rise d2">From raw land to <span class="ph"><em>financial close.</em><svg class="ph-frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" pathLength="1"/></svg><svg class="ph-pointer" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 1l5.2 13.2 1.9-5.6 5.6-1.9L1 1z" fill="var(--gold)" stroke="var(--navy-deep)" stroke-width="1"/></svg></span></h1>
         <p class="lede rise d3">EcoEnergy Consultancy advises developers, landowners and financiers across the full lifecycle of Malaysian renewable-energy projects — solar PV, battery storage, hydropower and waste-to-energy.</p>
         <div class="hero-actions rise d4">
-          <a class="btn-gold" href="#contact">Discuss your project →<i>✦</i><i>✦</i></a>
+          <a class="btn-gold" href="consult/#consult">Discuss your project →<i>✦</i><i>✦</i></a>
           <a class="btn-ghost" href="#services">Explore services</a>
         </div>
       </div>
@@ -832,7 +878,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>Red-flag register</li>
         </ul>
         <div class="t-fee">Fixed fee · scope by proposal</div>
-        <a class="btn-ghost" href="#contact">Start with screening</a>
+        <a class="btn-ghost" href="consult/#consult">Start with screening</a>
       </article>
       <article class="tier featured reveal">
         <span class="flag">Most engaged</span>
@@ -847,7 +893,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>EIA/SIA scoping — 1, 5, 10 km</li>
         </ul>
         <div class="t-fee">Fixed fee · staged milestones</div>
-        <a class="btn-gold" href="#contact">Scope a feasibility →<i>✦</i><i>✦</i></a>
+        <a class="btn-gold" href="consult/#consult">Scope a feasibility →<i>✦</i><i>✦</i></a>
       </article>
       <article class="tier reveal">
         <span class="t-name">Stage 03</span>
@@ -861,7 +907,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="20"/></svg>CP tracking to financial close</li>
         </ul>
         <div class="t-fee">Retainer or milestone · by proposal</div>
-        <a class="btn-ghost" href="#contact">Discuss a transaction</a>
+        <a class="btn-ghost" href="consult/#consult">Discuss a transaction</a>
       </article>
     </div>
   </div>
@@ -997,7 +1043,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <footer>
   <div class="wrap">
-    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. — Kuala Lumpur, Malaysia</p>
+    <p>© 2026 EcoEnergy Consultancy Sdn. Bhd. (202601020468 (1682563-A)) — Kuala Lumpur, Malaysia</p>
     <p>Solar PV · BESS · Hydropower · Waste-to-Energy &nbsp;·&nbsp; <a href="privacy/">Privacy</a></p>
   </div>
 </footer>

@@ -18,6 +18,24 @@
 <meta name="twitter:title" content="Free terrain screening for your site">
 <meta name="twitter:description" content="Upload a KML or KMZ and get elevation, KPKT slope classes I–IV, cross-sections and a PDF/Word report in minutes.">
 <meta name="twitter:image" content="{{ public_url }}static/og-image.png">
+{#- Structured data: only what this page shows. No rating or review: none exist. #}
+<script type="application/ld+json">
+{{ {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "@id": public_url ~ "#app",
+  "name": "Terrain Screening",
+  "url": public_url,
+  "description": "Upload a KML or KMZ of a site in Malaysia and get a desktop terrain screening: elevation, slope classes under the KPKT hillside guidelines (Class I to IV), cross-section profiles and a PDF and Word report. It is not a topographic or land survey, a geotechnical investigation or an engineering design.",
+  "applicationCategory": "BusinessApplication",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "MYR"},
+  "featureList": ["Site layout map", "Elevation map with contours", "KPKT slope classification map, Class I to IV", "Terrain cross-sections", "PDF and Word report"],
+  "image": public_url ~ "static/og-image.png",
+  "publisher": {"@type": "Organization", "@id": settings.site_url.rstrip("/") ~ "/#organization", "name": "EcoEnergy Consultancy", "url": settings.site_url}
+}|tojson }}
+</script>
 {% if turnstile %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}{% endblock %}
 {% block content %}
 {# Three grid areas: on narrow screens the form follows the intro instead of sitting

@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTextResponse,
+                               RedirectResponse, Response)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
@@ -307,7 +308,7 @@ def landing_response(request: Request, *, email: str = "", newsletter: bool = Fa
                   turnstile=turnstile_enabled(settings_of(request)))
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def landing(request: Request):
     settings = settings_of(request)
     utm = {k: clean_utm(request.query_params.get(k)) for k in UTM_KEYS}
@@ -955,9 +956,35 @@ def _unsubscribe_submit(request: Request, form: dict[str, str]) -> Response:
 # --- static pages ----------------------------------------------------------------
 
 
-@router.get("/privacy", response_class=HTMLResponse)
+@router.api_route("/privacy", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def privacy(request: Request):
     return render(request, "privacy.html")
+
+
+# --- crawler files ---------------------------------------------------------------
+# Only "/" and "/privacy" are public. /start and /unsubscribe carry tokens and are left
+# crawlable on purpose so crawlers read their noindex; a URL blocked here can still be listed.
+ROBOTS_DISALLOW = ("/upload", "/reports", "/account", "/api/", "/admin", "/dev/",
+                   "/request-link", "/logout", "/healthz")
+PUBLIC_PAGES = ("/", "/privacy")
+
+
+@router.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)
+def robots_txt(request: Request) -> PlainTextResponse:
+    base = settings_of(request).base_url.rstrip("/")
+    body = ("User-agent: *\n" + "".join(f"Disallow: {p}\n" for p in ROBOTS_DISALLOW)
+            + f"\nSitemap: {base}/sitemap.xml\n")
+    return PlainTextResponse(body, headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
+def sitemap_xml(request: Request) -> Response:
+    base = settings_of(request).base_url.rstrip("/")
+    urls = "".join(f"  <url><loc>{escape(base + p)}</loc></url>\n" for p in PUBLIC_PAGES)
+    body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "</urlset>\n")
+    return Response(body, media_type="application/xml",
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 
 # --- development outbox ------------------------------------------------------------

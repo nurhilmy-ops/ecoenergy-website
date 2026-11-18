@@ -614,7 +614,7 @@ def test_erased_data_is_not_left_in_the_database_file(flow, settings, secure_del
 
 
 @pytest.mark.parametrize("path", ["/", "/privacy", "/static/css/app.css", "/no-such-page", "/start?t=x",
-                                  "/api/reports/abcdefgh/status", "/upload"])
+                                  "/api/reports/abcdefgh/status", "/upload", "/robots.txt", "/sitemap.xml"])
 def test_security_headers_everywhere(client, path):
     resp = client.get(path, follow_redirects=False)
     csp = resp.headers["content-security-policy"]
@@ -627,7 +627,9 @@ def test_security_headers_everywhere(client, path):
     assert resp.headers["x-content-type-options"] == "nosniff"
     assert resp.headers["x-frame-options"] == "DENY"
     assert "camera=()" in resp.headers["permissions-policy"]
-    if not path.startswith("/static/"):
+    if path in ("/robots.txt", "/sitemap.xml"):     # public crawler files: cacheable for a day
+        assert resp.headers["cache-control"] == "public, max-age=86400"
+    elif not path.startswith("/static/"):
         assert resp.headers["cache-control"] == "no-store"
 
 

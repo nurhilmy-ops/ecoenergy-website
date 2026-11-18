@@ -909,3 +909,31 @@ def test_worker_inline_false_is_logged_as_a_warning(app_factory, caplog):
     with caplog.at_level(logging.WARNING, logger="app.main"):
         app_factory("noworker", worker_inline=False)
     assert "WORKER_INLINE=false" in caplog.text and "retention sweeps are off" in caplog.text
+
+
+def test_crawler_files(client):
+    robots = client.get("/robots.txt")
+    assert robots.status_code == 200 and robots.headers["content-type"].startswith("text/plain")
+    assert "Disallow: /reports" in robots.text and "/start" not in robots.text
+    assert "Sitemap: http://testserver/sitemap.xml" in robots.text
+    sitemap = client.get("/sitemap.xml")
+    assert sitemap.headers["content-type"].startswith("application/xml")
+    assert "<loc>http://testserver/</loc>" in sitemap.text
+    assert "<loc>http://testserver/privacy</loc>" in sitemap.text
+    assert client.head("/").status_code == 200 and client.head("/privacy").status_code == 200
+
+
+def test_landing_structured_data(client):
+    html = client.get("/?utm_source=website&utm_medium=nav").text
+    block = html.split('<script type="application/ld+json">', 1)[1].split("</script>", 1)[0]
+    data = json.loads(block)
+    assert data["@type"] == "WebApplication" and data["url"] == "http://testserver/"
+    assert data["publisher"]["@id"].endswith("/#organization")
+    assert "aggregateRating" not in data and "review" not in data
+
+
+def test_privacy_canonical(client):
+    html = client.get("/privacy").text
+    assert '<link rel="canonical" href="http://testserver/privacy">' in html
+    assert ('<meta name="description" content="How EcoEnergy Consultancy handles personal data in its free '
+            'terrain screening tool: the PDPA 2010 section 7 notice, in English and Bahasa Malaysia.">') in html
