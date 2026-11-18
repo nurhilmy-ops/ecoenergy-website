@@ -1,0 +1,56 @@
+# EcoEnergy Consultancy
+
+> EcoEnergy Consultancy Sdn. Bhd. is an independent renewable-energy advisory firm in Kuala Lumpur, Malaysia. It advises developers, landowners and financiers across the full lifecycle of Malaysian renewable-energy projects: solar PV, battery energy storage (BESS), hydropower and waste-to-energy.
+
+## Key facts
+
+- Legal name: EcoEnergy Consultancy Sdn. Bhd., Registration No. 202601020468 (1682563-A)
+- Office: Level 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur, Malaysia
+- Telephone: +60 3 8744 6478
+- Email: contact@ecoconsultancy.services
+- Service area: all of Malaysia (Peninsular Malaysia, Sabah, Sarawak and Labuan)
+- Clients named on the site: developers and IPPs, industrial and GLC landholders, international financiers and state investment agencies
+- Fees: agreed by written proposal. Site Screening and Full Feasibility are fixed fee; Transaction Advisory is retainer or milestone. Prices are not published.
+
+## Services
+
+- Scheme selection and regulatory strategy: matching a site, its load and its capital structure to the right Malaysian programme (Solar ATAP, SELCO, LSS, CRESS, corporate PPA).
+- Site and land studies: terrain and KML analysis, MET Malaysia weather data, land tenure review and grid-proximity assessment, plus early scoping of the soil, geology and flood studies a site will need, for registered specialists to carry out.
+- Engineering design: scoping and coordination of civil, electrical, mounting and floating-PV design, SCADA and BESS integration. Designs are signed off by Professional Engineers registered with the Board of Engineers Malaysia (BEM) whom EcoEnergy works with.
+- Project finance and financial modelling: bank-grade models covering DSCR, IRR and tariff solving, including sukuk and Islamic financing structures.
+- Legal and commercial packaging: assembling the land tenure, licensing, PPA, EPC and lender security packages a project needs to be bankable. Legal drafting and legal advice are provided by advocates and solicitors whom EcoEnergy works with.
+
+## Technologies
+
+- Solar PV: ground-mount, rooftop and floating.
+- Battery energy storage: grid-scale and co-located; sizing, dispatch strategy and integration.
+- Hydropower: small-hydro development advisory and operations support.
+- Waste-to-energy: feasibility, siting and regulatory pathways, municipal and industrial.
+
+## How an engagement works
+
+- Free first step: a 30-minute scheme-fit consult, no fee. Send the site KML before the call and receive a one-page pre-screen: scheme options, obvious red flags, and whether a study is worth paying for.
+- Stage 01, Site Screening: a go/no-go answer in weeks: terrain and KML desktop review, grid-proximity assessment, scheme-fit matrix and red-flag register.
+- Stage 02, Full Feasibility: yield modelling and concept design, a financial model (DSCR, IRR, tariff), a regulatory pathway and licensing map, and EIA/SIA scoping.
+- Stage 03, Transaction Advisory: model audit and lender Q&A, PPA and EPC review support, sukuk and Islamic structuring support, and CP tracking to financial close.
+- Each stage ends with a go/no-go decision. NDAs are standard, and reports and models belong to the client on payment.
+
+## Main pages
+
+- [Home](https://www.ecoconsultancy.services/): services, technologies, engagement stages, FAQ and contact details.
+- [Free scheme-fit consult](https://www.ecoconsultancy.services/consult/): the 30-minute consult and the enquiry form.
+- [Insights](https://www.ecoconsultancy.services/insights/): articles on Malaysian renewable-energy schemes, each with its sources listed.
+- [Terrain screening tool](https://tools.ecoconsultancy.services/): free KML/KMZ terrain and KPKT slope-class (I to IV) screening for sites in Malaysia; a desktop screening, not a survey.
+
+## Insights
+
+- [Slope classes for solar: what Class III land means](https://www.ecoconsultancy.services/insights/kpkt-slope-classes-solar-malaysia.html): Peninsular Malaysia's four hillside slope classes, the ground conditions that push land into a higher class, and the specialist reports a solar project will need. Published 17 November 2026.
+- [CRESS bankability and SMP mechanics](https://www.ecoconsultancy.services/insights/cress-bankability-smp-malaysia.html): what lenders underwrite in a CRESS deal, how the System Marginal Price works, and the CRESS Acceleration Package in force from 18 November 2026 (firm supply only; developer SAC of 14 sen/kWh fixed for 10 years; separate charge on the green consumer). Published 22 August 2026; updated 18 November 2026.
+- [GITA timing traps for solar](https://www.ecoconsultancy.services/insights/gita-solar-tax-allowance-timing-traps-2026.html): six timing and process traps in solar Green Investment Tax Allowance claims, with a fix for each. Budget 2027 proposes extending GITA to 31 December 2030 but leaves standalone solar off the proposed lists, so 31 December 2026 remains the deadline for standalone systems. Published 13 August 2026; updated 18 November 2026.
+- [LSS1 to LSS6: a decade of Large Scale Solar](https://www.ecoconsultancy.services/insights/lss1-to-lss6-large-scale-solar-comparison.html): Malaysia's Large Scale Solar rounds compared, including LSS6 (2,650 MW of solar across three packages, two of them paired with 1,250 MW of battery storage). Published 13 August 2026; updated 18 November 2026.
+- [Solar ATAP vs SELCO vs CRESS vs corporate PPA](https://www.ecoconsultancy.services/insights/solar-atap-vs-selco-vs-cress-vs-corporate-ppa-2026.html): a guide to Malaysia's four commercial solar routes. Updated 18 November 2026.
+
+## Optional
+
+- [Privacy notice](https://www.ecoconsultancy.services/privacy/)
+- [Terrain tool privacy notice](https://tools.ecoconsultancy.services/privacy)
