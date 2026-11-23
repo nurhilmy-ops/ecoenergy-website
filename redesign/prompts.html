@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seven Gates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: oklch(0.17 0.02 252);
+  --bg2: oklch(0.20 0.022 252);
+  --ink: oklch(0.93 0.008 245);
+  --muted: oklch(0.64 0.02 248);
+  --accent: oklch(0.75 0.12 84);
+  --line: oklch(0.30 0.02 250);
+  --disp:'Bricolage Grotesque',sans-serif;
+  --sans:'Inter',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;
+  line-height:1.6;overflow-x:hidden;
+}
+/* drifting mesh background */
+body::before{
+  content:'';position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(40% 35% at 20% 25%, oklch(0.24 0.05 252 / .55), transparent 70%),
+    radial-gradient(35% 40% at 80% 70%, oklch(0.22 0.04 230 / .5), transparent 70%),
+    radial-gradient(30% 30% at 60% 15%, oklch(0.22 0.03 90 / .35), transparent 70%);
+  animation:mesh 26s ease-in-out infinite alternate;
+}
+@keyframes mesh{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.06)}}
+::selection{background:var(--accent);color:oklch(0.15 0.02 252)}
+em{font-style:italic;color:var(--accent)}
+b{font-weight:500;color:var(--ink)}
+a{color:inherit}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+  padding:22px 4vw;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
+  mix-blend-mode:difference;
+}
+nav .dot{color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;height:100vh;overflow:hidden}
+.hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .veil{position:absolute;inset:0;background:
+  linear-gradient(to bottom, oklch(0.17 0.02 252/.35), transparent 35%, transparent 60%, oklch(0.17 0.02 252) 100%)}
+.hwm{
+  position:absolute;left:4vw;bottom:10vh;max-width:760px;
+}
+.hwm::before{
+  content:'';position:absolute;inset:-60px -80px;z-index:-1;
+  background:radial-gradient(60% 60% at 35% 60%, oklch(0.12 0.025 252/.8), transparent 75%);
+  filter:blur(8px);
+}
+.eye{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;text-shadow:0 1px 12px oklch(0.1 0.02 252/.9)}
+h1{
+  font-family:var(--disp);font-weight:700;font-size:clamp(56px,9vw,128px);line-height:.95;letter-spacing:-.02em;
+  text-shadow:0 2px 28px oklch(0.1 0.02 252/.85);
+}
+.lede{margin-top:22px;max-width:520px;font-size:17px;color:oklch(0.85 0.012 245);text-shadow:0 1px 10px oklch(0.1 0.02 252/.9)}
+.scrollcue{position:absolute;right:4vw;bottom:10vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);writing-mode:vertical-rl}
+
+/* ---------- shared section chrome ---------- */
+section{position:relative;padding:18vh 4vw}
+.wrap{max-width:1180px;margin:0 auto}
+.k{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(36px,5.2vw,72px);line-height:1.02;letter-spacing:-.015em;margin-bottom:26px}
+.body{max-width:62ch;color:var(--muted);font-size:17px}
+.body b{color:var(--ink)}
+
+/* ---------- thesis / index ---------- */
+.thesis h2{max-width:18ch}
+.pieces{margin-top:9vh;border-top:1px solid var(--line)}
+.piece{
+  display:grid;grid-template-columns:90px 1fr 1.1fr;gap:32px;align-items:baseline;
+  padding:30px 0;border-bottom:1px solid var(--line);cursor:pointer;text-decoration:none;
+  transition:padding-left .35s ease;
+}
+.piece:hover{padding-left:14px}
+.piece .n{font-family:var(--mono);font-size:13px;color:var(--accent)}
+.piece .t{font-family:var(--disp);font-weight:700;font-size:clamp(22px,2.6vw,34px);letter-spacing:-.01em}
+.piece .d{font-size:15px;color:var(--muted)}
+
+/* ---------- discipline sections ---------- */
+.lesson .grid{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:start}
+.lesson .media{position:relative;border-radius:6px;overflow:hidden}
+.lesson .media img,.lesson .media video{display:block;width:100%;height:auto}
+.lesson .media .cap,.band .media .cap{
+  position:absolute;left:22px;bottom:18px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:oklch(0.92 0.008 245);text-shadow:0 1px 10px oklch(0.1 0.02 252/.95);
+}
+.law{margin-top:26px;display:flex;flex-direction:column;gap:12px}
+.law div{display:flex;gap:14px;font-size:15px;color:var(--muted)}
+.law div::before{content:'·';color:var(--accent);font-weight:700}
+.law b{color:var(--ink);font-weight:500}
+
+/* scope card */
+.prompt{margin-top:34px;background:oklch(0.13 0.018 252);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.prompt .bar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+.prompt .bar span{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.prompt pre{
+  padding:22px;white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.75;color:oklch(0.82 0.01 245);
+  max-height:420px;overflow:auto;
+}
+
+/* spine diagram */
+.spine{margin-top:30px;border-top:1px solid var(--line)}
+.spine div{display:grid;grid-template-columns:60px 200px 1fr;gap:24px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--muted)}
+.spine .sn{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.spine .sh{font-family:var(--disp);font-weight:700;color:var(--ink);font-size:16px}
+
+/* band */
+.band{padding:24vh 4vw;text-align:center}
+.band h2{max-width:22ch;margin:0 auto}
+.band .media{position:relative}
+
+/* reserve */
+.reserve{text-align:center;padding:24vh 4vw}
+.cta{
+  display:inline-block;margin-top:36px;font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  border:1px solid var(--accent);color:var(--accent);padding:18px 44px;border-radius:999px;text-decoration:none;transition:.3s;
+}
+.cta:hover{background:var(--accent);color:oklch(0.15 0.02 252)}
+
+footer{
+  position:relative;min-height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--muted);
+}
+footer::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(50% 90% at 50% 120%, oklch(0.4 0.1 84/.45), transparent 70%);
+  animation:aurora 9s ease-in-out infinite alternate;
+}
+@keyframes aurora{from{opacity:.5;transform:translateX(-6%)}to{opacity:1;transform:translateX(6%)}}
+footer span{position:relative;text-align:center;padding-inline:20px}
+footer em{color:var(--accent);font-style:normal}
+
+.reveal{opacity:0;transform:translateY(40px)}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}body::before,footer::before{animation:none}}
+
+@media(max-width:860px){
+  .lesson .grid{grid-template-columns:1fr}
+  .piece{grid-template-columns:50px 1fr;}
+  .piece .d{grid-column:2}
+}
+</style>
+</head>
+<body>
+
+<nav><span>ECOENERGY<span class="dot"> ·</span> CONSULTANCY</span><span>GO/NO-GO TO BANKABLE</span></nav>
+
+<!-- HERO · video one -->
+<header class="hero">
+  <video autoplay muted loop playsinline src="assets/hero.webm"></video>
+  <div class="veil"></div>
+  <div class="hwm">
+    <div class="eye">Renewable energy advisory · due diligence · bankable analysis</div>
+    <h1>SEVEN GATES.</h1>
+    <p class="lede">We take renewable energy projects from go/no-go to bankable. Advisory, engineering, and independent due diligence for developers, financiers, and landowners, from first screening to financial close.</p>
+  </div>
+  <div class="scrollcue">scroll the gates</div>
+</header>
+
+<!-- THESIS + INDEX -->
+<section class="thesis" id="pieces">
+  <div class="wrap">
+    <div class="k reveal">What we run</div>
+    <h2 class="reveal">Every project passes the same gates. We run <em>all of them.</em></h2>
+    <p class="body reveal">Most advisors cover one gate. EcoEnergy carries a project through the full sequence, or steps in at any gate to verify someone else's work. <b>Each discipline below is one decision your project cannot skip.</b></p>
+    <div class="pieces">
+      <a class="piece reveal" href="#s1"><span class="n">01</span><span class="t">Screening</span><span class="d">Go or no-go answered before you pay a land deposit.</span></a>
+      <a class="piece reveal" href="#s2"><span class="n">02</span><span class="t">Feasibility</span><span class="d">Conceptual to full feasibility, every number tied to a named source.</span></a>
+      <a class="piece reveal" href="#s3"><span class="n">03</span><span class="t">Design to RFC</span><span class="d">Basic and detail design taken to a ready-for-construction package.</span></a>
+      <a class="piece reveal" href="#s4"><span class="n">04</span><span class="t">Due diligence</span><span class="d">Independent review a credit committee can act on.</span></a>
+      <a class="piece reveal" href="#s5"><span class="n">05</span><span class="t">Approvals and risk</span><span class="d">Consents on the schedule, risks priced and allocated.</span></a>
+      <a class="piece reveal" href="#s6"><span class="n">06</span><span class="t">Bankable analysis</span><span class="d">A financial model a lender's analyst can interrogate line by line.</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- 01 SCREENING -->
+<section class="lesson" id="s1">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">01 · Screening</div>
+        <h2 class="reveal">Kill bad sites <em>early.</em></h2>
+        <p class="body reveal">A screening study answers go or no-go before real money moves. One site walk, the constraints mapped, the fatal flaws named. <b>The cheapest study we sell is the one that stops a bad project</b>, and the ones that pass move to feasibility with their risks already on the table.</p>
+        <div class="law reveal">
+          <div><b>Before the land deposit,</b> not after.</div>
+          <div>Every constraint gets a name: grid, land, terrain, tenure.</div>
+          <div>The recommendation comes <b>in writing, with the reasons.</b></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 01 · typical scope</span></div>
+          <pre>Site visit and constraint mapping
+Indicative layout and yield
+Grid proximity and interconnection options
+Land status and tenure check
+Go or no-go recommendation, with the reasons in writing</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 FEASIBILITY -->
+<section class="lesson" id="s2">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">02 · Feasibility</div>
+        <h2 class="reveal">Numbers a reviewer <em>can check.</em></h2>
+        <p class="body reveal">Conceptual study, pre-feasibility, then full feasibility, with yield, grid, land, and cost each tied to a named source. <b>A feasibility study is not a brochure.</b> It is the document every later reviewer will attack, so we build it to survive the attack.</p>
+        <div class="law reveal">
+          <div>Yield, grid, land, cost: <b>each tied to a named source.</b></div>
+          <div>Assumptions are listed, <b>never buried.</b></div>
+          <div>The decision memo says <b>proceed, hold, or stop.</b></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 02 · typical scope</span></div>
+          <pre>Conceptual layout and technology selection
+Energy yield assessment
+Grid connection study
+Environmental and social screening
+Capex and opex estimate with basis of estimate
+Project schedule and decision memo</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 DESIGN TO RFC -->
+<section class="lesson" id="s3">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">03 · Design to RFC</div>
+        <h2 class="reveal">Designed to <em>be built.</em></h2>
+        <p class="body reveal">Basic design fixes the concept. Detail design makes it buildable. The gate closes with a ready-for-construction package a contractor can price without guessing, <b>across solar, mini hydro, and the grid works between them.</b></p>
+        <div class="media reveal" style="margin-top:34px">
+          <img src="assets/g3.jpg" alt="Turbine hall of a mini hydro plant">
+          <div class="cap">Slim · mini hydro turbine hall</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 03 · typical scope</span></div>
+          <pre>Basic design and specifications
+Detail design drawings
+Equipment schedules and bill of quantities
+Tender and contract support
+Ready-for-construction package</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 DUE DILIGENCE -->
+<section class="lesson" id="s4">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">04 · Due diligence</div>
+        <h2 class="reveal">Diligence a bank can <em>lend against.</em></h2>
+        <p class="body reveal">We audit the developer's yields, contracts, and permits, then report what a credit committee can act on. <b>A red-flag review settles "should we look further" before the full diligence spend.</b> For owners and acquirers, the same discipline runs in reverse: we find the problems before the other side's advisors do.</p>
+        <div class="media reveal" style="margin-top:34px">
+          <img src="assets/g1.jpg" alt="High-voltage switchyard under construction at a utility-scale solar site">
+          <div class="cap">Gambang · switchyard construction</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 04 · typical scope</span></div>
+          <pre>Red-flag review
+Technical and commercial due diligence
+Contract and permit audit
+Construction and drawdown monitoring
+Reporting in the format credit committees read</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 APPROVALS AND RISK -->
+<section class="lesson" id="s5">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">05 · Approvals and risk</div>
+        <h2 class="reveal">Consents arrive when the <em>schedule needs them.</em></h2>
+        <p class="body reveal">Consent schedules are built backward from your financing date, each authority requirement tracked from first submission to final sign-off. Alongside them, every risk is priced and assigned to the party best able to carry it, <b>so the register, the contracts, and the model all say the same thing.</b></p>
+        <div class="media reveal" style="margin-top:34px">
+          <video autoplay muted loop playsinline src="assets/middle.webm"></video>
+          <div class="cap">every row, flown and counted</div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 05 · typical scope</span></div>
+          <pre>Authority engagement plan
+Consent schedule tied to the financing date
+Stakeholder register and engagement record
+Risk register with pricing and allocation
+Alignment check: register, contracts, model</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BAND -->
+<section class="band">
+  <div class="media reveal" style="max-width:420px;margin:0 auto 8vh;border-radius:6px;overflow:hidden">
+    <img src="assets/g4.jpg" alt="Aerial view of a completed utility-scale solar farm" style="width:100%;display:block">
+    <div class="cap">Pasir Gudang · completed array</div>
+  </div>
+  <h2 class="reveal">Six gates in, you have a project a bank can <em>price.</em></h2>
+</section>
+
+<!-- 06 BANKABLE ANALYSIS -->
+<section class="lesson" id="s6">
+  <div class="wrap">
+    <div class="grid">
+      <div>
+        <div class="k reveal">06 · Bankable analysis</div>
+        <h2 class="reveal">A model that survives <em>interrogation.</em></h2>
+        <p class="body reveal">Every input traces to a study, a contract, or a quote. A lender's analyst can test any line without calling us first. <b>That is what bankable means:</b> not optimism, traceability. The project's whole spine leads here.</p>
+        <div class="spine reveal">
+          <div><span class="sn">1</span><span class="sh">Screening</span><span>go or no-go, before the land deposit</span></div>
+          <div><span class="sn">2</span><span class="sh">Conceptual</span><span>the technology and the layout chosen</span></div>
+          <div><span class="sn">3</span><span class="sh">Pre-feasibility</span><span>the first numbers worth defending</span></div>
+          <div><span class="sn">4</span><span class="sh">Feasibility</span><span>every figure tied to a named source</span></div>
+          <div><span class="sn">5</span><span class="sh">Basic design</span><span>the concept fixed</span></div>
+          <div><span class="sn">6</span><span class="sh">Detail design</span><span>buildable without guessing</span></div>
+          <div><span class="sn">7</span><span class="sh">Ready for construction</span><span>a package a contractor can price</span></div>
+          <div><span class="sn">8</span><span class="sh">Bankable</span><span>a model a lender can interrogate</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="prompt reveal">
+          <div class="bar"><span>Gate 06 · typical scope</span></div>
+          <pre>Financial model build or audit
+Input traceability register
+Sensitivity and scenario runs
+Debt sizing and covenant checks
+Bankability review, in writing</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECOND MOMENT -->
+<section class="band" style="padding-top:6vh">
+  <div class="media reveal" style="max-width:420px;margin:0 auto;border-radius:6px;overflow:hidden">
+    <img src="assets/g2.jpg" alt="Engineers in a site control room, the solar array beyond the windows" style="width:100%;display:block">
+    <div class="cap">Pasir Gudang · site control room</div>
+  </div>
+</section>
+
+<!-- RESERVE -->
+<section class="reserve">
+  <div class="k reveal">Start at your gate</div>
+  <h2 class="reveal">Bring us the site, the term sheet, or <em>the doubt.</em></h2>
+  <p class="body reveal" style="margin:0 auto">A screening study answers go or no-go in weeks. A red-flag review answers "should we lend" before the full diligence spend.</p>
+  <a class="cta reveal" href="mailto:contact@ecoconsultancy.services">Contact EcoEnergy · contact@ecoconsultancy.services</a>
+</section>
+
+<footer><span>EcoEnergy Consultancy · <em>ecoconsultancy.services</em> · photographs from EcoEnergy projects · footage T. Kellner (CC0)</span></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+if (window.gsap && window.ScrollTrigger && window.Lenis &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+
+const lenis = new Lenis({lerp:0.1});
+function raf(t){lenis.raf(t);requestAnimationFrame(raf)}
+requestAnimationFrame(raf);
+gsap.registerPlugin(ScrollTrigger);
+lenis.on('scroll', ScrollTrigger.update);
+
+// hero settles in
+gsap.from('.hwm > *',{y:50,opacity:0,duration:1.2,ease:'power3.out',stagger:0.12,delay:0.2});
+
+// reveals
+document.querySelectorAll('.reveal').forEach(el=>{
+  gsap.to(el,{opacity:1,y:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 86%'}});
+});
+
+// hero video gently scales out as you leave it
+gsap.to('.hero video',{scale:1.12,ease:'none',
+  scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+
+// anchor links respect lenis
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{e.preventDefault();lenis.scrollTo(a.getAttribute('href'),{offset:-40})});
+});
+
+} else {
+  document.querySelectorAll('.reveal').forEach(el=>{el.style.opacity=1;el.style.transform='none'});
+}
+</script>
+</body>
+</html>

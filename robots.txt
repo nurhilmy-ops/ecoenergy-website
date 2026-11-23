@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /careers/
 
 Sitemap: https://www.ecoconsultancy.services/sitemap.xml

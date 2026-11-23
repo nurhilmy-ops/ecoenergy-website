@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EcoEnergy Consultancy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Public+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Scene: a credit analyst in a KL bank tower, mid-afternoon daylight
+     through tinted glass. Light theme; neutrals tinted toward brand
+     navy (hue 245 to 250); one saturated accent: brand gold (hue 84). */
+  :root {
+    --bg: oklch(0.972 0.006 245);
+    --surface: oklch(0.993 0.004 245);
+    --ink: oklch(0.26 0.02 250);
+    --muted: oklch(0.5 0.018 248);
+    --line: oklch(0.87 0.012 245);
+    --accent: oklch(0.58 0.12 84);
+    --accent-bright: oklch(0.73 0.13 84);
+    --panel: oklch(0.28 0.05 252);
+    --ph-stripe: oklch(0.26 0.02 250 / 0.06);
+    --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --sans: 'Public Sans', system-ui, -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: oklch(0.22 0.018 250);
+      --surface: oklch(0.27 0.02 250);
+      --ink: oklch(0.94 0.008 245);
+      --muted: oklch(0.72 0.015 245);
+      --line: oklch(0.36 0.018 248);
+      --accent: oklch(0.78 0.12 84);
+      --accent-bright: oklch(0.82 0.11 84);
+      --panel: oklch(0.3 0.05 252);
+      --ph-stripe: oklch(0.94 0.008 245 / 0.05);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: oklch(0.22 0.018 250);
+    --surface: oklch(0.27 0.02 250);
+    --ink: oklch(0.94 0.008 245);
+    --muted: oklch(0.72 0.015 245);
+    --line: oklch(0.36 0.018 248);
+    --accent: oklch(0.78 0.12 84);
+    --accent-bright: oklch(0.82 0.11 84);
+    --panel: oklch(0.3 0.05 252);
+    --ph-stripe: oklch(0.94 0.008 245 / 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    font: 1rem/1.7 var(--sans);
+  }
+  #rail {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    height: 3px;
+    width: 0;
+    background: var(--accent-bright);
+    z-index: 10;
+  }
+  .wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding-inline: 20px;
+  }
+  section { padding-block: 5rem; }
+
+  .eyebrow {
+    font: 0.72rem/1 var(--mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+  h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0 0 1rem; }
+  h1 { font-size: clamp(2.3rem, 5.5vw, 4rem); line-height: 1.08; font-weight: 700; }
+  h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.2; font-weight: 600; }
+  p { max-width: 62ch; }
+  .muted { color: var(--muted); }
+
+  /* full-bleed hero: fixed dark-scene colors over video, no theme swap */
+  .hero-full {
+    position: relative;
+    min-height: 86svh;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: oklch(0.2 0.03 252);
+  }
+  .hero-full video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(90rem 30rem at 18% 95%, oklch(0.14 0.03 252 / 0.75), transparent 60%),
+      linear-gradient(to top, oklch(0.14 0.03 252 / 0.85), oklch(0.14 0.03 252 / 0.2) 55%, oklch(0.14 0.03 252 / 0.04));
+  }
+  .hero-inner {
+    position: relative;
+    width: 100%;
+    padding-block: 7rem 3.2rem;
+  }
+  .wordmark {
+    font: 400 clamp(1.9rem, 4vw, 2.6rem)/1.1 var(--display);
+    color: oklch(0.97 0.004 245);
+    margin: 0 0 0.4rem;
+  }
+  .wordmark b { font-weight: 400; color: oklch(0.75 0.12 84); }
+  .wordmark small {
+    display: block;
+    font: 400 0.72rem/1 var(--sans);
+    letter-spacing: 0.5em;
+    color: oklch(0.84 0.015 245);
+    margin-top: 0.55rem;
+  }
+  .hero-inner .eyebrow { color: oklch(0.75 0.12 84); margin-top: 2.2rem; }
+  .hero-inner .lede {
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    color: oklch(0.93 0.008 245);
+    text-shadow: 0 1px 22px oklch(0.14 0.03 252 / 0.6);
+    margin: 0;
+  }
+
+  /* media */
+  .media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .tile {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .tile img, .tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .cap {
+    font: 0.78rem/1.6 var(--mono);
+    color: var(--muted);
+    margin-top: 0.7rem;
+  }
+  .cap em { font-style: normal; color: var(--accent); }
+
+  /* gate line */
+  .gates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    margin-top: 2.5rem;
+    padding: 0;
+    list-style: none;
+  }
+  .gate {
+    font: 0.75rem/1 var(--mono);
+    letter-spacing: 0.06em;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .gate.final { border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .gate-arrow { color: var(--muted); font-family: var(--mono); font-size: 0.75rem; }
+
+  /* feature pairs */
+  .feature {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+  .feature + .feature { margin-top: 5rem; }
+  .feature.flip .media { order: -1; }
+  @media (max-width: 760px) {
+    .feature { grid-template-columns: 1fr; }
+    .feature.flip .media { order: 0; }
+  }
+
+  /* gallery band */
+  .band {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+  }
+  @media (max-width: 760px) { .band { grid-template-columns: 1fr; } }
+
+  /* detail rows */
+  .row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.5rem;
+    padding-block: 2rem;
+    border-top: 1px solid var(--line);
+  }
+  .row:last-of-type { border-bottom: 1px solid var(--line); }
+  .row .label { font: 0.78rem/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  .row p { margin: 0; }
+  @media (max-width: 760px) { .row { grid-template-columns: 1fr; gap: 0.5rem; } }
+
+  /* CTA panel keeps its fixed brand palette in both themes */
+  .cta {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 3.5rem clamp(1.5rem, 5vw, 4rem);
+  }
+  .cta h2 { color: oklch(0.975 0.005 245); margin: 0; }
+  .cta a.button {
+    display: inline-block;
+    margin-top: 1.8rem;
+    padding: 0.85rem 1.6rem;
+    background: oklch(0.78 0.12 84);
+    color: oklch(0.25 0.02 250);
+    text-decoration: none;
+    font: 500 0.85rem/1 var(--mono);
+    letter-spacing: 0.08em;
+    border-radius: 4px;
+  }
+  .cta a.button:focus-visible,
+  a:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+
+  /* animated footer */
+  footer {
+    padding-block: 0 3rem;
+    font: 0.75rem/1.8 var(--mono);
+    color: var(--muted);
+  }
+  footer .fline {
+    height: 2px;
+    background: var(--accent);
+    transform-origin: left center;
+    margin-bottom: 2rem;
+  }
+  footer .fcols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 3rem;
+    justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #rail { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="rail"></div>
+
+<!-- 1 · HERO -->
+<header class="hero-full">
+  <video autoplay muted loop playsinline preload="auto"
+    aria-label="Aerial pass over a solar plant">
+    <source src="assets/hero.webm" type="video/webm">
+  </video>
+  <div class="hero-scrim" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <p class="wordmark">Eco<b>Energy</b><small>CONSULTANCY</small></p>
+    <p class="eyebrow">Renewable energy advisory</p>
+    <p class="lede">
+      Seven stage gates separate a raw site from a financed project.
+      EcoEnergy runs all seven, and writes the due diligence lenders
+      read before they commit.
+    </p>
+  </div>
+</header>
+
+<main id="page" class="wrap">
+
+  <!-- 2 · THESIS -->
+  <section data-reveal>
+    <h1>We take renewable energy projects from go/no-go to bankable.</h1>
+    <ul class="gates" aria-label="Project stage gates">
+      <li class="gate">Screening · go/no-go</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Conceptual</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Pre-feasibility</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Feasibility</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Basic design</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Detail design</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate">Ready for construction</li><li class="gate-arrow" aria-hidden="true">→</li>
+      <li class="gate final">Bankable</li>
+    </ul>
+  </section>
+
+  <!-- 3 · FEATURE PAIRS -->
+  <section>
+    <div class="feature" data-reveal>
+      <div>
+        <h2>Build on defensible numbers.</h2>
+        <p class="muted">
+          A screening study answers go or no-go before you pay a land
+          deposit. Feasibility follows, with yield, grid, land, and cost
+          each tied to a named source a reviewer can check.
+        </p>
+      </div>
+      <div class="media">
+        <img src="assets/g1.jpg" alt="High-voltage switchyard under construction at a utility-scale solar site">
+      </div>
+    </div>
+
+    <div class="feature flip" data-reveal>
+      <div>
+        <h2>Diligence a bank can lend against.</h2>
+        <p class="muted">
+          We audit the developer's yields, contracts, and permits, then
+          report what a credit committee can act on. A red-flag review
+          settles "should we look further" before the full diligence spend.
+        </p>
+      </div>
+      <div class="media">
+        <img src="assets/g2.jpg" alt="Engineers in a site control room, the solar array visible beyond the windows">
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · GALLERY BAND -->
+  <section data-reveal>
+    <div class="band">
+      <div>
+        <div class="tile">
+          <img src="assets/g3.jpg" alt="Turbine hall of a mini hydro plant">
+        </div>
+        <p class="cap">Mini <em>hydro</em>, gate by gate.</p>
+      </div>
+      <div>
+        <div class="tile">
+          <video autoplay muted loop playsinline preload="metadata"
+            aria-label="Low pass along solar module rows">
+            <source src="assets/middle.webm" type="video/webm">
+          </video>
+        </div>
+        <p class="cap">Every row, flown and <em>counted</em>.</p>
+      </div>
+      <div>
+        <div class="tile">
+          <img src="assets/g4.jpg" alt="Aerial view of a completed utility-scale solar farm">
+        </div>
+        <p class="cap">Every assumption <em>walked</em> on site.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · NUMBERED ROWS -->
+  <section data-reveal>
+    <div class="row">
+      <div class="label">01 · Approvals</div>
+      <p class="muted">Consent schedules built backward from your financing
+      date. Each authority requirement tracked from first submission to
+      final sign-off.</p>
+    </div>
+    <div class="row">
+      <div class="label">02 · Risk</div>
+      <p class="muted">Every risk priced and assigned to the party best able
+      to carry it. The register, the contracts, and the model all say the
+      same thing.</p>
+    </div>
+    <div class="row">
+      <div class="label">03 · Financial model</div>
+      <p class="muted">Every input traces to a study, a contract, or a
+      quote. A lender's analyst can test any line without calling us first.</p>
+    </div>
+  </section>
+
+  <!-- 6 · CTA -->
+  <section data-reveal>
+    <div class="cta">
+      <h2>Bring us the site, the term sheet, or the doubt.</h2>
+      <a class="button" href="mailto:contact@ecoconsultancy.services">CONTACT ECOENERGY →</a>
+    </div>
+  </section>
+
+  <!-- 7 · ANIMATED FOOTER -->
+  <footer>
+    <div class="fline" aria-hidden="true"></div>
+    <div class="fcols">
+      <span>EcoEnergy Consultancy</span>
+      <span>ecoconsultancy.services</span>
+      <span>Photographs: EcoEnergy project archive ·
+      Aerial footage: T. Kellner (CC0), Wikimedia Commons</span>
+    </div>
+  </footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    document.querySelectorAll('video').forEach(function (v) {
+      v.removeAttribute('autoplay'); v.pause();
+    });
+    return;
+  }
+  if (!window.gsap || !window.ScrollTrigger) return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (window.Lenis) {
+    var lenis = new Lenis();
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+  }
+
+  gsap.to('#rail', {
+    width: '100%',
+    ease: 'none',
+    scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: true }
+  });
+
+  gsap.utils.toArray('[data-reveal]').forEach(function (el) {
+    gsap.from(el, {
+      y: 28, autoAlpha: 0, duration: 0.8, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 85%' }
+    });
+  });
+
+  gsap.from('.gates > li', {
+    y: 16, autoAlpha: 0, stagger: 0.07, duration: 0.45, ease: 'power2.out',
+    scrollTrigger: { trigger: '.gates', start: 'top 88%' }
+  });
+
+  gsap.from('footer .fline', {
+    scaleX: 0, duration: 1.1, ease: 'power2.inOut',
+    scrollTrigger: { trigger: 'footer', start: 'top 92%' }
+  });
+  gsap.from('footer .fcols > span', {
+    y: 14, autoAlpha: 0, stagger: 0.12, duration: 0.5, ease: 'power2.out',
+    scrollTrigger: { trigger: 'footer', start: 'top 92%' }
+  });
+})();
+</script>
+</body>
+</html>

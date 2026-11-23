@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="referrer" content="no-referrer">
+<title>Candidate forms · EcoEnergy Consultancy</title>
+<link rel="icon" href="/careers/static/assets/mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0F2742;--gold:#B8841F;--gold2:#D4A23A;--mist:#C9D4E0;--slate:#5A6B7C;--cream:#F4F1EA;--line:#CFD7E0;--bg:#FBFAF7;--err:#A8322D;--ok:#2F6B3A}
+  *{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:#1c2530;font:16px/1.5 "Source Sans 3",system-ui,-apple-system,Segoe UI,sans-serif}
+  h1,h2,h3{font-family:"Source Serif 4",Georgia,serif;font-weight:600;color:var(--navy);margin:0}
+  a{color:var(--gold)}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 20px 80px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 0 18px;border-bottom:2px solid var(--gold)}
+  .top img{height:44px}
+  .top .who{text-align:right;font-size:14px;color:var(--slate)} .top .who b{color:var(--navy);display:block;font-size:15px}
+  /* gate */
+  .gate{max-width:440px;margin:60px auto;background:#fff;border:1px solid var(--line);padding:32px 30px}
+  .gate img{height:48px;margin-bottom:22px}
+  .gate p{font-size:15px;color:var(--slate);margin:8px 0 18px}
+  label{display:block;font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:4px}
+  input,select,textarea{width:100%;font:inherit;font-size:15.5px;padding:9px 10px;border:1px solid var(--line);background:#fff;border-radius:2px;color:#111}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--gold2);outline-offset:0;border-color:var(--gold)}
+  textarea{min-height:84px;resize:vertical}
+  .btn{font:inherit;font-weight:600;font-size:15px;padding:11px 20px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;border-radius:2px}
+  .btn.ghost{background:#fff;color:var(--navy)} .btn.gold{background:var(--gold);border-color:var(--gold)} .btn[disabled]{opacity:.5;cursor:default}
+  .err{color:var(--err);font-size:14px;margin-top:8px} .errbox{border-left:4px solid var(--err);background:#FBEDEC;padding:12px 14px;margin:16px 0;font-size:14.5px} .errbox li{margin:2px 0}
+  /* stepper */
+  .steps{display:flex;gap:0;margin:22px 0 10px;border:1px solid var(--line);background:#fff}
+  .steps div{flex:1;padding:10px 14px;font-size:14px;border-right:1px solid var(--line);color:var(--slate)} .steps div:last-child{border-right:0}
+  .steps .cur{background:var(--navy);color:#fff} .steps .done{color:var(--ok)} .steps small{display:block;font-size:11.5px;opacity:.85}
+  /* form */
+  .form{background:#fff;border:1px solid var(--line);padding:28px 30px;margin-top:14px}
+  .form h2{font-size:26px} .form .code{color:var(--gold);font-size:14px;font-family:"Source Sans 3",sans-serif;font-weight:600;margin-left:8px}
+  .form .bm{font-style:italic;color:var(--slate);font-size:14px;margin:2px 0 12px}
+  .intro{font-size:14.5px;color:#3a4552;border-left:3px solid var(--gold2);padding:6px 12px;margin:0 0 6px;background:var(--cream)}
+  .sec{margin-top:26px} .sec h3{font-size:13.5px;letter-spacing:.02em;color:#fff;background:var(--navy);padding:6px 10px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px} .grid .wide{grid-column:1/-1}
+  .f{min-width:0} .req label::after{content:" *";color:var(--gold)}
+  .help{font-size:13px;color:var(--slate);margin:-2px 0 6px} .note{font-size:13px;color:var(--slate);font-style:italic;margin-top:12px}
+  .opts label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:15px;color:#1c2530} .opts input{width:auto;margin-top:5px}
+  .opts.row{display:flex;flex-wrap:wrap;gap:4px 22px}
+  table.t{width:100%;border-collapse:collapse;font-size:14px} table.t th{background:#EEF1F5;color:var(--navy);text-align:left;font-size:12.5px;padding:6px 6px;border:1px solid var(--line)}
+  table.t td{border:1px solid var(--line);padding:3px} table.t input,table.t textarea{border:0;padding:6px;font-size:14px} table.t input:focus{outline-offset:-2px}
+  .addrow{margin-top:8px;font-size:14px;background:none;border:1px dashed var(--line);padding:6px 12px;cursor:pointer;color:var(--navy)}
+  .block{border:1px solid var(--line);padding:14px 16px;margin-bottom:12px;background:#FCFCFA} .block .n{font-family:"Source Serif 4",serif;color:var(--gold);font-size:18px;margin-bottom:8px;display:flex;justify-content:space-between}
+  .block .n button,.t .del{background:none;border:0;color:var(--slate);cursor:pointer;font-size:13px}
+  .consent{display:flex;gap:12px;align-items:flex-start;background:var(--cream);padding:14px;border:1px solid var(--line)} .consent input{width:auto;margin-top:5px;transform:scale(1.25)} .consent span{font-size:14.5px}
+  .yn{border-bottom:1px solid var(--line);padding:12px 0} .yn .q{font-size:15px;margin-bottom:6px} .yn .a{display:flex;gap:20px;align-items:center;flex-wrap:wrap} .yn .a label{display:flex;gap:6px;font-weight:400;margin:0} .yn .a input[type=radio]{width:auto} .yn .a input[type=text]{flex:1;min-width:220px}
+  .notice{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;font-size:13.5px;border:1px solid var(--line);padding:16px 18px;background:#fff}
+  .notice h4{margin:0 0 2px;font-size:13.5px;color:var(--navy)} .notice p{margin:0 0 12px} .notice .bm{font-style:italic;color:#333}
+  .invalid{border-color:var(--err)!important;background:#FFF8F7}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
+  .actions .l{display:flex;gap:10px;flex-wrap:wrap}
+  .saved{font-size:13px;color:var(--slate)}
+  .done{background:#fff;border:1px solid var(--line);padding:36px 32px;margin-top:14px} .done h2{font-size:26px;margin-bottom:6px} .done p{font-size:15.5px}
+  .ref{font-family:ui-monospace,Menlo,monospace;background:var(--cream);padding:3px 8px;border:1px solid var(--line)}
+  footer{margin-top:40px;font-size:12.5px;color:var(--slate);border-top:1px solid var(--line);padding-top:12px}
+  @media (max-width:640px){.grid{grid-template-columns:1fr}.form{padding:20px 16px}.notice{grid-template-columns:1fr}.steps{flex-direction:column}.steps div{border-right:0;border-bottom:1px solid var(--line)}}
+  @media print{
+    body{background:#fff;font-size:12px} .wrap{max-width:none;padding:0} .btn,.actions,.steps,.addrow,.del,.n button,footer .np{display:none!important}
+    .form{border:0;padding:0} .sec{break-inside:avoid} .block{break-inside:avoid} input,textarea,select{border:0;border-bottom:1px solid #999;border-radius:0;padding:2px 4px;font-size:12px}
+    .sec h3{-webkit-print-color-adjust:exact;print-color-adjust:exact} .top{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .printonly{display:block!important}
+  }
+  .printonly{display:none;font-size:11px;color:var(--slate);margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<script src="/careers/static/schema.js"></script>
+<script>
+(() => {
+  const S = window.FORM_SCHEMA, $ = (s, r = document) => r.querySelector(s), app = $("#app");
+  const token = location.pathname.split("/").filter(Boolean).pop();
+  const api = (p, o = {}) => fetch("/careers/api/" + p, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...o }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => ({})) }));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const draftKey = (f) => `ee-draft-${token}-${f}`;
+  let invite = null, current = null;
+
+  // ---------------- gate ----------------
+  function gate(msg) {
+    app.innerHTML = `<div class="gate"><img src="/careers/static/assets/logo.png" alt="EcoEnergy Consultancy">
+      <h1 style="font-size:24px">Candidate forms</h1>
+      <p>This page is for invited candidates only. Enter the password you received from EcoEnergy Consultancy. It was sent separately from this link.</p>
+      <form id="g"><label for="pw">Password</label><input id="pw" type="password" autocomplete="off" required autofocus>
+      <div class="err" id="gerr">${esc(msg || "")}</div>
+      <div style="margin-top:16px"><button class="btn" type="submit">Continue</button></div></form>
+      <p style="font-size:13px;margin-top:22px">Five incorrect attempts lock this link for 15 minutes. If your link has expired, contact <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a>.</p></div>`;
+    $("#g").onsubmit = async (e) => {
+      e.preventDefault(); const b = $("#g button"); b.disabled = true;
+      const r = await api("verify", { method: "POST", body: JSON.stringify({ token, password: $("#pw").value }) });
+      if (r.status === 200) return boot();
+      b.disabled = false; $("#gerr").textContent = r.status === 429 ? "Too many attempts. Try again in 15 minutes." : (r.body.error || "Could not verify.");
+    };
+  }
+
+  async function boot() {
+    const r = await api("invite");
+    if (r.status !== 200) return gate();
+    invite = r.body;
+    const next = invite.forms.find((f) => !invite.submitted.includes(f));
+    if (!next) return finished();
+    show(next);
+  }
+
+  // ---------------- shell ----------------
+  function shell(inner) {
+    app.innerHTML = `<div class="top"><img src="/careers/static/assets/logo.png" alt="EcoEnergy Consultancy">
+      <div class="who"><b>${esc(invite.name)}</b>${esc(invite.position)}${invite.ref ? " · " + esc(invite.ref) : ""}</div></div>
+      <div class="steps">${invite.forms.map((f) => `<div class="${f === current ? "cur" : invite.submitted.includes(f) ? "done" : ""}">${S.forms[f].code}<small>${esc(S.forms[f].title)}${invite.submitted.includes(f) ? " — submitted" : ""}</small></div>`).join("")}</div>
+      ${inner}
+      <footer>EcoEnergy Consultancy Sdn Bhd · Level 21 &amp; 22, Menara Merdeka 118, Presint Merdeka 118, 50118 Kuala Lumpur · Personal data on this page is processed under the Personal Data Protection Act 2010; see the notice in HR-REC-02. <span class="np">Session expires after 4 hours of inactivity; your draft is kept in this browser tab only.</span></footer>`;
+  }
+
+  // ---------------- field renderers ----------------
+  const attrs = (f) => `name="${f.id}" id="f-${f.id}" ${f.req ? "required" : ""}`;
+  function field(f, data) {
+    const v = data[f.id];
+    const wrap = (inner, extra = "") => `<div class="f ${f.wide ? "wide" : ""} ${f.req ? "req" : ""} ${extra}" data-field="${f.id}">${inner}</div>`;
+    const lbl = f.label ? `<label for="f-${f.id}">${esc(f.label)}</label>` : "";
+    const help = f.help ? `<div class="help">${esc(f.help)}</div>` : "";
+    switch (f.type) {
+      case "textarea": return wrap(`${lbl}${help}<textarea ${attrs(f)}>${esc(v)}</textarea>`);
+      case "select": return wrap(`${lbl}<select ${attrs(f)}><option value="">— select —</option>${f.options.map((o) => `<option ${v === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`);
+      case "radio": return wrap(`${lbl}${help}<div class="opts row">${f.options.map((o) => `<label><input type="radio" name="${f.id}" value="${esc(o)}" ${v === o ? "checked" : ""}> ${esc(o)}</label>`).join("")}</div>`);
+      case "check": return wrap(`<div class="opts"><label><input type="checkbox" name="${f.id}" ${v ? "checked" : ""}> ${esc(f.label)}</label></div>`);
+      case "consent": return wrap(`<label class="consent"><input type="checkbox" name="${f.id}" ${v ? "checked" : ""}><span>${esc(f.label)}</span></label>`);
+      case "sign": return wrap(`${lbl}<input type="text" ${attrs(f)} value="${esc(v && v.name)}" placeholder="Full name" autocomplete="off"><div class="help">Typing your name here has the effect of a signature. The date, time and network address are recorded by the server when you submit.</div>`);
+      case "yn": return wrap(`<div class="yn"><div class="q">${esc(f.label)}</div><div class="a">
+          <label><input type="radio" name="${f.id}" value="Yes" ${v && v.answer === "Yes" ? "checked" : ""}> Yes</label>
+          <label><input type="radio" name="${f.id}" value="No" ${v && v.answer === "No" ? "checked" : ""}> No</label>
+          <input type="text" name="${f.id}__details" placeholder="Details (if Yes)" value="${esc(v && v.details)}"></div></div>`);
+      case "areas": return wrap(`${lbl}${help}<table class="t"><thead><tr><th style="width:52%">Area</th><th style="width:10%">Experience</th><th>Scale / examples</th></tr></thead><tbody>${
+          f.options.map((o, i) => `<tr><td style="padding:6px">${esc(o)}</td><td style="text-align:center"><input type="checkbox" name="${f.id}__tick__${i}" ${v && v[o] && v[o].tick ? "checked" : ""} style="width:auto"></td><td><input type="text" name="${f.id}__scale__${i}" value="${esc(v && v[o] && v[o].scale)}"></td></tr>`).join("")}</tbody></table>`);
+      case "table": {
+        const rows = Array.isArray(v) && v.length ? v : Array.from({ length: f.min || 1 }, () => ({}));
+        return wrap(`${lbl}${help}<table class="t" data-table="${f.id}" data-max="${f.max || 6}"><thead><tr>${f.columns.map((c) => `<th>${esc(c.label)}${c.req ? " *" : ""}</th>`).join("")}<th style="width:28px"></th></tr></thead><tbody>${rows.map((r) => trow(f, r)).join("")}</tbody></table><button type="button" class="addrow" data-add="${f.id}">+ Add row</button>`);
+      }
+      case "blocks": {
+        const rows = Array.isArray(v) && v.length ? v : [{}];
+        return wrap(`${help}<div data-blocks="${f.id}" data-max="${f.max || 6}">${rows.map((r, i) => block(f, r, i)).join("")}</div><button type="button" class="addrow" data-addblock="${f.id}">+ Add another employer</button>`);
+      }
+      default: return wrap(`${lbl}${help}<input type="${f.type}" ${attrs(f)} value="${esc(v)}" ${f.type === "number" ? 'min="0" step="1"' : ""}>`);
+    }
+  }
+  const trow = (f, r) => `<tr>${f.columns.map((c) => `<td><input type="${c.kind === "date" ? "date" : "text"}" data-col="${c.id}" value="${esc(r[c.id])}" ${c.req ? "data-req=1" : ""}></td>`).join("")}<td><button type="button" class="del" title="Remove">✕</button></td></tr>`;
+  const block = (f, r, i) => `<div class="block"><div class="n"><span>${i + 1}.</span><button type="button" class="delb">Remove</button></div><div class="grid">${f.columns.map((c) => `<div class="f ${c.wide ? "wide" : ""} ${c.req ? "req" : ""}"><label>${esc(c.label)}</label>${c.kind === "textarea" ? `<textarea data-col="${c.id}" ${c.req ? "data-req=1" : ""}>${esc(r[c.id])}</textarea>` : `<input type="text" data-col="${c.id}" value="${esc(r[c.id])}" ${c.req ? "data-req=1" : ""}>`}</div>`).join("")}</div></div>`;
+
+  // ---------------- collect ----------------
+  function collect(form, root) {
+    const d = {};
+    for (const sec of form.sections) for (const f of sec.fields) {
+      const el = root.querySelector(`[data-field="${f.id}"]`); if (!el) continue;
+      switch (f.type) {
+        case "radio": d[f.id] = (el.querySelector("input:checked") || {}).value || ""; break;
+        case "check": case "consent": d[f.id] = !!el.querySelector("input:checked"); break;
+        case "sign": d[f.id] = { name: el.querySelector("input").value.trim() }; break;
+        case "yn": d[f.id] = { answer: (el.querySelector("input[type=radio]:checked") || {}).value || "", details: el.querySelector("input[type=text]").value.trim() }; break;
+        case "areas": d[f.id] = {}; f.options.forEach((o, i) => { d[f.id][o] = { tick: el.querySelector(`[name="${f.id}__tick__${i}"]`).checked, scale: el.querySelector(`[name="${f.id}__scale__${i}"]`).value.trim() }; }); break;
+        case "table": case "blocks":
+          d[f.id] = [...el.querySelectorAll(f.type === "table" ? "tbody tr" : ".block")].map((r) => { const o = {}; r.querySelectorAll("[data-col]").forEach((i) => (o[i.dataset.col] = i.value.trim())); return o; })
+            .filter((o) => Object.values(o).some((x) => x)); break;
+        default: d[f.id] = el.querySelector("input,textarea,select").value.trim();
+      }
+    }
+    return d;
+  }
+
+  // client-side check mirrors server rules for required + min rows
+  function check(form, d, root) {
+    root.querySelectorAll(".invalid").forEach((e) => e.classList.remove("invalid"));
+    const errs = [];
+    const mark = (id, m) => { errs.push(m); const el = root.querySelector(`[data-field="${id}"]`); if (el) (el.querySelector("input,textarea,select,table,.yn,.consent") || el).classList.add("invalid"); };
+    for (const sec of form.sections) for (const f of sec.fields) {
+      if (f.showIf) { const [k, want] = Object.entries(f.showIf)[0]; if (d[k] !== want) continue; }
+      const v = d[f.id];
+      if (!f.req) continue;
+      if (f.type === "table" || f.type === "blocks") {
+        if ((v || []).length < (f.min || 1)) mark(f.id, `${f.label}: at least ${f.min || 1} required`);
+        (v || []).forEach((r, i) => f.columns.filter((c) => c.req).forEach((c) => { if (!r[c.id]) mark(f.id, `${f.label} #${i + 1}: ${c.label} required`); }));
+      } else if (f.type === "yn") { if (!v.answer) mark(f.id, `Answer required: ${f.label.slice(0, 70)}…`); }
+      else if (f.type === "consent") { if (!v) mark(f.id, "Please confirm the declaration / consent"); }
+      else if (f.type === "sign") { if (!v.name) mark(f.id, "Typed signature required"); }
+      else if (!v) mark(f.id, `${f.label} is required`);
+    }
+    return errs;
+  }
+
+  // ---------------- show a form ----------------
+  function show(formId) {
+    current = formId;
+    const form = S.forms[formId];
+    let data = {};
+    try { data = JSON.parse(sessionStorage.getItem(draftKey(formId)) || "{}"); } catch {}
+    for (const sec of form.sections) for (const f of sec.fields) if (f.prefill && !data[f.id]) data[f.id] = invite[f.prefill] || "";
+    // prefill signature name from invite
+    shell(`<form class="form" id="frm" autocomplete="on" novalidate>
+      <h2>${esc(form.title)}<span class="code">${form.code}</span></h2><div class="bm">${esc(form.bm)}</div>
+      <p class="intro">${esc(form.intro)}</p>
+      ${form.notice ? `<div class="sec"><h3>Notice / Notis</h3><div class="notice">${form.notice.map(([a, b, c, e], i) => `<div><h4>${i + 1}. ${esc(a)}</h4><p>${esc(b)}</p></div><div class="bm"><h4>${i + 1}. ${esc(c)}</h4><p>${esc(e)}</p></div>`).join("")}</div></div>` : ""}
+      ${form.sections.map((sec) => `<div class="sec"><h3>${esc(sec.title)}</h3><div class="grid">${sec.fields.map((f) => field(f, data)).join("")}</div>${sec.note ? `<div class="note">${esc(sec.note)}</div>` : ""}</div>`).join("")}
+      <div class="printonly">Draft printed from the EcoEnergy candidate portal. The official record is the PDF generated by the server on submission.</div>
+      <div id="errs"></div>
+      <div class="actions"><div class="l"><button type="button" class="btn ghost" id="print">Print / save draft as PDF</button><span class="saved" id="saved"></span></div>
+        <button type="submit" class="btn gold" id="submit">Submit ${form.code}</button></div>
+    </form>`);
+    const frm = $("#frm");
+    const persist = () => { sessionStorage.setItem(draftKey(formId), JSON.stringify(collect(form, frm))); $("#saved").textContent = "Draft saved in this tab"; setTimeout(() => { const s = $("#saved"); if (s) s.textContent = ""; }, 1500); };
+    frm.addEventListener("input", persist); frm.addEventListener("change", (e) => { persist(); showIf(); });
+    const showIf = () => { for (const sec of form.sections) for (const f of sec.fields) if (f.showIf) { const [k, want] = Object.entries(f.showIf)[0]; const on = collect(form, frm)[k] === want; frm.querySelector(`[data-field="${f.id}"]`).style.display = on ? "" : "none"; } };
+    showIf();
+    frm.addEventListener("click", (e) => {
+      const add = e.target.dataset.add, addb = e.target.dataset.addblock;
+      if (add) { const f = findField(form, add), t = frm.querySelector(`[data-table="${add}"] tbody`); if (t.children.length < +t.parentElement.dataset.max) t.insertAdjacentHTML("beforeend", trow(f, {})); }
+      if (addb) { const f = findField(form, addb), c = frm.querySelector(`[data-blocks="${addb}"]`); if (c.children.length < +c.dataset.max) c.insertAdjacentHTML("beforeend", block(f, {}, c.children.length)); }
+      if (e.target.classList.contains("del")) { const tb = e.target.closest("tbody"); if (tb.children.length > 1) e.target.closest("tr").remove(); persist(); }
+      if (e.target.classList.contains("delb")) { const c = e.target.closest("[data-blocks]"); if (c.children.length > 1) { e.target.closest(".block").remove(); [...c.children].forEach((b, i) => (b.querySelector(".n span").textContent = `${i + 1}.`)); } persist(); }
+    });
+    $("#print").onclick = () => window.print();
+    frm.onsubmit = async (e) => {
+      e.preventDefault();
+      const d = collect(form, frm);
+      const errs = check(form, d, frm);
+      const box = $("#errs");
+      if (errs.length) { box.innerHTML = `<div class="errbox"><b>Please complete the following before submitting:</b><ul>${errs.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`; frm.querySelector(".invalid")?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (!confirm(`Submit ${form.code}? You will not be able to edit it afterwards.`)) return;
+      const b = $("#submit"); b.disabled = true; b.textContent = "Submitting…"; box.innerHTML = "";
+      const r = await api("submit", { method: "POST", body: JSON.stringify({ formId, data: d }) });
+      if (r.status === 200) { sessionStorage.removeItem(draftKey(formId)); invite.submitted.push(formId); return submitted(formId, r.body); }
+      b.disabled = false; b.textContent = `Submit ${form.code}`;
+      if (r.status === 401) return gate("Your session expired. Your draft is kept in this tab; sign in again.");
+      box.innerHTML = `<div class="errbox"><b>${esc(r.body.error || "Submission failed.")}</b>${r.body.errors ? `<ul>${r.body.errors.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</div>`;
+    };
+  }
+  const findField = (form, id) => form.sections.flatMap((s) => s.fields).find((f) => f.id === id);
+
+  function submitted(formId, res) {
+    current = null;
+    const next = invite.forms.find((f) => !invite.submitted.includes(f));
+    shell(`<div class="done"><h2>${esc(S.forms[formId].title)} received</h2>
+      <p>Your submission reference is <span class="ref">${esc(res.ref)}</span>. ${res.mailed ? "A copy has been sent to EcoEnergy's HR mailbox." : "It has been recorded for EcoEnergy's HR team."}</p>
+      <p><a class="btn ghost" href="${esc(res.pdf)}">Download your signed PDF copy</a></p>
+      ${next ? `<p style="margin-top:26px">Next: <b>${S.forms[next].code} ${esc(S.forms[next].title)}</b>.</p><p><button class="btn" id="next">Continue to ${S.forms[next].code}</button></p>` : `<p style="margin-top:26px">That completes the forms in your invitation. Thank you. EcoEnergy will be in touch by email.</p><p><button class="btn ghost" id="out">Sign out</button></p>`}</div>`);
+    if (next) $("#next").onclick = () => show(next);
+    else $("#out").onclick = async () => { await api("logout", { method: "POST" }); gate("Signed out."); };
+  }
+  function finished() {
+    current = null;
+    shell(`<div class="done"><h2>All forms submitted</h2><p>Every form in your invitation has already been submitted. If you need to correct something, email <a href="mailto:contact@ecoconsultancy.services">contact@ecoconsultancy.services</a> quoting your submission reference.</p><p><button class="btn ghost" id="out">Sign out</button></p></div>`);
+    $("#out").onclick = async () => { await api("logout", { method: "POST" }); gate("Signed out."); };
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
