@@ -37,7 +37,7 @@ literature (Bain; Scherer's *Industrial Market Structure and Economic Performanc
 - **Feedback:** the regulator raises the bar each round. Bigger quotas and lots (LSS5 doubled to
   2,000 MW), local-ownership rules (LSS4 100% local; LSS5+ ≥51% local equity), a dedicated floating
   package (LSS5+), tariffs no longer disclosed, and in LSS6 solar+BESS hybrids (2,500 MW with
-  1,250 MW / 6,000 MWh BESS), Bumiputera packages, domestic-module priority and a southern-region
+  1,250 MW / 5,000 MWh BESS), Bumiputera packages, domestic-module priority and a southern-region
   steer. Oversubscription fell from about 13× (LSS3) to about 2× (LSS5+). Structure shifts toward well-capitalised, multi-disciplinary bidders.
 - **Implication:** in each round the advantage moves further from "cheapest panel" toward
   integrated capability (storage, financing, land, policy reading). Those are exactly the

@@ -50,13 +50,14 @@ petra.gov.my/uploads/content-downloads/file_20250904095348.pdf.
 | Item | Finding | Src |
 |---|---|---|
 | Name | Program Solar Berskala Besar Pusingan Keenam (LSS6); "LSS6 – Hibrid" (Pakej 1–2) and "LSS6 – Solar" (Pakej 3) | [P] |
-| Quota | **2,650 MW solar in total + 1,250 MW / 6,000 MWh BESS.** Pakej 1 (open): 2,200 MW + 1,100 MW BESS. Pakej 2 (Bumiputera): 300 MW + 150 MW BESS. Pakej 3 (Bumiputera): 150 MW solar, no BESS | [P] |
+| Quota | **2,650 MW solar in total + 1,250 MW / 5,000 MWh BESS (4 hours).** Pakej 1 (open): 2,200 MW + 1,100 MW BESS. Pakej 2 (Bumiputera): 300 MW + 150 MW BESS. Pakej 3 (Bumiputera): 150 MW solar, no BESS | [P] ST RFP notice, 24 Jul 2026 (SolarQuarter's "6,000 MWh" is wrong) |
 | Dates | Announced by PETRA 16 Jul 2026. ST notice 24 Jul 2026. Hybrid RFP on sale 27 Jul–7 Aug 2026 (RM20,000/document); Solar RFP 17–28 Aug 2026 (RM5,000) | [P] |
 | Bid size and rules | 60–500 MW per bidder (Pakej 1–2); 10–30 MW (Pakej 3). Solar experience required, BESS experience not. Priority for locally manufactured PV modules. Southern Peninsula focus | [P] |
 | COD | Phased, all by 31 Dec 2029 | [P] |
-| PPA tenor | "Up to 25 years" | [S] |
+| PPA tenor | 21 years ("structured 21-year PPA with TNB", an industry CEO quoted by The Star, 15 Aug 2026). "Up to 25 years" is a general LSS description, not an LSS6 term | [S] |
+| Other terms reported | Delay LADs RM1,000/MW/day capped at 180 days (LSS5+: RM5,000); shareholding moratorium to the 3rd year after COD; minimum 20% local content (The Star, 15 Aug 2026, attributed to industry players) | [S] |
 | Bid deadline, evaluation formula, equity rules, bid security | Not in public notices; read the RFP | [U] |
-| Status (Oct 2026) | No shortlist or award published; a broker (Maybank IB) expects the shortlist in 1H2027 | [S] |
+| Status (Nov 2026) | Bidding "concluded in late October" 2026; winners may be named "as early as January" 2027 (The Edge Malaysia Weekly, 9–15 Nov 2026). No ST notice of closing date, bid count or shortlist | [S] |
 
 Sources: petra.gov.my/uploads/content-downloads/file_20260716105952.pdf; ST RFP notice (Jul 2026).
 

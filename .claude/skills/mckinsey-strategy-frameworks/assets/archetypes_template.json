@@ -1,7 +1,7 @@
 {
-  "_note": "ILLUSTRATIVE TEMPLATE - every number is an assumption to replace. LSS6-style hybrid: 0.5 MW BESS per MWac solar, 4.8 h (1,250 MW / 6,000 MWh). Tax/GITA settings must be confirmed with solar-accountant; GITA is off by default.",
+  "_note": "ILLUSTRATIVE TEMPLATE - every number is an assumption to replace. LSS6-style hybrid: 0.5 MW BESS per MWac solar, 4 h (1,250 MW / 5,000 MWh per the ST RFP notice of 24 Jul 2026). Tax/GITA settings must be confirmed with solar-accountant; GITA is off by default.",
   "common": {
-    "solar_rm_per_mwac": 2200000, "bess_ratio": 0.5, "bess_hours": 4.8, "bess_rm_per_kwh": 540,
+    "solar_rm_per_mwac": 2200000, "bess_ratio": 0.5, "bess_hours": 4.0, "bess_rm_per_kwh": 540,
     "yield_kwh_per_kwac": 1800, "deg": 0.0045, "bess_loss": 0.05,
     "om_fixed_rm_per_mwac": 28000, "om_bess_pct": 0.012, "insurance_pct": 0.0035, "land_rm_per_mwac": 15000,
     "escalation": 0.025, "aug_years": [9, 17], "aug_pct_of_bess": 0.15,

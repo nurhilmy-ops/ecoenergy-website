@@ -30,7 +30,7 @@ from $50 to $36) is arithmetically correct and illustrative.
 - **Calibration problem:** since LSS5, the Energy Commission has not disclosed winning tariffs.
   Old results (LSS3 lowest 17.777 sen/kWh; LSS4 winners 18.50–24.81 sen in Pakej 1 and 17.68–19.70
   sen in Pakej 2) are solar-only and pre-BESS, so they are not comparable with a solar+BESS hybrid
-  bid (LSS6 Pakej 1–2 BESS is 1,250 MW / 6,000 MWh, about 4.8 hours). Build competitor costs
+  bid (LSS6 Pakej 1–2 BESS is 1,250 MW / 5,000 MWh, i.e. 4 hours, per the Energy Commission's RFP notice). Build competitor costs
   **bottom-up by archetype** instead:
 
 | Archetype | Typical cost-curve position (hypothesis to test) | Main drivers |
