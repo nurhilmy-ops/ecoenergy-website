@@ -739,6 +739,31 @@ def test_older_result_json_without_new_dem_fields_still_renders(flow, settings):
     assert "DEM notice" not in page.text and "coordinates were sent" not in page.text
 
 
+def test_result_page_opens_at_a_glance_with_the_location_snapshot(flow, settings):
+    """The fake result predates the snapshot fields (like an older result.json): the nearest
+    towns are recomputed from the centroid and credited; stored towns are used as written."""
+    flow.login("snap@example.com")
+    job_id = flow.upload_job()
+    jobs.run_once(settings)
+    html = flow.client.get(f"/reports/{job_id}").text
+    glance = html.split('id="glance-title"', 1)[1].split("</section>", 1)[0]
+    assert "<dt>Centroid</dt><dd>2.90500° N, 101.50500° E</dd>" in glance
+    assert "<dt>Project size</dt><dd>1 site · 123.40 ha (1.23 km²)</dd>" in glance
+    assert "of Klang, Selangor" in glance and "straight-line, not road distance" in glance
+    assert glance.index("Nearest major town") < glance.index('class="tiles"')
+    assert "<dt>Towns</dt><dd>Reference towns: GeoNames" in html
+
+    path = settings.jobs_dir / job_id / "result.json"
+    result = json.loads(path.read_text(encoding="utf-8"))
+    result["location"]["nearest_towns"] = [{"name": "Klang", "state": "Selangor", "distance_km": 12.0,
+                                            "bearing": "<b>E</b>"}]
+    result["totals"]["extent_km"] = {"ew": 1.5, "ns": 0.9}
+    path.write_text(json.dumps(result), encoding="utf-8")
+    html = flow.client.get(f"/reports/{job_id}").text
+    assert "≈ 12 km &lt;b&gt;E&lt;/b&gt; of Klang, Selangor; straight-line" in html   # escaped
+    assert "overall extent ≈ 1.5 km E–W × 0.9 km N–S" in html
+
+
 # ----------------------------------------------------------------------------
 # Owner documentation stays in step with Settings
 # ----------------------------------------------------------------------------

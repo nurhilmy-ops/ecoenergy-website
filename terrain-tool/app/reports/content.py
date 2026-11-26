@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Union
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from .. import places
 from ..config import Settings
 
 BRAND = "EcoEnergy Consultancy"
@@ -273,9 +274,7 @@ def _datum(dem: dict) -> str:
 
 
 def _coord(lat, lon) -> str:
-    if not (_ok(lat) and _ok(lon)):
-        return DASH
-    return f"{abs(lat):.5f}° {'N' if lat >= 0 else 'S'}, {abs(lon):.5f}° {'E' if lon >= 0 else 'W'}"
+    return places.centroid_text(lon, lat) if _ok(lat) and _ok(lon) else DASH
 
 
 # ---------------------------------------------------------------------------
@@ -381,9 +380,14 @@ def _at_a_glance(result: dict) -> list[Block]:
     if res:
         dem_parts.append(", ".join(res))
 
+    # Key location snapshot first: where the site is, how big it is, and how far it lies from
+    # the nearest major town, before any terrain figure.
+    snap = places.snapshot(result)
     rows = (
         ("Location", _location_text(loc)),
-        ("Total site area", num(totals.get("total_area_ha"), 2, " ha")),
+        ("Centroid", snap["centroid"]),
+        ("Project size", snap["size"]),
+        ("Nearest major town", snap["nearest"]),
         ("Features analysed", " · ".join(features)),
         ("Elevation range", elev),
         ("Overall KPKT split", kpkt_text),
@@ -592,6 +596,10 @@ def _sources(result: dict) -> list[Block]:
         # boundaries:"; use it as the item title instead of repeating it.
         prefix = next((p for p in BOUNDARY_LABELS if boundaries.startswith(p)), BOUNDARY_LABELS[-1])
         items.append(ListItem(boundaries.removeprefix(prefix).strip(), title=prefix))
+    towns = clean(places.town_credit(result), 300)   # also for older files (towns recomputed)
+    if towns:
+        title, _, body = towns.partition(": ")
+        items.append(ListItem(body, title=f"{title}:") if body else ListItem(towns))
     if loc.get("utm_epsg"):
         items.append(ListItem("areas and lengths are geodesic on the WGS 84 ellipsoid; slopes are "
                               "computed on the elevation model's geographic grid; maps are drawn on a "

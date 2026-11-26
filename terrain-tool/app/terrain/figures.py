@@ -24,6 +24,7 @@ from matplotlib import patheffects
 from pyproj import Transformer
 from shapely.geometry.polygon import orient
 
+from .. import places
 from .analysis import SLOPE_BINS, Analysis
 
 # --- brand ---
@@ -283,8 +284,10 @@ def draw_site_layout(an: Analysis, path: Path, stamp: str) -> None:
         bits.append(f"{len(an.routes)} route{'s' if len(an.routes) != 1 else ''}, {km:,.2f} km")
     if an.points:
         bits.append(f"{len(an.points)} point{'s' if len(an.points) != 1 else ''}")
+    # second line: the key location snapshot (centroid, nearest town), as in the report
     _titles(fig, ax, "Site layout (as supplied in the KML)",
-            " · ".join(bits) + f" · grid: {an.utm_epsg} (UTM), km from frame corner")
+            " · ".join(bits) + f" · grid: {an.utm_epsg} (UTM), km from frame corner\n"
+            + places.map_line(*an.centroid))
     _footer(fig, stamp)
     _save(fig, path)
 
