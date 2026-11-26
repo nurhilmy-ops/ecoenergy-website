@@ -1,0 +1,55 @@
+{
+  "title": "ILLUSTRATIVE TEMPLATE - bid/no-bid register (replace every score, gate and evidence line)",
+  "mode": "bid",
+  "size_label": "estimated fee (RM m)",
+  "axes": {
+    "attractiveness": {
+      "factors": [
+        {"name": "Fee value & margin", "weight": 0.25},
+        {"name": "Strategic fit (horizon, reference value)", "weight": 0.20},
+        {"name": "Client payment & contract risk (5 = low)", "weight": 0.15},
+        {"name": "Evaluation transparency (published criteria/weights)", "weight": 0.15},
+        {"name": "Follow-on potential", "weight": 0.15},
+        {"name": "Bid cost vs value (5 = cheap to bid)", "weight": 0.10}
+      ]
+    },
+    "strength": {
+      "factors": [
+        {"name": "Mandatory-requirement & track-record match", "weight": 0.25},
+        {"name": "Named key personnel available", "weight": 0.20},
+        {"name": "Differentiators / win themes", "weight": 0.20},
+        {"name": "Client insight before the RFP (legitimate)", "weight": 0.20},
+        {"name": "Price competitiveness", "weight": 0.15}
+      ]
+    }
+  },
+  "units": [
+    {
+      "name": "State agency - RE feasibility consultancy",
+      "size": 0.6,
+      "gates": [
+        {"name": "MOF consultant registration in the required field code", "pass": true, "basis": "ILLUSTRATIVE: certificate no./expiry"},
+        {"name": "BEM-registered Engineering Consultancy Practice for PE submissions", "pass": true, "basis": "ILLUSTRATIVE"},
+        {"name": "No conflict of interest (not advising a competing bidder/evaluator)", "pass": true, "basis": "ILLUSTRATIVE: conflicts register checked"},
+        {"name": "Bumiputera status (only if the RFP requires it)", "pass": true, "basis": "ILLUSTRATIVE: not required"}
+      ],
+      "scores": {
+        "attractiveness": {"Fee value & margin": 3, "Strategic fit (horizon, reference value)": 4, "Client payment & contract risk (5 = low)": 4, "Evaluation transparency (published criteria/weights)": 4, "Follow-on potential": 4, "Bid cost vs value (5 = cheap to bid)": 3},
+        "strength": {"Mandatory-requirement & track-record match": 3, "Named key personnel available": 4, "Differentiators / win themes": 3, "Client insight before the RFP (legitimate)": 2, "Price competitiveness": 3}
+      },
+      "evidence": {}
+    },
+    {
+      "name": "LSS6 winner - lender's technical advisor",
+      "size": 0.9,
+      "gates": [
+        {"name": "No conflict of interest (did not advise the sponsor's bid)", "pass": false, "basis": "ILLUSTRATIVE: we prepared this sponsor's bid feasibility - lender TA would not be independent"}
+      ],
+      "scores": {
+        "attractiveness": {"Fee value & margin": 4, "Strategic fit (horizon, reference value)": 5, "Client payment & contract risk (5 = low)": 4, "Evaluation transparency (published criteria/weights)": 3, "Follow-on potential": 4, "Bid cost vs value (5 = cheap to bid)": 3},
+        "strength": {"Mandatory-requirement & track-record match": 3, "Named key personnel available": 3, "Differentiators / win themes": 4, "Client insight before the RFP (legitimate)": 3, "Price competitiveness": 3}
+      },
+      "evidence": {}
+    }
+  ]
+}

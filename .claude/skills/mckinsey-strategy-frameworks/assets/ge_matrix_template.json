@@ -1,0 +1,74 @@
+{
+  "title": "ILLUSTRATIVE TEMPLATE - EcoEnergy service-line portfolio (replace every score and evidence line)",
+  "mode": "ge",
+  "size_label": "trailing-12-month fee revenue (RM m) from the ledger",
+  "axes": {
+    "attractiveness": {
+      "factors": [
+        {"name": "Market growth (MW pipeline per year)", "weight": 0.25},
+        {"name": "Fee margin achievable", "weight": 0.20},
+        {"name": "Policy visibility (quota, rules, dates)", "weight": 0.20},
+        {"name": "Competitive intensity (5 = few rivals)", "weight": 0.15},
+        {"name": "Client ability to pay / payment risk", "weight": 0.10},
+        {"name": "Regulatory or disruption risk (5 = low)", "weight": 0.10}
+      ]
+    },
+    "strength": {
+      "factors": [
+        {"name": "Track record / references", "weight": 0.30},
+        {"name": "Team capability (PE/Ir., modellers, counsel access)", "weight": 0.25},
+        {"name": "Credibility with lenders (independence)", "weight": 0.20},
+        {"name": "Relationships / channel to clients", "weight": 0.15},
+        {"name": "Cost to serve vs rivals", "weight": 0.10}
+      ]
+    }
+  },
+  "units": [
+    {
+      "name": "LSS bidder feasibility & tariff modelling",
+      "size": 1.2,
+      "trajectory": [0.3, 0.0],
+      "scores": {
+        "attractiveness": {"Market growth (MW pipeline per year)": 4, "Fee margin achievable": 3, "Policy visibility (quota, rules, dates)": 4, "Competitive intensity (5 = few rivals)": 2, "Client ability to pay / payment risk": 4, "Regulatory or disruption risk (5 = low)": 3},
+        "strength": {"Track record / references": 3, "Team capability (PE/Ir., modellers, counsel access)": 4, "Credibility with lenders (independence)": 4, "Relationships / channel to clients": 3, "Cost to serve vs rivals": 3}
+      },
+      "evidence": {
+        "attractiveness": {"Market growth (MW pipeline per year)": "ILLUSTRATIVE: LSS6 offers 2,650 MW solar incl. 2,500 MW hybrid with 1,250 MW BESS (PETRA, 16 Jul 2026)", "Policy visibility (quota, rules, dates)": "ILLUSTRATIVE: RFP packages and COD 31 Dec 2029 published"},
+        "strength": {"Track record / references": "ILLUSTRATIVE: count of LSS feasibility mandates in the quotation register"}
+      }
+    },
+    {
+      "name": "CRESS structuring & bankability",
+      "size": 0.8,
+      "trajectory": [0.4, 0.2],
+      "scores": {
+        "attractiveness": {"Market growth (MW pipeline per year)": 5, "Fee margin achievable": 4, "Policy visibility (quota, rules, dates)": 4, "Competitive intensity (5 = few rivals)": 4, "Client ability to pay / payment risk": 3, "Regulatory or disruption risk (5 = low)": 3},
+        "strength": {"Track record / references": 3, "Team capability (PE/Ir., modellers, counsel access)": 4, "Credibility with lenders (independence)": 4, "Relationships / channel to clients": 2, "Cost to serve vs rivals": 3}
+      },
+      "evidence": {
+        "attractiveness": {"Regulatory or disruption risk (5 = low)": "ILLUSTRATIVE: SAC fixed to end of RP4 (Dec 2027); reset risk after"},
+        "strength": {"Track record / references": "ILLUSTRATIVE: SIA defended to an international financier's E&S panel (website case)"}
+      }
+    },
+    {
+      "name": "SELCO / Solar ATAP C&I advisory",
+      "size": 0.5,
+      "trajectory": [0.0, -0.3],
+      "scores": {
+        "attractiveness": {"Market growth (MW pipeline per year)": 4, "Fee margin achievable": 2, "Policy visibility (quota, rules, dates)": 4, "Competitive intensity (5 = few rivals)": 1, "Client ability to pay / payment risk": 3, "Regulatory or disruption risk (5 = low)": 3},
+        "strength": {"Track record / references": 3, "Team capability (PE/Ir., modellers, counsel access)": 3, "Credibility with lenders (independence)": 3, "Relationships / channel to clients": 2, "Cost to serve vs rivals": 2}
+      },
+      "evidence": {}
+    },
+    {
+      "name": "Waste-to-energy feasibility",
+      "size": 0.2,
+      "trajectory": [0.2, 0.3],
+      "scores": {
+        "attractiveness": {"Market growth (MW pipeline per year)": 2, "Fee margin achievable": 4, "Policy visibility (quota, rules, dates)": 2, "Competitive intensity (5 = few rivals)": 4, "Client ability to pay / payment risk": 2, "Regulatory or disruption risk (5 = low)": 2},
+        "strength": {"Track record / references": 2, "Team capability (PE/Ir., modellers, counsel access)": 2, "Credibility with lenders (independence)": 3, "Relationships / channel to clients": 2, "Cost to serve vs rivals": 3}
+      },
+      "evidence": {}
+    }
+  ]
+}
