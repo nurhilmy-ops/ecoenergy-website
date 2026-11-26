@@ -37,9 +37,10 @@ DEM_KEYS = {"provider", "name", "model_type", "epoch", "vertical_datum", "nomina
             "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution",
             # added to schema_version 1 later (templates read them with .get())
             "disclaimer", "sends_coordinates_to_third_party"}
-LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg", "boundary_attribution"}
+LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg", "boundary_attribution",
+                 "nearest_towns", "town_attribution"}
 TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km",
-               "steeper_than_grade_pct"}
+               "steeper_than_grade_pct", "extent_km"}
 SITE_KEYS = {"name", "area_ha", "perimeter_m", "centroid", "elev_min_m", "elev_max_m", "elev_mean_m",
              "relief_m", "slope_mean_deg", "slope_p90_deg", "slope_max_deg", "kpkt_pct",
              "slope_bins_pct", "steeper_than_grade_pct", "cells"}

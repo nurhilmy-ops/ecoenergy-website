@@ -34,7 +34,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import jobs
+from . import jobs, places
 from .admin import router as admin_router
 from .config import APP_ROOT, Settings, get_settings
 from .db import db, init_db, now_iso, parse_iso, tx
@@ -268,6 +268,10 @@ def summarise_result(result: dict) -> dict:
 
     mins, maxs, slopes = values("elev_min_m"), values("elev_max_m"), values("slope_max_deg")
     return {
+        # key location snapshot; location.nearest_towns / town_attribution post-date
+        # schema_version 1, and places recomputes / credits them for older files
+        "snapshot": places.snapshot(result),
+        "town_attribution": places.town_credit(result),
         "total_area_ha": (result.get("totals") or {}).get("total_area_ha"),
         "elev_min": min(mins) if mins else None,
         "elev_max": max(maxs) if maxs else None,

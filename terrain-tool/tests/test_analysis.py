@@ -31,9 +31,9 @@ DEM_KEYS = {"provider", "name", "model_type", "epoch", "vertical_datum", "nomina
             "grid_spacing_m", "cells_analysed", "nodata_pct", "attribution", "disclaimer",
             "sends_coordinates_to_third_party"}
 LOCATION_KEYS = {"centroid_lon", "centroid_lat", "state", "district", "utm_epsg",
-                 "boundary_attribution"}
+                 "boundary_attribution", "nearest_towns", "town_attribution"}
 TOTALS_KEYS = {"polygon_count", "line_count", "point_count", "total_area_ha", "total_line_km",
-               "steeper_than_grade_pct"}
+               "steeper_than_grade_pct", "extent_km"}
 SITE_KEYS = {"name", "area_ha", "perimeter_m", "centroid", "elev_min_m", "elev_max_m",
              "elev_mean_m", "relief_m", "slope_mean_deg", "slope_p90_deg", "slope_max_deg",
              "kpkt_pct", "slope_bins_pct", "steeper_than_grade_pct", "cells"}
@@ -262,7 +262,9 @@ def test_outputs_written_and_schema_matches_contract(tmp_path):
     assert result["totals"] == {"polygon_count": 1, "line_count": 1, "point_count": 1,
                                 "total_area_ha": result["sites"][0]["area_ha"],
                                 "total_line_km": result["routes"][0]["length_km"],
-                                "steeper_than_grade_pct": result["sites"][0]["steeper_than_grade_pct"]}
+                                "steeper_than_grade_pct": result["sites"][0]["steeper_than_grade_pct"],
+                                "extent_km": result["totals"]["extent_km"]}
+    assert set(result["totals"]["extent_km"]) == {"ew", "ns"}
     assert result["location"]["utm_epsg"] == "EPSG:32647"
     assert result["location"]["state"] == "Selangor"
     assert result["dem"]["cells_analysed"] > 0 and result["dem"]["nodata_pct"] == 0.0
@@ -975,6 +977,57 @@ def test_figure_footer_fits_on_the_narrowest_figure(family):
         box = text.get_window_extent(fig.canvas.get_renderer())
         assert box.x1 < fig.bbox.width
         assert text.get_fontsize() >= figures.FOOTER_FONT_PT * 0.85        # still readable
+
+
+def test_key_location_snapshot_opens_summary_md(tmp_path):
+    """Every land description opens with the snapshot: centroid, size and extent, and the
+    straight-line distance and bearing from the nearest major town."""
+    from app import places
+
+    body = polygon_pm("Lot", rect(LON, LAT, 600, 300)) + point_pm("PMU", (LON + 0.01, LAT))
+    result, out = screen(tmp_path, body, plane_fetcher(2.0))
+    loc, tot = result["location"], result["totals"]
+    assert loc["nearest_towns"] == places.nearest_towns(loc["centroid_lon"], loc["centroid_lat"])
+    assert [t["name"] for t in loc["nearest_towns"]] == ["Bentong", "Kuala Lumpur"]
+    assert loc["town_attribution"] == places.TOWN_ATTRIBUTION
+    # bounding box of every feature: the lot's west edge to the point 0.01° (1.11 km) east
+    assert tot["extent_km"]["ew"] == pytest.approx(1.11, abs=0.02)
+    assert tot["extent_km"]["ns"] == pytest.approx(0.30, abs=0.02)
+
+    md = (out / "summary.md").read_text(encoding="utf-8")
+    head = md.split("## ", 2)[1]
+    assert head.startswith("Key location snapshot")
+    snap = places.snapshot(result)
+    for line in (f"centroid {snap['centroid']}", f"**Project size:** {snap['size']}",
+                 f"**Nearest major town:** {snap['nearest']}", "Bentong, Pahang"):
+        assert line in head
+    assert "GeoNames" in md and "not road distances" in md
+
+    old = json.loads(json.dumps(result))
+    old["location"].pop("nearest_towns"), old["location"].pop("town_attribution")
+    old["totals"].pop("extent_km")
+    old_md = render_summary_md(old)                              # older result.json still renders
+    assert "Bentong, Pahang" in old_md and "GeoNames" in old_md
+
+
+def test_site_layout_subtitle_fits_with_the_longest_location_line():
+    """Figure 1 adds the centroid and nearest town on its own subtitle line; the longest
+    possible line still fits inside the narrowest (7.5 in) figure."""
+    from app import places
+    from app.terrain import figures
+
+    worst_town = max(places.TOWNS, key=lambda t: len(f"{t[0]}, {t[1]}"))
+    phrase = places.town_phrase({"name": worst_town[0], "state": worst_town[1],
+                                 "distance_km": 888.8, "bearing": "WNW"})
+    line = f"Centroid {places.centroid_text(-179.99999, -89.99999)} · {phrase} (straight line)"
+    fig = figures._new_figure((7.5, 5.9))
+    ax = fig.add_subplot()
+    figures._titles(fig, ax, "Site layout (as supplied in the KML)",
+                    "12 sites, 1,234.5 ha · 3 routes, 12.34 km · 5 points · grid: EPSG:32647 "
+                    "(UTM), km from frame corner\n" + line)
+    fig.canvas.draw()
+    box = ax.title.axes._left_title.get_window_extent(fig.canvas.get_renderer())
+    assert box.x1 < fig.bbox.width
 
 
 def test_summary_md_prints_dem_disclaimer(tmp_path):

@@ -29,7 +29,12 @@
     "state": "Selangor",
     "district": "Kuala Langat",
     "utm_epsg": "EPSG:32647",
-    "boundary_attribution": "State and district boundaries: Department of Statistics Malaysia (DOSM) open data (github.com/dosm-malaysia/data-open), used under the DOSM Open Data Licence. No endorsement by DOSM is implied."
+    "boundary_attribution": "State and district boundaries: Department of Statistics Malaysia (DOSM) open data (github.com/dosm-malaysia/data-open), used under the DOSM Open Data Licence. No endorsement by DOSM is implied.",
+    "nearest_towns": [
+      {"name": "Klang", "state": "Selangor", "distance_km": 19.3, "bearing": "S"},
+      {"name": "Shah Alam", "state": "Selangor", "distance_km": 26.0, "bearing": "SSW"}
+    ],
+    "town_attribution": "Reference towns: GeoNames (geonames.org), licensed under CC BY 4.0; distances are straight-line (geodesic), not road distances."
   },
   "totals": {
     "polygon_count": 2,
@@ -37,6 +42,7 @@
     "point_count": 1,
     "total_area_ha": 60.97,
     "total_line_km": 2.84,
+    "extent_km": {"ew": 4.12, "ns": 1.38},
     "steeper_than_grade_pct": {
       "10": 24.6,
       "15": 17.0

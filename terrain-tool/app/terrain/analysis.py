@@ -19,6 +19,7 @@ from shapely.geometry import LineString, Polygon
 from shapely.geometry.polygon import orient
 
 from ..config import Settings
+from ..places import extent_km
 from .dem import NO_COVERAGE_MESSAGE, SENDS_COORDINATES, DemGrid
 from .kml import Feature, ScreeningError, SiteInput, feature_geometry
 
@@ -534,6 +535,8 @@ def result_sections(an: Analysis) -> dict:
             # Area of the union of the site polygons: overlapping parts count once.
             "total_area_ha": num(an.total_area_ha, 2),
             "total_line_km": num(sum(r.length_m for r in an.routes) / 1000.0, 2),
+            # Overall E-W x N-S extent of every feature, for the key location snapshot.
+            "extent_km": extent_km(an.site.bbox, an.centroid),
             # % of that area steeper than a 10% / 15% grade (cells inside any site, once each).
             "steeper_than_grade_pct": _pct_dict(an.grade_overall),
         },

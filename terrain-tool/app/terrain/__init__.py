@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from .. import places
 from ..config import Settings
 from . import analysis, boundaries, figures, flags
 from .dem import DemGrid, fetch_dem
@@ -81,7 +82,9 @@ def run_screening(path: Path, out_dir: Path, settings: Settings, meta: dict, *,
     sections = analysis.result_sections(an)
     state, district = boundaries.lookup(*an.centroid)
     sections["location"].update(state=state, district=district,
-                                boundary_attribution=boundaries.BOUNDARY_ATTRIBUTION)
+                                boundary_attribution=boundaries.BOUNDARY_ATTRIBUTION,
+                                nearest_towns=places.nearest_towns(*an.centroid),
+                                town_attribution=places.TOWN_ATTRIBUTION)
     result.update(sections)
     result["flags"] = flags.build_flags(result)
     result["followups"] = flags.build_followups(result)
@@ -124,6 +127,17 @@ def render_summary_md(result: dict) -> str:
     lines = ["# Terrain screening summary", ""]
     if m.get("site_label"):
         lines += [f"**Site:** {_md(m['site_label'])}", ""]
+    # Every land description opens with where the site is, before any terrain figures.
+    snap = places.snapshot(result)
+    place = ", ".join(_md(x) for x in (loc.get("district"), loc.get("state")) if x) or "n/a"
+    lines += [
+        "## Key location snapshot",
+        "",
+        f"- **Where:** {place} · centroid {snap['centroid']}",
+        f"- **Project size:** {_md(snap['size'])}",
+        f"- **Nearest major town:** {_md(snap['nearest'])}",
+        "",
+    ]
     lines += [
         f"- Report: {_md(m['report_id'] or 'n/a')} · generated {_md(m['generated_at'])}",
         f"- Input file: {_md(m['input_filename'])} (sha256 `{m['input_sha256'][:16]}…`)",
@@ -194,5 +208,8 @@ def render_summary_md(result: dict) -> str:
     lines += ["---", "", f"{_md(d['attribution'])}  "]
     if d.get("disclaimer"):
         lines.append(f"{_md(d['disclaimer'])}  ")
-    lines += [f"{_md(loc['boundary_attribution'])}", ""]
+    lines += [f"{_md(loc['boundary_attribution'])}  "]
+    if places.town_credit(result):
+        lines.append(_md(places.town_credit(result)))
+    lines.append("")
     return "\n".join(lines)

@@ -21,6 +21,7 @@ from pypdf import PdfReader  # noqa: E402
 
 from app.reports import DOCX_NAME, PDF_NAME, build_reports  # noqa: E402
 from app.reports import content as c  # noqa: E402
+from app.reports import pdf as pdf_renderer  # noqa: E402
 
 CONSULT = "https://www.ecoconsultancy.services/consult/"
 H1_ORDER = ["About this report", "At a glance", "Findings", "Site statistics", "Figures",
@@ -201,7 +202,8 @@ def test_both_formats_render_the_same_blocks(sample):
         elif isinstance(block, c.KeyValueTable):
             texts = [v for row in block.rows for v in row]
         for t in texts:
-            assert t in pdf, t
+            # the PDF draws characters outside WinAnsi with its stand-ins ("≈" as "~")
+            assert "".join(pdf_renderer._drawable(ch) for ch in t) in pdf, t
             assert t in docx, t
 
 
@@ -440,3 +442,55 @@ def test_disclaimer_rules_out_geological_report_and_jmg_endorsement(sample):
         assert "not prepared or reviewed by a registered geologist" in flat
         assert "has not been reviewed or endorsed by the Department of Mineral and Geoscience Malaysia (JMG)" in flat
         assert "Licensed Land Surveyors Act 1958, Act 458) is required for design" in flat
+
+
+# ---------------------------------------------------------------------------
+# key location snapshot
+# ---------------------------------------------------------------------------
+def _glance_rows(content) -> list[tuple[str, str]]:
+    blocks = list(content.blocks)
+    at = next(i for i, b in enumerate(blocks) if isinstance(b, c.Heading) and b.text == "At a glance")
+    return list(next(b for b in blocks[at:] if isinstance(b, c.KeyValueTable)).rows)
+
+
+def test_at_a_glance_opens_with_the_key_location_snapshot(sample, tmp_path):
+    from app import places
+
+    write_placeholder_figures(tmp_path)
+    rows = _glance_rows(c.build_content(load_sample(), tmp_path, report_settings(tmp_path)))
+    assert [k for k, _ in rows[:5]] == ["Location", "Centroid", "Project size",
+                                        "Nearest major town", "Features analysed"]
+    values = dict(rows)
+    assert values["Centroid"] == "2.86263° N, 101.45721° E"
+    assert values["Project size"] == ("2 sites · 60.97 ha (0.61 km²) · overall extent ≈ 4.1 km E–W "
+                                      "× 1.4 km N–S")
+    assert values["Nearest major town"] == ("≈ 19 km S of Klang, Selangor (next: ≈ 26 km SSW of "
+                                            "Shah Alam, Selangor); straight-line, not road distance")
+    assert "Total site area" not in values               # folded into Project size
+    # the PDF's built-in fonts have no "≈" (WinAnsi), so pdf.py draws it as "~"
+    for text, approx in ((sample["pdf_text"], "~"), (docx_text(sample["docx"]), "≈")):
+        assert f"Nearest major town {approx} 19 km S of Klang, Selangor" in text
+        assert "Reference towns: GeoNames (geonames.org), licensed under CC BY 4.0" in text
+    assert values["Nearest major town"] == places.snapshot(load_sample())["nearest"]
+
+
+def test_snapshot_from_an_older_result_json(tmp_path):
+    """result.json written before the snapshot: towns are recomputed from the centroid (with
+    the GeoNames credit), the extent is left out, and nothing else changes."""
+    result = load_sample()
+    result["location"].pop("nearest_towns"), result["location"].pop("town_attribution")
+    result["totals"].pop("extent_km")
+    write_placeholder_figures(tmp_path)
+    content = c.build_content(result, tmp_path, report_settings(tmp_path))
+    values = dict(_glance_rows(content))
+    assert values["Project size"] == "2 sites · 60.97 ha (0.61 km²)"
+    assert values["Nearest major town"].startswith("≈ 19 km S of Klang, Selangor")
+    items = [i for b in content.blocks if isinstance(b, c.BulletList) for i in b.items]
+    assert any(i.title == "Reference towns:" and i.text.startswith("GeoNames") for i in items)
+
+    result["location"].update(centroid_lon=None, centroid_lat=None)
+    content = c.build_content(result, tmp_path, report_settings(tmp_path))
+    values = dict(_glance_rows(content))
+    assert values["Centroid"] == values["Nearest major town"] == "—"
+    items = [i for b in content.blocks if isinstance(b, c.BulletList) for i in b.items]
+    assert not any(i.title == "Reference towns:" for i in items)   # no towns, no credit

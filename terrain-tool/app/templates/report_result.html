@@ -23,6 +23,16 @@
 
 <section class="section" aria-labelledby="glance-title">
   <h2 id="glance-title">At a glance</h2>
+  {# Key location snapshot: where the site is, how big it is, how far from the nearest town.
+     Worded by app.places.snapshot so it matches the PDF, Word file and summary.md. #}
+  {% set snap = glance.snapshot or {} %}
+  {% if snap %}
+  <dl class="dl snapshot">
+    <dt>Centroid</dt><dd>{{ snap.centroid }}</dd>
+    <dt>Project size</dt><dd>{{ snap.size }}</dd>
+    <dt>Nearest major town</dt><dd>{{ snap.nearest }}</dd>
+  </dl>
+  {% endif %}
   <div class="tiles">
     <div class="tile"><span class="label">Total area</span><div class="value">{{ glance.total_area_ha|num(1) }} <small>ha</small></div></div>
     {# Whole metres read cleanly for hilly sites; flat sites need the decimal to show any relief. #}
@@ -207,6 +217,7 @@
        was first written; .get() keeps older result.json files rendering. #}
     {% if dem.get('disclaimer') %}<dt>DEM notice</dt><dd>{{ dem.get('disclaimer') }}</dd>{% endif %}
     {% if loc.boundary_attribution %}<dt>Boundaries</dt><dd>{{ loc.boundary_attribution }}</dd>{% endif %}
+    {% if glance.town_attribution %}<dt>Towns</dt><dd>{{ glance.town_attribution }}</dd>{% endif %}
     <dt>Report ID</dt><dd><code>{{ job.id }}</code></dd>
   </dl>
   {% if dem.get('sends_coordinates_to_third_party') %}

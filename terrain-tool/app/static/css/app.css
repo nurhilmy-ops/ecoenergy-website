@@ -249,6 +249,7 @@ details.danger[open] summary{margin-bottom:12px}
 .dl dt{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cloud-dim);padding-top:3px}
 .dl dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:520px){.dl{grid-template-columns:minmax(0,1fr)}.dl dd{margin-bottom:8px}}
+.snapshot{margin:0 0 18px}
 .meta-line{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--cloud);font-size:15px;margin:0 0 24px}
 .meta-line span{white-space:nowrap}
 .prose{max-width:78ch}

@@ -58,6 +58,9 @@ terrain-tool/
     manage.py            python -m app.manage withdraw EMAIL … [--env-file F]: staff record a written
                          withdrawal (never creates a database); test-email ADDRESS [--env-file F]:
                          send a test email, explain failures
+    places.py            key location snapshot: 55 reference towns (GeoNames, CC BY 4.0), nearest
+                         town distance/bearing, overall extent, and the snapshot wording shared by
+                         the engine, the result page and the reports (no engine import; pyproj lazy)
     terrain/             screening engine (ported from the kml-terrain-screening skill)
       __init__.py        public API: ScreeningError, SiteInput, validate_upload, run_screening
       kml.py             safe KML/KMZ parsing (defusedxml, zip limits, 2.2/2.1/no namespace)
@@ -156,11 +159,13 @@ def send_mail(settings, to: str, subject: str, text: str, html: str | None = Non
 
 All numbers are plain floats (rounded sensibly), never NaN — use `null` when unknown.
 `dem.disclaimer`, `dem.sends_coordinates_to_third_party`, `sites[].steeper_than_grade_pct`,
-`totals.steeper_than_grade_pct` and `routes[].max_slope_deg` / `routes[].length_on_35deg_m`
-were added after schema_version 1 first shipped, without a version bump: readers must use
+`totals.steeper_than_grade_pct`, `routes[].max_slope_deg` / `routes[].length_on_35deg_m`,
+`location.nearest_towns`, `location.town_attribution` and `totals.extent_km` were added after
+schema_version 1 first shipped, without a version bump: readers must use
 `.get()` for them so result.json files written before the change still render (the result
 page does; `tests/test_flow.py` checks an old-format file; `flags.py` falls back to the
-per-site shares and the route grade when they are missing). The `//` comments below are
+per-site shares and the route grade when they are missing; `app.places.snapshot` recomputes
+the nearest towns from the centroid and leaves out the extent). The `//` comments below are
 documentation only.
 
 ```json
@@ -194,11 +199,18 @@ documentation only.
     "centroid_lon": 101.7, "centroid_lat": 3.1,
     "state": "Selangor|null", "district": "Petaling|null",
     "utm_epsg": "EPSG:32647",
-    "boundary_attribution": "str"               // DOSM open data credit + no-endorsement sentence
+    "boundary_attribution": "str",              // DOSM open data credit + no-endorsement sentence
+    "nearest_towns": [{"name": "Kuah", "state": "Kedah", "distance_km": 17.3,
+                       "bearing": "WNW"}],      // two nearest reference towns, nearest first; geodesic
+                                                 // from the centroid; bearing = direction of the site
+                                                 // as seen from the town (16-point compass)
+    "town_attribution": "str"                   // GeoNames CC BY 4.0 credit + "not road distance"
   },
   "totals": {
     "polygon_count": 1, "line_count": 0, "point_count": 0,
     "total_area_ha": 42.3, "total_line_km": 0.0,  // area of the UNION of the site polygons
+    "extent_km": {"ew": 2.2, "ns": 1.7},          // bounding box of ALL features, measured through
+                                                   // the centroid (geodesic)
     "steeper_than_grade_pct": {"10": 12.0, "15": 4.0}  // over the union (overlaps counted once)
   },
   "sites": [{
@@ -276,6 +288,17 @@ cites them.
 `location.state` / `location.district` come from DOSM's district layer, which carries both
 names (DOSM spelling). A point outside every polygon (offshore, or in a simplification gap)
 falls back to the nearest district within 5 km, otherwise both are `null`.
+
+Every land description opens with the **key location snapshot** (`app/places.py`): the
+centroid, the project size (site count, union area, overall E–W × N–S extent) and the
+straight-line distance and 16-point bearing from the nearest of 55 reference towns (state and
+federal-territory capitals, principal regional towns, Singapore), with the second-nearest in
+brackets. Town points are GeoNames (CC BY 4.0, credited in the reports and result page)
+checked against OpenStreetMap to within 3.5 km; each town's state is this tool's own DOSM
+lookup. The same wording, from `places.snapshot(result)`, opens "At a glance" in the PDF and
+Word report and on the result page, opens summary.md, and the nearest town is added to the
+Figure 1 subtitle. Distances are not road distances and the town list is not exhaustive: a
+site may be nearer a smaller town than the one named.
 
 ## Consent model (PDPA)
 
